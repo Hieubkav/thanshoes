@@ -6,13 +6,12 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('/', [ShopController::class, 'store_front'])->name('shop.store_front');
+Route::get('/catfilter', [ShopController::class, 'cat_filter'])->name('shop.cat_filter');
+Route::get('/product/{id}', [ShopController::class, 'product_overview'])->name('shop.product_overview');
 
+// xử lý nhập liệu
 Route::get('/excel',[AdminController::class,'excel'])->name('shop.excel');
 Route::get('/form_import_excel',[AdminController::class,'form_import_excel']);
 Route::post('/import_excel',[AdminController::class,'import_excel'])->name('shop.import_excel');
 
 Route::get('/test',[AdminController::class,'test']);
-
-Route::get('/test2',function(){
-    return "xin chào";
-});

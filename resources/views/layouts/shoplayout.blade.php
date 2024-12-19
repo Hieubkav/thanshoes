@@ -11,7 +11,7 @@
 
     @vite('resources/css/app.css')
     @vite('resources/js/app.js')
-
+    @livewireStyles
 </head>
 
 <body>
@@ -28,6 +28,22 @@
     @include('component.footer')
 
     @include('component.shop.speedial')
+
+    
+    <script defer>
+        document.addEventListener("DOMContentLoaded", function () {
+            const allImages = document.querySelectorAll("img");
+    
+            allImages.forEach((img) => {
+                if (!img.hasAttribute("loading")) {
+                    img.setAttribute("loading", "lazy");
+                }
+            });
+            console.log("Đã thêm loading='lazy' vào tất cả ảnh.");
+        });
+    </script>        
+
+    @livewireScripts
 </body>
 
 </html>

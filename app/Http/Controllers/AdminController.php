@@ -52,31 +52,31 @@ class AdminController extends Controller
                 $variant = [];
                 for ($i = $start; $i < $end; $i++) {
                     $variant[] = [
-                        'size' => $value['H'],
-                        'color' => $value['J'],
-                        'variant_name' => $value['M'],
-                        'sku' => $value['N'],
-                        'barcode' => $value['O'],
-                        'weight' => $value['P'],
-                        'unit' => $value['Q'],
-                        'price' => $value['AF'],
-                        'image' => $value['R'],
-                        'quantity' => $value['AA'],
+                        'size' => $data[$i]['H'],
+                        'color' => $data[$i]['J'],
+                        'variant_name' => $data[$i]['A'],
+                        'sku' =>  $data[$i]['N'],
+                        'barcode' => $data[$i]['O'],
+                        'weight' => $data[$i]['P'],
+                        'unit' => $data[$i]['Q'],
+                        'price' => $data[$i]['AF'],
+                        'image' => $data[$i]['R'],
+                        'quantity' => $data[$i]['AA'],
                     ];
 
                     // Lưu dữ liệu vào bảng Variant
                     $variant_data = new Variant();
-                    $variant_data->color = $value['J'];
-                    $variant_data->size = $value['H'];
-                    $variant_data->price = str_replace(',', '', $value['AF']);
-                    $variant_data->stock =str_replace(',', '', $value['AA']);
+                    $variant_data->color = $data[$i]['J'];
+                    $variant_data->size = $data[$i]['H'];
+                    $variant_data->price = str_replace(',', '', $data[$i]['AF']);
+                    $variant_data->stock = str_replace(',', '', $data[$i]['AA']);
                     $variant_data->product_id = $product->id;
                     $variant_data->save();
 
                     // Lưu dữ liệu vào bảng VariantImage
                     $variant_image = new VariantImage();
                     $variant_image->variant_id = $variant_data->id;
-                    $variant_image->image = $value['R'];
+                    $variant_image->image = $data[$i]['R'];
                     $variant_image->save();
                 }
 
@@ -88,8 +88,6 @@ class AdminController extends Controller
                     'tags' => $value['F'],
                     'variants' => $variant
                 ];
-
-                
             }
         }
 
@@ -122,5 +120,22 @@ class AdminController extends Controller
         }
 
         return view('test', compact('data'));
+    }
+
+    public function phan_trang(Request $request)
+    {
+        // Lấy dữ liệu sản phẩm và phân trang
+        $products = Product::paginate(5);
+
+        if ($request->ajax()) {
+            // Trả về dữ liệu JSON gồm danh sách sản phẩm và phân trang
+            return response()->json([
+                'products' => view('partials.product_list_phan_trang', compact('products'))->render(),
+                'pagination' => (string) $products->links('pagination::tailwind')
+            ]);
+        }
+
+        // Trả về view bình thường nếu không phải yêu cầu AJAX
+        return view('shop.phan_trang', compact('products'));
     }
 }

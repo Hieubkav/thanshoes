@@ -31,6 +31,8 @@
 
     @include('component.discount_coupons')
 
+    @include('component.shop.animate_banner')
+
     @if ($count_types >= 2)
         @include('component.new_arrival', [
             'type_name' => $types->values()->get(1),

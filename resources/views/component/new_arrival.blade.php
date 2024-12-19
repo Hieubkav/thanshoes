@@ -21,8 +21,17 @@
             <!-- Product Card 1 -->
             <div class="border rounded-lg p-2 bg-white shadow hover:shadow-lg transition">
                 <div class="relative group">
-                    <img src="{{ $item->variants->first()->variant_images->first()->image }}" alt="Product 1"
-                        class="rounded-lg w-full">
+                    <img 
+                        src="
+                        @php
+                            if ($item->variants->first()->variant_images->first()->image != "") {
+                                echo $item->variants->first()->variant_images->first()->image;
+                            } else {
+                                echo asset('images/logo.svg');
+                            }
+                        @endphp
+                        " 
+                        alt="Product 1" class="rounded-lg w-full">
                     <!-- Sale Badge -->
                     {{-- <span
                         class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded">
@@ -30,7 +39,7 @@
                         chạy
                     </span> --}}
                     <!-- Discount Badge -->
-                    @if ($item->variants->min('price') > 0)
+                    @if ($item->variants->min('price') > 500000)
                         <span
                             class="absolute top-2 right-2 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded">
                             FREESHIP
