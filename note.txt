@@ -1,0 +1,11 @@
+// TODO: Overview product
+Chức năng chi tiết sản phẩm  :
+ 1) Kiểm tra xem sản phẩm hiển tại có 2 phân mục color  và size không
+  => nếu có 2 thì cho color làm phân mục chính không thì cho size
+ 2) Với phân mục chính 
+  => Khi ấn vào phân mục chính thì ô đó sẽ đậm màu (dĩ nhiên là với  ô có thể ấn)
+  => khi ấn vào phân mục phụ trước thì nó sẽ báo là vui lòng chọn phân loại ở trên 
+ 3) Khi ấn cả 2 phân mục thoã mãn hoặc nếu có 1 mục và ấn 1 mục rồi thì 
+ => Hiện  số lượng sản phẩm còn lại của nó 
+ 4) Nút thêm giỏ hàng và nút mua ngay sáng lên 
+ 5) Viết lại chức năng dispatch vỉew để cho nó là 1 toast cho đẹp

@@ -1,5 +1,4 @@
 <div>
-    {{-- {{dd($list_sizes)}}} --}}
     <div class="bg-gray-100 dark:bg-gray-800 py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-wrap -mx-4">
@@ -12,7 +11,6 @@
                             <div class="absolute top-0 left-0 bg-blue-500 text-white px-2 py-1 rounded-br-lg">
                                 Freeship
                             </div>
-                            
                         @endif
                         <div class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded-bl-lg">
                             -49%
@@ -64,16 +62,24 @@
                             <div class="flex space-x-4">
                                 <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                     @foreach ($list_colors as $color)
-                                        <label class="relative bg-blue-400 rounded-md border-none py-1 px-1 inline-block text-sm font-semibold uppercase cursor-pointer transform -skew-x-21 group">
+                                        <label
+                                            class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold uppercase cursor-pointer transform -skew-x-21 group 
+                                            @if ($product->variants->where('color', $color)->sum('stock') == 0) bg-gray-400
+                                                cursor-not-allowed
+                                            @else
+                                                bg-blue-400
+                                                cursor-pointer @endif
+
+                                            @if ($countfilter == 2 and $color == $selectedColor) text-white font-extrabold shadow-blue-600 shadow-2xl bg-blue-900 border-2 border-blue-500 @endif
+                                            ">
                                             <input wire:model.live.debounce.300ms='selectedColor'
-                                            @if ($product->variants->where('color',$color)->sum('stock')==0)
-                                                disabled
-                                            @endif
-                                            value="{{ $color }}" type="radio" name="color" class="absolute opacity-0 w-0 h-0">
+                                                @if ($product->variants->where('color', $color)->sum('stock') == 0) disabled @endif
+                                                value="{{ $color }}" type="radio" name="color"
+                                                class="absolute opacity-0 w-0 h-0">
                                             <span class="inline-block transform skew-x-21">
                                                 {{ $color }}
                                             </span>
-                                            <div class="absolute top-0 bottom-0 left-0 right-0 bg-blue-900 opacity-0 -z-10 transition-all duration-500 group-hover:opacity-100 group-hover:left-0 group-hover:right-0"></div>
+
                                         </label>
                                     @endforeach
                                 </div>
@@ -87,43 +93,57 @@
                             <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Chọn phân loại:</h3>
                             <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 @foreach ($list_sizes as $size)
-                                    <label class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold uppercase  transform -skew-x-21 group
-                                        @if ($product->variants->where('size',$size)->sum('stock')==0)
+                                    <label
+                                        class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold uppercase  transform -skew-x-21 group
+                                        @if (
+                                            $product->variants->where('size', $size)->sum('stock') == 0 or
+                                            ($countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0)
+                                        ) 
                                             bg-gray-400
                                             cursor-not-allowed
                                         @else
                                             bg-green-400
-                                            cursor-pointer
-                                        @endif
+                                            cursor-pointer @endif
+
+                                        @if ($size == $selectedSize) text-white font-extrabold shadow-green-600 shadow-2xl bg-green-900 border-2 border-green-500 @endif
                                         ">
-                                        <input wire:model.live.debounce.300ms='selectedSize' 
-                                        @if ($product->variants->where('size',$size)->sum('stock')==0)
-                                            disabled
-                                        @endif
-                                        value="{{ $size }}" type="radio" name="size" class="absolute opacity-0 w-0 h-0">
+                                        <input wire:model.live.debounce.300ms='selectedSize'
+                                            @if ($product->variants->where('size', $size)->sum('stock') == 0) disabled @endif
+                                            value="{{ $size }}" type="radio" name="size"
+                                            class="absolute opacity-0 w-0 h-0">
                                         <span class="inline-block transform skew-x-21">
                                             {{ $size }}
                                         </span>
-                                        <div class="absolute top-0 bottom-0 left-0 right-0 bg-gray-900 opacity-0 -z-10 transition-all duration-500 group-hover:opacity-100 group-hover:left-0 group-hover:right-0"></div>
                                     </label>
                                 @endforeach
                             </div>
                         </div>
                     @endif
-                    
+
                     <!-- Số lượng tồn kho -->
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Mua nhanh chỉ còn:</h3>
-                        <span class="text-red-500 font-bold">6 sản phẩm</span>
+                        <span class="text-red-500 font-bold italic">
+                            @if ($countfilter==2)
+                                {{ $product->variants->where('color', $selectedColor)->where('size', $selectedSize)->sum('stock') }}
+                            @else 
+                                {{ $product->variants->where('size', $selectedSize)->sum('stock') }}
+                            @endif
+                            sản phẩm
+                        </span>
                     </div>
-                    
+
 
                     <!-- Nút Thêm vào giỏ hàng -->
-                    <div class="flex space-x-4 mb-6">
-                        {{-- <button 
-                            class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500">
-                            Thêm vào giỏ hàng
-                        </button> --}}
+                    <div class="flex space-x-4 mb-6
+                        @php
+                            if ($countfilter == 1 and $selectedSize==''){
+                                echo "hidden";
+                            } else if ($countfilter == 2 and ($selectedSize=='' or $selectedColor=='')){
+                                echo "hidden";
+                            }
+                        @endphp
+                        ">
                         @include('partials.button_add_cart')
                         <button
                             class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500">
@@ -150,10 +170,19 @@
     </script>
 
 
-    {{-- @include('partials.dispatch',[
-        'event' => 'sizeSelected',
-        'message' => 'cập nhậT  giá trj size thành  size'. $selectedSize,
-        'color' => 'green'
-    ]) --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Livewire.on('colorSelected', (data) => {
+                console.log(data[0]);
+            });
 
+            Livewire.on('sizeSelected', (data) => {
+                console.log(data[0]);
+            });
+
+            Livewire.on('checkcolorfirst', (data) => {
+                alert('Vui lòng chọn phân mục ở trên trước');
+            });
+        });
+    </script>
 </div>

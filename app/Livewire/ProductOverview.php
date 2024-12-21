@@ -9,22 +9,36 @@ class ProductOverview extends Component
     public $product;
     public $selectedColor = '';
     public $selectedSize = '';
+    public $countfilter = 1;
+    public $clicked = false;
 
     // Nhận dữ liệu từ component cha
     public function mount($product)
     {
         $this->product = $product;
+        
+        // Kiểm tra xem sản phẩm có phân loại theo color không
+        if($this->product->variants->where('color', '!=', null)->count() > 0){
+            $this->countfilter = 2;
+        }
     }
 
     // Xử lý khi người dùng chọn màu
-    public function updatingSelectedColor($value)
+    public function updatingSelectedColor($color)
     {
-        $this->dispatch('colorSelected', $value);
+        $this->clicked = true;
+        $this->selectedSize = '';
+        $this->dispatch('colorSelected', $color);
     }
 
     // Xử lý khi người dùng chọn size
     public function updatingSelectedSize($value)
     {
+        if ($this->clicked==false and $this->countfilter==2) {
+            $this->dispatch('checkcolorfirst');
+        }
+
+        $this->clicked = true;
         $this->dispatch('sizeSelected', $value);
     }
 
