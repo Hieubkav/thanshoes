@@ -7,8 +7,8 @@ use Livewire\Component;
 class ProductOverview extends Component
 {
     public $product;
-    public $selectedColor = '';
-    public $selectedSize = '';
+    public $selectedColor = [];
+    public $selectedSize = [];
     public $countfilter = 1;
     public $clicked = false;
 
@@ -16,7 +16,6 @@ class ProductOverview extends Component
     public function mount($product)
     {
         $this->product = $product;
-        
         // Kiểm tra xem sản phẩm có phân loại theo color không
         if($this->product->variants->where('color', '!=', null)->count() > 0){
             $this->countfilter = 2;
@@ -27,7 +26,7 @@ class ProductOverview extends Component
     public function updatingSelectedColor($color)
     {
         $this->clicked = true;
-        $this->selectedSize = '';
+        $this->selectedSize = [];
         $this->dispatch('colorSelected', $color);
     }
 
@@ -36,12 +35,11 @@ class ProductOverview extends Component
     {
         if ($this->clicked==false and $this->countfilter==2) {
             $this->dispatch('checkcolorfirst');
+        } else {
+            $this->clicked = true;
+            $this->dispatch('sizeSelected', $value);
         }
-
-        $this->clicked = true;
-        $this->dispatch('sizeSelected', $value);
     }
-
 
     public function render()
     {

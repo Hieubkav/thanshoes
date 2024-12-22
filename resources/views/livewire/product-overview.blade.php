@@ -58,16 +58,16 @@
                     <!-- Chọn màu -->
                     @if (count($list_colors) > 0)
                         <div class="mb-6">
-                            <h3 class="text-sm font-semibold text-blue-800 dark:text-white mb-2">Chọn phân loại:</h3>
+                            <h3 class="text-sm font-semibold text-blue-600 dark:text-white mb-2 italic">Chọn phân loại ngay:</h3>
                             <div class="flex space-x-4">
                                 <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                     @foreach ($list_colors as $color)
                                         <label
-                                            class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold uppercase cursor-pointer transform -skew-x-21 group 
+                                            class="relative  rounded-md border-none py-1 px-1 text-sm font-semibold uppercase cursor-pointer group text-center
                                             @if ($product->variants->where('color', $color)->sum('stock') == 0) bg-gray-400
                                                 cursor-not-allowed
                                             @else
-                                                bg-blue-400
+                                                bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600
                                                 cursor-pointer @endif
 
                                             @if ($countfilter == 2 and $color == $selectedColor) text-white font-extrabold shadow-blue-600 shadow-2xl bg-blue-900 border-2 border-blue-500 @endif
@@ -76,7 +76,7 @@
                                                 @if ($product->variants->where('color', $color)->sum('stock') == 0) disabled @endif
                                                 value="{{ $color }}" type="radio" name="color"
                                                 class="absolute opacity-0 w-0 h-0">
-                                            <span class="inline-block transform skew-x-21">
+                                            <span class=" flex items-center justify-center">
                                                 {{ $color }}
                                             </span>
 
@@ -86,15 +86,16 @@
                             </div>
                         </div>
                     @endif
+                    
 
                     <!-- Chọn kích cỡ -->
                     @if (count($list_sizes) > 0)
                         <div class="mb-6">
-                            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Chọn phân loại:</h3>
+                            <h3 class="text-sm font-semibold text-green-400 italic dark:text-white mb-2">Chọn phân loại ngay:</h3>
                             <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 @foreach ($list_sizes as $size)
                                     <label
-                                        class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold uppercase  transform -skew-x-21 group
+                                        class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold group text-center
                                         @if (
                                             $product->variants->where('size', $size)->sum('stock') == 0 or
                                             ($countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0)
@@ -102,16 +103,18 @@
                                             bg-gray-400
                                             cursor-not-allowed
                                         @else
-                                            bg-green-400
+                                            bg-gradient-to-r from-green-400 via-green-500 to-green-600
                                             cursor-pointer @endif
 
                                         @if ($size == $selectedSize) text-white font-extrabold shadow-green-600 shadow-2xl bg-green-900 border-2 border-green-500 @endif
                                         ">
                                         <input wire:model.live.debounce.300ms='selectedSize'
-                                            @if ($product->variants->where('size', $size)->sum('stock') == 0) disabled @endif
+                                            @if ($product->variants->where('size', $size)->sum('stock') == 0 or 
+                                            ($countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0)
+                                            ) disabled @endif
                                             value="{{ $size }}" type="radio" name="size"
                                             class="absolute opacity-0 w-0 h-0">
-                                        <span class="inline-block transform skew-x-21">
+                                        <span class="flex items-center justify-center">
                                             {{ $size }}
                                         </span>
                                     </label>
@@ -137,7 +140,7 @@
                     <!-- Nút Thêm vào giỏ hàng -->
                     <div class="flex space-x-4 mb-6
                         @php
-                            if ($countfilter == 1 and $selectedSize==''){
+                            if ($countfilter == 1 and $selectedSize==[]){
                                 echo "hidden";
                             } else if ($countfilter == 2 and ($selectedSize=='' or $selectedColor=='')){
                                 echo "hidden";

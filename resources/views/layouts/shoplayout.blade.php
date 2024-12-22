@@ -15,9 +15,9 @@
 </head>
 
 <body>
-    
 
-    @include('component.navbar')
+    {{-- @include('component.navbar') --}}
+    @livewire('navbar')
 
     <main class="mt-[7.5rem]">
         @yield('content')

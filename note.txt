@@ -9,3 +9,11 @@ Chức năng chi tiết sản phẩm  :
  => Hiện  số lượng sản phẩm còn lại của nó 
  4) Nút thêm giỏ hàng và nút mua ngay sáng lên 
  5) Viết lại chức năng dispatch vỉew để cho nó là 1 toast cho đẹp
+ 6) Viết sản phẩm tương tự // (liên quan đến cùng thương hiệu hoặc danh mục)
+
+// TODO: Chức năng giỏ hàng
+ 0) Giỏ hàng như một cái modal , và như một cái checkout luôn để tiện cho việc đặt nhanh
+ 1) Tạo khung modal 
+ => có thể ẩn hiện được
+ => reponsive cho modal 
+ 2) Fill chức năng modal jj
