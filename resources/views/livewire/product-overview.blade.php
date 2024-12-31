@@ -55,7 +55,7 @@
                         </span>
                     </div>
 
-                    <!-- Chọn màu -->
+                    {{-- <!-- Chọn màu -->
                     @if (count($list_colors) > 0)
                         <div class="mb-6">
                             <h3 class="text-sm font-semibold text-blue-600 dark:text-white mb-2 italic">Chọn phân loại ngay:</h3>
@@ -77,30 +77,73 @@
                                                 value="{{ $color }}" type="radio" name="color"
                                                 class="absolute opacity-0 w-0 h-0">
                                             <span class=" flex items-center justify-center">
+                                                <img src="
+                                                {{
+                                                // $product->variants->where('color', $color)->first()->variant_images->first()->image
+                                                $product->variants
+                                                ->where('color', $color)
+                                                ->random() // Lấy phiên bản ngẫu nhiên
+                                                ->variant_images
+                                                ->random() // Lấy ảnh ngẫu nhiên từ phiên bản ngẫu nhiên
+                                                ->image
+                                                }}" alt="" class="w-6 h-6 rounded-full bg-white">
                                                 {{ $color }}
+                                                
                                             </span>
-
                                         </label>
                                     @endforeach
                                 </div>
                             </div>
                         </div>
+                    @endif --}}
+                    @if (count($list_colors) > 0)
+                        <div class="mb-6">
+                            <h3 class="text-sm font-medium text-gray-800 dark:text-white mb-4">Chọn phân loại ngay:</h3>
+                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                                @foreach ($list_colors as $color)
+                                    @php
+                                        $link_src_color_pic =
+                                            optional(
+                                                $product->variants
+                                                    ->where('color', $color)
+                                                    ->filter(fn($variant) => $variant->variant_images->isNotEmpty())
+                                                    ->random()
+                                                    ?->variant_images->random(),
+                                            )->image ?? asset('images/logo.svg');
+                                    @endphp
+                                    <label
+                                        class="group relative flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer shadow-sm
+                                @if ($product->variants->where('color', $color)->sum('stock') == 0) bg-gray-200 text-gray-400 cursor-not-allowed
+                                @else
+                                    bg-white text-gray-800 hover:shadow-md hover:border-blue-500 hover:text-blue-600 @endif
+                                @if ($countfilter == 2 and $color == $selectedColor) bg-blue-500 text-blue-400 font-bold shadow-md @endif">
+                                        <input wire:model.live.debounce.300ms="selectedColor"
+                                            @if ($product->variants->where('color', $color)->sum('stock') == 0) disabled @endif
+                                            value="{{ $color }}" type="radio" name="color"
+                                            class="absolute opacity-0 w-0 h-0">
+                                        <div
+                                            class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full shadow-sm overflow-hidden">
+                                            <img src="{{ $link_src_color_pic }}" alt="{{ $color }}"
+                                                class="w-full h-full object-cover">
+                                        </div>
+                                        <span
+                                            class="mt-2 text-xs sm:text-sm break-words text-center max-w-full">{{ $color }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
                     @endif
-                    
 
                     <!-- Chọn kích cỡ -->
-                    @if (count($list_sizes) > 0)
+                    {{-- @if (count($list_sizes) > 0)
                         <div class="mb-6">
-                            <h3 class="text-sm font-semibold text-green-400 italic dark:text-white mb-2">Chọn phân loại ngay:</h3>
+                            <h3 class="text-sm font-semibold text-green-400 italic dark:text-white mb-2">Chọn phân loại
+                                ngay:</h3>
                             <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 @foreach ($list_sizes as $size)
                                     <label
                                         class="relative  rounded-md border-none py-1 px-1 inline-block text-sm font-semibold group text-center
-                                        @if (
-                                            $product->variants->where('size', $size)->sum('stock') == 0 or
-                                            ($countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0)
-                                        ) 
-                                            bg-gray-400
+                                        @if ($product->variants->where('size', $size)->sum('stock') == 0 or $countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0) bg-gray-400
                                             cursor-not-allowed
                                         @else
                                             bg-gradient-to-r from-green-400 via-green-500 to-green-600
@@ -109,14 +152,40 @@
                                         @if ($size == $selectedSize) text-white font-extrabold shadow-green-600 shadow-2xl bg-green-900 border-2 border-green-500 @endif
                                         ">
                                         <input wire:model.live.debounce.300ms='selectedSize'
-                                            @if ($product->variants->where('size', $size)->sum('stock') == 0 or 
-                                            ($countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0)
-                                            ) disabled @endif
+                                            @if ($product->variants->where('size', $size)->sum('stock') == 0 or $countfilter == 2 and $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0) disabled @endif
                                             value="{{ $size }}" type="radio" name="size"
                                             class="absolute opacity-0 w-0 h-0">
                                         <span class="flex items-center justify-center">
                                             {{ $size }}
                                         </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif --}}
+                    @if (count($list_sizes) > 0)
+                        <div class="mb-6">
+                            <h3 class="text-sm font-medium text-green-500 italic dark:text-white mb-4">Chọn phân loại
+                                ngay:</h3>
+                            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                                @foreach ($list_sizes as $size)
+                                    <label
+                                        class="group relative flex items-center justify-center p-2 border rounded-lg cursor-pointer shadow-sm
+                                        @if (
+                                            $countfilter == 1 and $product->variants->where('size', $size)->sum('stock') == 0 or
+                                                $countfilter == 2 and
+                                                    $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0) bg-gray-200 text-gray-400 cursor-not-allowed
+                                        @else
+                                            bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-black hover:shadow-md @endif
+                                        @if ($size == $selectedSize) bg-green-700 border-2 border-green-500 shadow-lg font-bold @endif">
+                                        <input wire:model.live.debounce.300ms="selectedSize"
+                                            @if (
+                                                $countfilter == 1 and $product->variants->where('size', $size)->sum('stock') == 0 or
+                                                    $countfilter == 2 and
+                                                        $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0) disabled @endif
+                                            value="{{ $size }}" type="radio" name="size"
+                                            class="absolute opacity-0 w-0 h-0">
+                                        <span class="text-sm sm:text-base break-words">{{ $size }}</span>
                                     </label>
                                 @endforeach
                             </div>
@@ -127,9 +196,9 @@
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Mua nhanh chỉ còn:</h3>
                         <span class="text-red-500 font-bold italic">
-                            @if ($countfilter==2)
+                            @if ($countfilter == 2)
                                 {{ $product->variants->where('color', $selectedColor)->where('size', $selectedSize)->sum('stock') }}
-                            @else 
+                            @else
                                 {{ $product->variants->where('size', $selectedSize)->sum('stock') }}
                             @endif
                             sản phẩm
@@ -138,21 +207,16 @@
 
 
                     <!-- Nút Thêm vào giỏ hàng -->
-                    <div class="flex space-x-4 mb-6
-                        @php
-                            if ($countfilter == 1 and $selectedSize==[]){
-                                echo "hidden";
-                            } else if ($countfilter == 2 and ($selectedSize=='' or $selectedColor=='')){
-                                echo "hidden";
-                            }
-                        @endphp
-                        ">
-                        @include('partials.button_add_cart')
-                        <button
+                    <div class="flex space-x-4 mb-6" wire:click="addToCart" >
+                        <div >
+                            @include('partials.button_add_cart')
+                        </div>
+                        <button 
                             class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500">
                             Mua ngay
                         </button>
                     </div>
+
                 </div>
             </div>
         </div>

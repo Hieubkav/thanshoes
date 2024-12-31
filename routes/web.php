@@ -5,7 +5,7 @@ use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::get('/', [ShopController::class, 'store_front'])->name('shop.store_front');
+Route::get('/', [ShopController::class, 'store_front'])->name('shop.store_front')->lazy();
 Route::get('/catfilter', [ShopController::class, 'cat_filter'])->name('shop.cat_filter');
 Route::get('/product/{id}', [ShopController::class, 'product_overview'])->name('shop.product_overview');
 

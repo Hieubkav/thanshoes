@@ -1,8 +1,15 @@
 @php
+    
+       
+
     $product = App\Models\Product::where('type', $type_name)->first();
     $so_luong_types = App\Models\Product::where('type', $type_name)->count();
     // Lấy ra tối đa 4 sản phẩm
-    $danh_sach_types = App\Models\Product::where('type', $type_name)->take(4)->get();
+    // $danh_sach_types = App\Models\Product::where('type', $type_name)->take(4)->get();
+    $danh_sach_types = App\Models\Product::where('type', $type_name)
+        ->inRandomOrder() // Lấy kết quả theo thứ tự ngẫu nhiên
+        ->take(4) // Giới hạn kết quả trả về là 4 bản ghi
+        ->get();
 
 @endphp
 <div class="max-w-screen-xl mx-auto px-4 py-6">
@@ -21,23 +28,24 @@
             <!-- Product Card 1 -->
             <div class="border rounded-lg p-2 bg-white shadow hover:shadow-lg transition">
                 <div class="relative group">
-                    <img 
-                        src="
-                        @php
-                            if ($item->variants->first()->variant_images->first()->image != "") {
-                                echo $item->variants->first()->variant_images->first()->image;
-                            } else {
-                                echo asset('images/logo.svg');
-                            }
-                        @endphp
-                        " 
-                        alt="Product 1" class="rounded-lg w-full">
-                    <!-- Sale Badge -->
-                    {{-- <span
-                        class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded">
-                        Bán
-                        chạy
-                    </span> --}}
+                    {{-- <img src="
+                        {{ $item->variants->first()->variant_images->first()->image != "" ? $item->variants->first()->variant_images->first()->image : asset('images/logo.svg') }}
+                        "
+                        alt="Product 1" class="rounded-lg w-full"> --}}
+                    @php
+                        $variantWithImage = $item->variants
+                            ->filter(function ($variant) {
+                                return $variant->variant_images->isNotEmpty();
+                            }) // Lọc các variants có ảnh
+                            ->random() // Lấy một variant ngẫu nhiên từ danh sách đã lọc
+                            ->variant_images
+                            ->random(); // Lấy ảnh ngẫu nhiên từ variant đã chọn
+                    
+                        $image_variant = $variantWithImage && $variantWithImage->image ? $variantWithImage->image : asset('images/logo.svg');
+                    @endphp
+                    
+                    <img src="{{ $image_variant }}" alt="Product Image" class="rounded-lg w-full">
+                    
                     <!-- Discount Badge -->
                     @if ($item->variants->min('price') > 500000)
                         <span
@@ -65,15 +73,15 @@
                 <!-- Color Options -->
                 <div class="flex items-center mt-3 space-x-2">
                     @if ($item->variants->count() > 1)
-                        <img src="{{ $item->variants->skip(1)->first()->variant_images->first()->image }}" alt="Color option 1"
-                            class="w-8 h-8 rounded-full border border-gray-300">
+                        <img src="{{ $item->variants->skip(1)->first()->variant_images->first()->image }}"
+                            alt="Color option 1" class="w-8 h-8 rounded-full border border-gray-300">
                     @endif
                     @if ($item->variants->count() > 2)
-                        <img src="{{ $item->variants->skip(2)->first()->variant_images->first()->image }}" alt="Color option 2"
-                            class="w-8 h-8 rounded-full border border-gray-300">
+                        <img src="{{ $item->variants->skip(2)->first()->variant_images->first()->image }}"
+                            alt="Color option 2" class="w-8 h-8 rounded-full border border-gray-300">
                     @endif
                     <span class="text-gray-500 text-sm">
-                        {{ $item->variants->count() }} 
+                        {{ $item->variants->count() }}
                         phiên bản
                     </span>
                 </div>
