@@ -7,6 +7,8 @@ use App\Models\Product;
 use App\Models\Variant;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
+use Livewire\Attributes\On;
+use Filament\Notifications\Notification;
 
 class Navbar extends Component
 {
@@ -14,6 +16,11 @@ class Navbar extends Component
     public $search;
     public $brands;
     public $types;
+
+    public $name_customer = "";
+    public $phone_customer = "";
+    public $address_customer = "";
+    public $email_customer = "";
 
     public $cart = [];
 
@@ -28,39 +35,101 @@ class Navbar extends Component
         } else {
             // Lấy giỏ hàng từ cookie
             $this->cart = session()->get('cart_' . Cookie::get('device_id'), []);
-            // dd($this->cart);
+
+            // Lấy thông tin khách hàng từ cookie
+            $this->name_customer = session()->get('name_customer');
+            $this->phone_customer = session()->get('phone_customer');
+            $this->address_customer = session()->get('address_customer');
+            $this->email_customer = session()->get('email_customer');
+
+
+            // dd(session()->all());
         }
     }
 
-    // public function addCart($variant_id, $quantity = 1)
-    // {
-    //     $deviceId = Cookie::get('device_id'); // Lấy device_id từ cookie
+    #[On('cart_added')]
+    public function add_cart_success()
+    {
+        $this->cart = session()->get('cart_' . Cookie::get('device_id'), []);
+    }
 
-    //     // Truy xuất thông tin sản phẩm từ variant_id
-    //     $variant = Variant::find($variant_id); // Variant là model của bạn
+    public function clear_cart()
+    {
+        // Xoá session giỏ hàng
+        session()->forget('cart_' . Cookie::get('device_id'));
+        // Clear cookie 
+        Cookie::queue(Cookie::forget('device_id'));
+        $this->cart = [];
 
-    //     if (!$variant) {
-    //         $this->dispatch('variant_cant_find');
-    //         return;
-    //     }
+        $this->dispatch('clear_cart');
+    }
 
-    //     // Thêm sản phẩm vào giỏ hàng
-    //     $this->cart[$variant_id] = [
-    //         'product_name' => $variant->product->name,
-    //         'variant_color' => $variant->color,
-    //         'variant_size' => $variant->size,
-    //         'price' => $variant->price,
-    //         'quantity' => isset($this->cart[$variant_id])
-    //             ? $this->cart[$variant_id]['quantity'] + $quantity
-    //             : $quantity,
-    //     ];
+    public function dat_hang()
+    {
+        $deviceId = Cookie::get('device_id');
 
-    //     // Lưu giỏ hàng vào session dựa trên device_id
-    //     session()->put('cart_' . $deviceId, $this->cart);
+        // Nếu không đủ 4 thông tin thì báo lỗi và không thực hiện đặt hàng
+        if (empty($this->name_customer) || empty($this->phone_customer) || empty($this->address_customer) || empty($this->email_customer)) {
+            $this->dispatch('dat_hang_error');
 
-    //     // Thông báo
-    //     $this->dispatch('cart_added');
-    // }
+            Notification::make()
+                ->title('Đặt hàng chưa hợp lệ')
+                ->danger()
+                ->iconColor('danger')
+                ->icon('heroicon-o-x-mark')
+                ->duration(3000)
+                ->body('Vui lòng chọn lại!')
+                ->send();
+            return;
+        }
+
+        try {
+            // Validate để đưa ra thông báo lỗi nếu $this->name_customer không phải là tên hợp lệ
+            $this->validate([
+                'name_customer' => 'required|string|min:3|max:255',
+                'phone_customer' => 'required|string|min:10|max:11',
+                'address_customer' => 'required|string|min:3|max:255',
+                'email_customer' => 'required|email',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Nếu thông tin không hợp lệ thì báo lỗi và không thực hiện đặt hàng
+            $this->dispatch('dat_hang_error');
+        
+            Notification::make()
+                ->title('Thông tin người dùng không hợp lệ')
+                ->danger()
+                ->iconColor('danger')
+                ->icon('heroicon-o-x-mark')
+                ->duration(3000)
+                ->body('Vui lòng điền thông tin hợp lệ!')
+                ->send();
+        
+            return;
+        }
+
+        // Lưu thông tin khách hàng vào cookie
+        session()->put('name_customer', $this->name_customer);
+        session()->put('phone_customer', $this->phone_customer);
+        session()->put('address_customer', $this->address_customer);
+        session()->put('email_customer', $this->email_customer);
+
+        // Xoá session giỏ hàng
+        session()->forget('cart_' . Cookie::get('device_id'));
+        // Clear cookie 
+        Cookie::queue(Cookie::forget('device_id'));
+        $this->cart = [];
+
+        $this->dispatch('clear_cart_after_dat_hang');
+
+        Notification::make()
+            ->title('Đặt hàng thành công!')
+            ->success()
+            ->iconColor('success')
+            ->icon('heroicon-o-check-circle')
+            ->duration(3000)
+            ->body('Đặt - đặt nữa - đặt mãi!')
+            ->send();
+    }
 
 
     public function render()

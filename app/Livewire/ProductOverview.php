@@ -7,6 +7,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Cookie;
 use Livewire\Component;
 use Illuminate\Support\Str;
+use Livewire\Attributes\On;
 
 class ProductOverview extends Component
 {
@@ -45,6 +46,33 @@ class ProductOverview extends Component
         }
     }
 
+    #[On('clear_cart')]
+    public function clear_cart_sucess()
+    {
+        // Xoá session giỏ hàng
+        session()->forget('cart_' . Cookie::get('device_id'));
+        // Clear cookie 
+        Cookie::queue(Cookie::forget('device_id'));
+        $this->cart = [];
+
+        Notification::make()
+            ->title('Đã xoá giỏ hàng')
+            ->danger()
+            ->iconColor('danger')
+            ->icon('heroicon-o-x-mark')
+            ->duration(3000)
+            ->body('Thêm sản phẩm vào giỏ hàng để mua hàng!')
+            ->send()
+        ;
+    }
+
+    #[On('clear_cart_after_dat_hang')]
+    public function clear_cart_after_dat_hang()
+    {
+        // Xoá session giỏ hàng
+        session()->forget('cart_' . Cookie::get('device_id'));
+        $this->cart = [];
+    }
 
     // Xử lý khi người dùng chọn màu
     public function updatingSelectedColor($color)
@@ -82,6 +110,20 @@ class ProductOverview extends Component
                 ->where('size', $this->selectedSize)
                 ->first();
 
+            // Kiểm tra xem người dùng có thêm nhiều hơn số lượng hàng tồn kho không
+            if (isset($this->cart[$variant->id]) and $variant->stock == $this->cart[$variant->id]['quantity']) {
+                Notification::make()
+                    ->title('Không thể thêm vào giỏ hàng vượt quá tồn kho ')
+                    ->danger()
+                    ->iconColor('danger')
+                    ->icon('heroicon-o-x-mark')
+                    ->duration(3000)
+                    ->body('Vui lòng chọn sản phẩm khác!')
+                    ->send();
+
+                return;
+            }
+
             // Thêm sản phẩm vào giỏ hàng
             $this->cart[$variant->id] = [
                 'product_name' => $variant->product->name,
@@ -91,15 +133,11 @@ class ProductOverview extends Component
                 'quantity' => isset($this->cart[$variant->id])
                     ? $this->cart[$variant->id]['quantity'] + 1
                     : 1,
-                'image' => $variant->variant_images->first()->image
+                'image' => $variant->variant_images->first()->image,
             ];
-
-            
 
             // Lưu giỏ hàng vào session dựa trên device_id
             session()->put('cart_' . $deviceId, $this->cart);
-
-            dd(session()->all());
 
             //Gửi thông báo khi thêm vào giỏ hàng thành công
             Notification::make()
@@ -108,38 +146,40 @@ class ProductOverview extends Component
                 ->duration(3000)
                 ->body('Chúc mừng bạn')
                 ->send();
+
+            $this->dispatch('cart_added');
         }
     }
 
-    public function addCart($variant_id, $quantity = 1)
-    {
-        $deviceId = Cookie::get('device_id'); // Lấy device_id từ cookie
+    // public function addCart($variant_id, $quantity = 1)
+    // {
+    //     $deviceId = Cookie::get('device_id'); // Lấy device_id từ cookie
 
-        // Truy xuất thông tin sản phẩm từ variant_id
-        $variant = Variant::find($variant_id); // Variant là model của bạn
+    //     // Truy xuất thông tin sản phẩm từ variant_id
+    //     $variant = Variant::find($variant_id); // Variant là model của bạn
 
-        if (!$variant) {
-            $this->dispatch('variant_cant_find');
-            return;
-        }
+    //     if (!$variant) {
+    //         $this->dispatch('variant_cant_find');
+    //         return;
+    //     }
 
-        // Thêm sản phẩm vào giỏ hàng
-        $this->cart[$variant_id] = [
-            'product_name' => $variant->product->name,
-            'variant_color' => $variant->color,
-            'variant_size' => $variant->size,
-            'price' => $variant->price,
-            'quantity' => isset($this->cart[$variant_id])
-                ? $this->cart[$variant_id]['quantity'] + $quantity
-                : $quantity,
-        ];
+    //     // Thêm sản phẩm vào giỏ hàng
+    //     $this->cart[$variant_id] = [
+    //         'product_name' => $variant->product->name,
+    //         'variant_color' => $variant->color,
+    //         'variant_size' => $variant->size,
+    //         'price' => $variant->price,
+    //         'quantity' => isset($this->cart[$variant_id])
+    //             ? $this->cart[$variant_id]['quantity'] + $quantity
+    //             : $quantity,
+    //     ];
 
-        // Lưu giỏ hàng vào session dựa trên device_id
-        session()->put('cart_' . $deviceId, $this->cart);
+    //     // Lưu giỏ hàng vào session dựa trên device_id
+    //     session()->put('cart_' . $deviceId, $this->cart);
 
-        // Thông báo
-        $this->dispatch('cart_added');
-    }
+    //     // Thông báo
+    //     $this->dispatch('cart_added');
+    // }
 
 
     // Xử lý khi người dùng chọn size

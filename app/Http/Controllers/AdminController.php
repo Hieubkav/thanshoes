@@ -111,17 +111,6 @@ class AdminController extends Controller
         return "Nhập thành công";
     }
 
-    public function test()
-    {
-        $data = [];
-
-        for ($i = 0; $i < 10; $i++) {
-            $data[] = $i;
-        }
-
-        return view('test', compact('data'));
-    }
-
     public function phan_trang(Request $request)
     {
         // Lấy dữ liệu sản phẩm và phân trang
