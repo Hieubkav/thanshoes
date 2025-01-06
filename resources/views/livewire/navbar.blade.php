@@ -8,7 +8,7 @@
         <div class="flex flex-wrap items-center justify-between mx-auto max-w-screen-xl p-4">
             <!-- Logo -->
             <a href="{{ route('shop.store_front') }}" class="flex items-center space-x-3">
-                <img src="{{ asset('images/logo.svg') }}" class="h-16" alt="Logo" />
+                <img src="{{ asset('images/logo.svg') }}" class="h-16" alt="Logo"/>
                 <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white hidden lg:block">
                     {{ env('APP_NAME') }}
                 </span>
@@ -16,7 +16,7 @@
 
             <!-- Mobile Menu Button -->
             <button data-collapse-toggle="mega-menu-full" type="button"
-                class="md:hidden inline-flex items-center justify-center p-2 text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+                    class="md:hidden inline-flex items-center justify-center p-2 text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
                 <i class="fa fa-bars w-5 h-5" aria-hidden="true"></i>
             </button>
 
@@ -25,16 +25,16 @@
                 <ul class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-8 font-medium">
                     <li>
                         <button data-dropdown-toggle="mega-menu-full-dropdown-all-product"
-                            class="flex items-center space-x-1 hover:text-blue-600 dark:hover:text-blue-500">
+                                class="flex items-center space-x-1 hover:text-blue-600 dark:hover:text-blue-500">
                             Thương hiệu <i class="fa fa-chevron-down"></i>
                         </button>
                         <div id="mega-menu-full-dropdown-all-product"
-                            class="hidden mt-2 bg-white shadow-lg border dark:bg-gray-800 dark:border-gray-600">
+                             class="hidden mt-2 bg-white shadow-lg border dark:bg-gray-800 dark:border-gray-600">
                             <ul class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
                                 @foreach ($brands as $brand)
                                     <li>
                                         <a href="#"
-                                            class="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                                           class="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                                             {{ $brand }}
                                         </a>
                                     </li>
@@ -44,16 +44,16 @@
                     </li>
                     <li>
                         <button data-dropdown-toggle="list-shoes"
-                            class="flex items-center space-x-1 hover:text-blue-600 dark:hover:text-blue-500">
+                                class="flex items-center space-x-1 hover:text-blue-600 dark:hover:text-blue-500">
                             Danh mục giày <i class="fa fa-chevron-down"></i>
                         </button>
                         <div id="list-shoes"
-                            class="hidden mt-2 bg-white shadow-lg border dark:bg-gray-800 dark:border-gray-600">
+                             class="hidden mt-2 bg-white shadow-lg border dark:bg-gray-800 dark:border-gray-600">
                             <ul class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
                                 @foreach ($types as $type)
                                     <li>
                                         <a href="#"
-                                            class="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                                           class="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                                             {{ $type }}
                                         </a>
                                     </li>
@@ -78,19 +78,19 @@
                 <div class="text-xl cursor-pointer">
                     <i class="fa-solid fa-user" data-dropdown-toggle="dropdown_user"></i>
                     <div id="dropdown_user"
-                        class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
+                         class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
                         <ul class="py-2 text-sm text-gray-700 dark:text-gray-200"
                             aria-labelledby="dropdownDefaultButton">
                             <li>
                                 <a href="#" data-modal-target="info_user_modal"
-                                    data-modal-toggle="info_user_modal"
-                                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                   data-modal-toggle="info_user_modal"
+                                   class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
                                     Thông tin
                                 </a>
                             </li>
                             <li>
                                 <a href="#" data-modal-target="info_user_order" data-modal-toggle="info_user_order"
-                                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                   class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
                                     Đơn đặt
                                 </a>
                             </li>
@@ -101,8 +101,8 @@
                 <!-- Cart -->
                 <div class="text-xl cursor-pointer">
                     <i class="fa-solid fa-shopping-cart relative" data-drawer-target="drawer_cart"
-                        data-drawer-show="drawer_cart" data-drawer-backdrop="false" data-drawer-placement="right"
-                        aria-controls="drawer_cart" data-drawer-body-scrolling="true">
+                       data-drawer-show="drawer_cart" data-drawer-backdrop="false" data-drawer-placement="right"
+                       aria-controls="drawer_cart" data-drawer-body-scrolling="true">
                         <div
                             class="absolute inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-orange-700 p-2 border-2 border-white rounded-full -top-3 -end-3 dark:border-gray-900">
                             {{ collect($cart)->sum('quantity') }}
@@ -111,8 +111,8 @@
 
                     <!-- Drawer -->
                     <div id="drawer_cart"
-                        class="fixed top-0 right-0 z-40 h-screen w-80 transition-transform translate-x-full bg-gradient-to-r from-orange-100 via-gray-100 to-blue-100  shadow-lg dark:bg-gray-900"
-                        tabindex="-1" aria-labelledby="drawer-title" aria-hidden="true">
+                         class="fixed top-0 right-0 z-40 h-screen w-80 transition-transform translate-x-full bg-gradient-to-r from-orange-100 via-gray-100 to-blue-100  shadow-lg dark:bg-gray-900"
+                         tabindex="-1" aria-labelledby="drawer-title" aria-hidden="true">
                         <div class="p-4 flex flex-col h-full">
                             <!-- Tiêu đề và nút đóng -->
                             <div class="flex justify-between items-center border-b pb-0">
@@ -120,7 +120,7 @@
                                     Giỏ Hàng/Thanh Toán
                                 </h5>
                                 <button type="button" data-drawer-hide="drawer_cart"
-                                    class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
                                     <i class="fa-solid fa-times"></i>
                                 </button>
                             </div>
@@ -137,7 +137,7 @@
                                         <div class="relative inline-block">
                                             <!-- Hình ảnh -->
                                             <img src="{{ $item['image'] }}" alt="Product Image"
-                                                class="w-6 h-6 lg:w-8 lg:h-8 rounded-md object-cover">
+                                                 class="w-6 h-6 lg:w-8 lg:h-8 rounded-md object-cover">
                                             <!-- Badge -->
                                             <span
                                                 class="absolute text-xs top-0 right-0 inline-flex items-center justify-center px-1 py-0 font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2 shadow-lg">
@@ -168,25 +168,25 @@
                                 <div class="mb-1">
                                     <label for="name" class="block text-gray-700 dark:text-gray-300">Tên:</label>
                                     <input type="text" id="name" wire:model="name_customer"
-                                        class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                                           class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                                 </div>
                                 <div class="mb-1">
                                     <label for="phone" class="block text-gray-700 dark:text-gray-300">Số điện
                                         thoại:</label>
                                     <input type="text" id="phone" wire:model="phone_customer"
-                                        class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                                           class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                                 </div>
                                 <div class="mb-1">
                                     <label for="email"
-                                        class="block text-gray-700 dark:text-gray-300">Email:</label>
+                                           class="block text-gray-700 dark:text-gray-300">Email:</label>
                                     <input type="email" id="email" wire:model="email_customer"
-                                        class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                                           class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                                 </div>
                                 <div class="mb-1">
                                     <label for="address" class="block text-gray-700 dark:text-gray-300">Địa
                                         chỉ:</label>
                                     <input type="text" id="address" wire:model="address_customer"
-                                        class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                                           class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                                 </div>
                             </div>
 
@@ -197,12 +197,12 @@
                                 <div class="flex space-x-4">
                                     <label class="flex items-center text-gray-700 dark:text-gray-300">
                                         <input type="radio" id="cod" name="payment_method" value="cod"
-                                            class="mr-2" wire:model="payment_method" checked>
+                                               class="mr-2" wire:model="payment_method" checked>
                                         Thanh toán khi nhận hàng (COD)
                                     </label>
                                     <label class="flex items-center text-gray-700 dark:text-gray-300">
                                         <input type="radio" id="bank_transfer" name="payment_method"
-                                            value="bank_transfer" class="mr-2" wire:model="payment_method">
+                                               value="bank_transfer" class="mr-2" wire:model="payment_method">
                                         Chuyển khoản
                                     </label>
                                 </div>
@@ -218,7 +218,7 @@
                                 </div>
                                 <div class="relative">
                                     <button wire:click="dat_hang()"
-                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
                                         Đặt hàng
                                     </button>
                                     <span
@@ -237,54 +237,66 @@
 
     <!-- Modal thông tin -->
     <div id="info_user_modal" tabindex="-1" aria-hidden="true"
-        class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-        <div class="relative p-4 w-full max-w-2xl max-h-full">
+         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-screen bg-black bg-opacity-50">
+        <div class="relative p-4 w-full max-w-md max-h-full">
             <!-- Modal content -->
-            <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <div
+                class="relative bg-white rounded-lg shadow-xl dark:bg-gray-800 transform transition-all duration-300 ease-in-out">
                 <!-- Modal header -->
-                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                <div class="flex items-center justify-between p-5 border-b rounded-t dark:border-gray-600">
+                    <h3 class="text-2xl font-semibold text-gray-900 dark:text-white">
                         Thông tin khách hàng
                     </h3>
                     <button type="button"
-                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                        data-modal-hide="info_user_modal">
-                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
-                            viewBox="0 0 14 14">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                            data-modal-hide="info_user_modal">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clip-rule="evenodd"></path>
                         </svg>
-                        <span class="sr-only">Close modal</span>
                     </button>
                 </div>
                 <!-- Modal body -->
-                <div class="p-4 md:p-5 space-y-4 text-gray-700 dark:text-gray-300">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-user text-blue-600"></i>
-                        <span class="font-semibold">Tên khách hàng:</span>
-                        <span>{{ $name_customer }}</span>
+                <div class="p-6 space-y-6 text-gray-700 dark:text-gray-300">
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-user-circle text-3xl text-blue-600"></i>
+                        <div>
+                            <p class="font-semibold">Tên khách hàng</p>
+                            <p>{{ $name_customer }}</p>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-phone text-green-600"></i>
-                        <span class="font-semibold">Số điện thoại:</span>
-                        <span>{{ $phone_customer }}</span>
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-phone-alt text-3xl text-green-600"></i>
+                        <div>
+                            <p class="font-semibold">Số điện thoại</p>
+                            <p>{{ $phone_customer }}</p>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-envelope text-red-600"></i>
-                        <span class="font-semibold">Email:</span>
-                        <span>{{ $email_customer }}</span>
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-envelope text-3xl text-red-600"></i>
+                        <div>
+                            <p class="font-semibold">Email</p>
+                            <p>{{ $email_customer }}</p>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-map-marker-alt text-yellow-600"></i>
-                        <span class="font-semibold">Địa chỉ:</span>
-                        <span>{{ $address_customer }}</span>
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-map-marker-alt text-3xl text-yellow-600"></i>
+                        <div>
+                            <p class="font-semibold">Địa chỉ</p>
+                            <p>{{ $address_customer }}</p>
+                        </div>
                     </div>
                 </div>
                 <!-- Modal footer -->
-                <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
-                    
+                <div
+                    class="flex items-center justify-between p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
+                    <div class="flex items-center">
+                        <label for="save-info" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Bạn đặt
+                            hàng thông tin sẽ tự động được lưu</label>
+                    </div>
                     <button data-modal-hide="info_user_modal" type="button"
-                        class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
+                            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                         Đóng
                     </button>
                 </div>
@@ -293,9 +305,91 @@
     </div>
 
     <!-- Modal Danh sách đơn đã dặt -->
+    {{--    <div id="info_user_order" tabindex="-1" aria-hidden="true"--}}
+    {{--         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">--}}
+    {{--        <div class="relative p-4 w-full max-w-2xl max-h-full">--}}
+    {{--            <!-- Modal content -->--}}
+    {{--            <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">--}}
+    {{--                <!-- Modal header -->--}}
+    {{--                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">--}}
+    {{--                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">--}}
+    {{--                        Thông tin đơn đã đặt--}}
+    {{--                    </h3>--}}
+    {{--                    <button type="button"--}}
+    {{--                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"--}}
+    {{--                            data-modal-hide="info_user_order">--}}
+    {{--                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"--}}
+    {{--                             viewBox="0 0 14 14">--}}
+    {{--                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"--}}
+    {{--                                  stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>--}}
+    {{--                        </svg>--}}
+    {{--                        <span class="sr-only">Close modal</span>--}}
+    {{--                    </button>--}}
+    {{--                </div>--}}
+    {{--                <!-- Modal body -->--}}
+    {{--                <div class="p-4 md:p-5 space-y-4 text-gray-700 dark:text-gray-300">--}}
+    {{--                    <div class="overflow-x-auto">--}}
+    {{--                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">--}}
+    {{--                            <thead class="bg-gray-50 dark:bg-gray-700">--}}
+    {{--                            <tr>--}}
+    {{--                                <th scope="col"--}}
+    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
+    {{--                                    STT--}}
+    {{--                                </th>--}}
+    {{--                                <th scope="col"--}}
+    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
+    {{--                                    Mã đơn--}}
+    {{--                                </th>--}}
+    {{--                                <th scope="col"--}}
+    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
+    {{--                                    Tổng tiền--}}
+    {{--                                </th>--}}
+    {{--                                <th scope="col"--}}
+    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
+    {{--                                    Tổng số món--}}
+    {{--                                </th>--}}
+    {{--                            </tr>--}}
+    {{--                            </thead>--}}
+    {{--                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700 ">--}}
+    {{--                            <tr>--}}
+    {{--                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">--}}
+    {{--                                    1--}}
+    {{--                                </td>--}}
+    {{--                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">--}}
+    {{--                                    OD123456--}}
+    {{--                                </td>--}}
+    {{--                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">--}}
+    {{--                                    1,000,000đ--}}
+    {{--                                </td>--}}
+    {{--                                <td class="flex justify-between px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">--}}
+    {{--                                    3--}}
+    {{--                                    <!-- icon mũi tên chỉ xuống trong  font awesome -->--}}
+    {{--                                    <i class="fa fa-chevron-down cursor-pointer hover:text-blue-500"--}}
+    {{--                                       data-dropdown-toggle="dropdownId" aria-hidden="true"></i>--}}
+
+    {{--                                </td>--}}
+
+    {{--                            </tr>--}}
+
+    {{--                            </tbody>--}}
+    {{--                        </table>--}}
+
+    {{--                    </div>--}}
+    {{--                </div>--}}
+    {{--                <!-- Modal footer -->--}}
+    {{--                <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">--}}
+    {{--                    <button data-modal-hide="info_user_order" type="button"--}}
+    {{--                            class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">--}}
+    {{--                        Đóng--}}
+    {{--                    </button>--}}
+    {{--                </div>--}}
+    {{--            </div>--}}
+    {{--        </div>--}}
+    {{--    </div>--}}
+    <!-- Modal Danh sách đơn đã đặt -->
     <div id="info_user_order" tabindex="-1" aria-hidden="true"
-        class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-        <div class="relative p-4 w-full max-w-2xl max-h-full">
+         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative p-4 w-full max-w-4xl max-h-full">
             <!-- Modal content -->
             <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
                 <!-- Modal header -->
@@ -304,12 +398,12 @@
                         Thông tin đơn đã đặt
                     </h3>
                     <button type="button"
-                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                        data-modal-hide="info_user_order">
+                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                            data-modal-hide="info_user_order">
                         <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
-                            viewBox="0 0 14 14">
+                             viewBox="0 0 14 14">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                                  stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
                         </svg>
                         <span class="sr-only">Close modal</span>
                     </button>
@@ -319,50 +413,85 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                             <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                        STT
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                        Mã đơn
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                        Tổng tiền
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                        Tổng số món
-                                    </th>
-                                </tr>
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    STT
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    Mã đơn
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    Tổng tiền
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    Tổng số món
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    Chi tiết
+                                </th>
+                            </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700 ">
+                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                            @for ($i = 1; $i <= 3; $i++)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                        1
+                                        {{ $i }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        OD123456
+                                        OD{{ 100000 + $i }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        1,000,000đ
+                                        {{ number_format(rand(100000, 2000000)) }}đ
                                     </td>
-                                    <td class="flex justify-between px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        3
-                                        <!-- icon mũi tên chỉ xuống trong  font awesome -->
-                                        <i class="fa fa-chevron-down cursor-pointer hover:text-blue-500" data-dropdown-toggle="dropdownId" aria-hidden="true"></i>
-                                        
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                        {{ rand(1, 5) }}
                                     </td>
-                                    
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                        <button
+                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
+                                            onclick="toggleDetails({{ $i }})">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </td>
                                 </tr>
-                                
+                                <tr id="details-{{ $i }}" class="hidden bg-gray-50 dark:bg-gray-700">
+                                    <td colspan="5" class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                                            <p><strong>Sản phẩm:</strong></p>
+                                            <ul class="list-disc list-inside">
+                                                @for ($j = 1; $j <= rand(1, 3); $j++)
+                                                    <li>Sản phẩm {{ $j }} - Số lượng: {{ rand(1, 3) }} -
+                                                        Giá: {{ number_format(rand(50000, 500000)) }}đ
+                                                    </li>
+                                                @endfor
+                                            </ul>
+                                            <p class="mt-2"><strong>Ngày
+                                                    đặt:</strong> {{ date('d/m/Y', strtotime('-'.rand(1, 30).' days')) }}
+                                            </p>
+                                            <p><strong>Trạng thái:</strong>
+                                                @php
+                                                    $statuses = ['Đang xử lý', 'Đang giao hàng', 'Đã giao hàng'];
+                                                    echo $statuses[array_rand($statuses)];
+                                                @endphp
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endfor
                             </tbody>
                         </table>
-                        
                     </div>
                 </div>
                 <!-- Modal footer -->
-                <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <div
+                    class="flex items-center justify-end p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
                     <button data-modal-hide="info_user_order" type="button"
-                        class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
+                            class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
                         Đóng
                     </button>
                 </div>
@@ -370,5 +499,14 @@
         </div>
     </div>
 
-
+    <script>
+        function toggleDetails(id) {
+            var detailsRow = document.getElementById('details-' + id);
+            if (detailsRow.classList.contains('hidden')) {
+                detailsRow.classList.remove('hidden');
+            } else {
+                detailsRow.classList.add('hidden');
+            }
+        }
+    </script>
 </div>

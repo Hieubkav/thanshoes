@@ -17,7 +17,7 @@ class ProductOverview extends Component
     public $selectedColor = [];
     // $selectedSize chứa size được chọn
     public $selectedSize = [];
-    // $countfilter chứa số lượng filter
+    // $countfilter chứa số lượng filter ( bộ lọc) : 1 là chỉ có size, 2 là có cả màu và size
     public $countfilter = 1;
     // $clicked chứa trạng thái người dùng đã chọn màu chưa
     public $clicked = false;
@@ -38,7 +38,7 @@ class ProductOverview extends Component
         // Kiểm tra xem cookie `device_id` có tồn tại không
         if (!Cookie::has('device_id')) {
             // Nếu chưa có, tạo UUID mới cho thiết bị và lưu vào cookie
-            $deviceId = (string) Str::uuid();
+            $deviceId = (string)Str::uuid();
             Cookie::queue('device_id', $deviceId, 60 * 24 * 365); // Lưu cookie trong 1 năm
         } else {
             // Lấy giỏ hàng từ cookie
@@ -51,7 +51,7 @@ class ProductOverview extends Component
     {
         // Xoá session giỏ hàng
         session()->forget('cart_' . Cookie::get('device_id'));
-        // Clear cookie 
+        // Clear cookie
         Cookie::queue(Cookie::forget('device_id'));
         $this->cart = [];
 
@@ -62,8 +62,7 @@ class ProductOverview extends Component
             ->icon('heroicon-o-x-mark')
             ->duration(3000)
             ->body('Thêm sản phẩm vào giỏ hàng để mua hàng!')
-            ->send()
-        ;
+            ->send();
     }
 
     #[On('clear_cart_after_dat_hang')]
@@ -84,11 +83,10 @@ class ProductOverview extends Component
 
     public function addToCart()
     {
-
+        // Kiểm tra xem người dùng đã chọn phân loại sản phẩm chưa
         if (
-            ($this->countfilter == 1 and $this->selectedSize == []) or
-            ($this->countfilter == 2 and $this->selectedColor == []) or
-            ($this->countfilter == 2 and $this->selectedSize == [])
+            ($this->countfilter == 1 && empty($this->selectedSize)) ||
+            ($this->countfilter == 2 && (empty($this->selectedColor) || empty($this->selectedSize)))
         ) {
 
             Notification::make()
@@ -98,17 +96,23 @@ class ProductOverview extends Component
                 ->icon('heroicon-o-x-mark')
                 ->duration(3000)
                 ->body('Vui lòng chọn!')
-                ->send()
-            ;
+                ->send();
         } else {
             // Lấy ra device_id từ cookie
             $deviceId = Cookie::get('device_id');
 
-            // Truy xuất thông tin sản phẩm từ sản phẩm đã chọn
-            $variant = Variant::where('product_id', $this->product->id)
-                ->where('color', $this->selectedColor)
-                ->where('size', $this->selectedSize)
-                ->first();
+            // Lấy ra variant dựa trên color và size dụa trên 2 trường hợp chỉ có size hoặc có cả màu và size
+            // Nếu chỉ có size thì lấy ra variant dựa trên size
+            if($this->countfilter == 1){
+                $variant = Variant::where('product_id', $this->product->id)
+                    ->where('size', $this->selectedSize)
+                    ->first();
+            } else {
+                $variant = Variant::where('product_id', $this->product->id)
+                    ->where('color', $this->selectedColor)
+                    ->where('size', $this->selectedSize)
+                    ->first();
+            }
 
             // Kiểm tra xem người dùng có thêm nhiều hơn số lượng hàng tồn kho không
             if (isset($this->cart[$variant->id]) and $variant->stock == $this->cart[$variant->id]['quantity']) {

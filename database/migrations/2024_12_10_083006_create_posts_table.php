@@ -18,10 +18,10 @@ return new class extends Migration
             $table->text('content');
             $table->string('thumbnail')->nullable();
             $table->enum('status', ['show', 'hidden'])->default('show');
-            $table->unsignedBigInteger('admin_id');
+            $table->unsignedBigInteger('user_id');
 
-            $table->foreign('admin_id')->references('id')->on('admins')->onDelete('cascade');
-            
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
         });

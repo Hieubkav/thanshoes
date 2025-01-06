@@ -17,8 +17,8 @@ class Post extends Model
         'admin_id',
     ];
 
-    public function admin()
+   public function user()
     {
-        return $this->belongsTo(Admin::class);
+        return $this->belongsTo(User::class);
     }
 }

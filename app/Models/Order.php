@@ -11,17 +11,17 @@ class Order extends Model
 
     protected $fillable = [
         'status',
-        'user_id',
+        'customer_id',
     ];
 
-    public function user()
+    public function customer()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function order_items()
     {
         return $this->hasMany(OrderItem::class);
     }
-    
+
 }

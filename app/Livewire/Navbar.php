@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Customer;
 use Livewire\Component;
 use App\Models\Product;
 use App\Models\Variant;
@@ -22,6 +23,9 @@ class Navbar extends Component
     public $address_customer = "";
     public $email_customer = "";
 
+    public $payment_method = "cod";
+    public $customer_id = null;
+
     public $cart = [];
 
     // Hàm khởi tạo
@@ -36,12 +40,15 @@ class Navbar extends Component
             // Lấy giỏ hàng từ cookie
             $this->cart = session()->get('cart_' . Cookie::get('device_id'), []);
 
-            // Lấy thông tin khách hàng từ cookie
-            $this->name_customer = session()->get('name_customer');
-            $this->phone_customer = session()->get('phone_customer');
-            $this->address_customer = session()->get('address_customer');
-            $this->email_customer = session()->get('email_customer');
-
+            // Nếu đã tồn tại session customer_id thì lấy thông tin khách hàng từ database
+            if (session()->has('customer_id'))  {
+                $this->customer_id = session()->get('customer_id');
+                // Lấy thông tin khách hàng từ cookie
+                $this->name_customer = Customer::find($this->customer_id)->name;
+                $this->phone_customer = Customer::find($this->customer_id)->phone;
+                $this->address_customer = Customer::find($this->customer_id)->address;
+                $this->email_customer =  Customer::find($this->customer_id)->email;
+            }
 
             // dd(session()->all());
         }
@@ -57,7 +64,7 @@ class Navbar extends Component
     {
         // Xoá session giỏ hàng
         session()->forget('cart_' . Cookie::get('device_id'));
-        // Clear cookie 
+        // Clear cookie
         Cookie::queue(Cookie::forget('device_id'));
         $this->cart = [];
 
@@ -94,7 +101,7 @@ class Navbar extends Component
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Nếu thông tin không hợp lệ thì báo lỗi và không thực hiện đặt hàng
             $this->dispatch('dat_hang_error');
-        
+
             Notification::make()
                 ->title('Thông tin người dùng không hợp lệ')
                 ->danger()
@@ -103,20 +110,27 @@ class Navbar extends Component
                 ->duration(3000)
                 ->body('Vui lòng điền thông tin hợp lệ!')
                 ->send();
-        
+
             return;
         }
 
-        // Lưu thông tin khách hàng vào cookie
-        session()->put('name_customer', $this->name_customer);
-        session()->put('phone_customer', $this->phone_customer);
-        session()->put('address_customer', $this->address_customer);
-        session()->put('email_customer', $this->email_customer);
+        // Kiểm tra số điện thoại có tồn tại trong bảng customer không, nếu không thì tạo ra customer mới
+        if (Customer::where('phone', $this->phone_customer)->count() == 0) {
+            $customer = Customer::create([
+                'name' => $this->name_customer,
+                'phone' => $this->phone_customer,
+                'address' => $this->address_customer,
+                'email' => $this->email_customer,
+            ]);
+            $this->customer_id = $customer->id;
+            session()->put('customer_id', $this->customer_id);
+        } else {
+            $this->customer_id = Customer::where('phone', $this->phone_customer)->first()->id;
+            session()->put('customer_id', $this->customer_id);
+        }
 
-        // Xoá session giỏ hàng
-        session()->forget('cart_' . Cookie::get('device_id'));
-        // Clear cookie 
-        Cookie::queue(Cookie::forget('device_id'));
+        // Cho  session giỏ hàng rỗng
+        session()->forget('cart_' . $deviceId);
         $this->cart = [];
 
         $this->dispatch('clear_cart_after_dat_hang');

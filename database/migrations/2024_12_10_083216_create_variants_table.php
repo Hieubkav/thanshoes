@@ -14,14 +14,14 @@ return new class extends Migration
     {
         Schema::create('variants', function (Blueprint $table) {
             $table->id();
-            $table->string('color');
-            $table->string('size');
-            $table->integer('price');
-            $table->integer('stock');
+            $table->string('color')->nullable();
+            $table->string('size')->nullable();
+            $table->integer('price')->default(0);
+            $table->integer('stock')->default(0);
             $table->unsignedBigInteger('product_id');
 
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            
+
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
         });
