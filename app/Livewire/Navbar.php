@@ -3,6 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\Customer;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Livewire\Component;
 use App\Models\Product;
 use App\Models\Variant;
@@ -10,6 +12,10 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Collection;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderShipped;
 
 class Navbar extends Component
 {
@@ -28,9 +34,21 @@ class Navbar extends Component
 
     public $cart = [];
 
+    // mặc địnhh $order bằng một collection rỗng
+    public $order;
+
+    //*********** Cấu hình qrcode
+    public $accountNumber = '0946775145';
+    public $accountHolder = 'Nguyễn Nhật Tân';
+    public $amount = 1000000; // Số tiền chuyển
+    public $content = 'Thanh toán hóa đơn'; // Nội dung chuyển khoản
+    //********** end qr code
+
     // Hàm khởi tạo
     public function mount()
     {
+        $this->order = new Collection();
+
         // Kiểm tra xem cookie `device_id` có tồn tại không
         if (!Cookie::has('device_id')) {
             // Nếu chưa có, tạo UUID mới cho thiết bị và lưu vào cookie
@@ -48,6 +66,8 @@ class Navbar extends Component
                 $this->phone_customer = Customer::find($this->customer_id)->phone;
                 $this->address_customer = Customer::find($this->customer_id)->address;
                 $this->email_customer =  Customer::find($this->customer_id)->email;
+
+                $this->order = Order::where('customer_id', $this->customer_id)->latest()->get();
             }
 
             // dd(session()->all());
@@ -76,7 +96,7 @@ class Navbar extends Component
         $deviceId = Cookie::get('device_id');
 
         // Nếu không đủ 4 thông tin thì báo lỗi và không thực hiện đặt hàng
-        if (empty($this->name_customer) || empty($this->phone_customer) || empty($this->address_customer) || empty($this->email_customer)) {
+        if (empty($this->name_customer) || empty($this->phone_customer) || empty($this->address_customer) ) {
             $this->dispatch('dat_hang_error');
 
             Notification::make()
@@ -96,7 +116,7 @@ class Navbar extends Component
                 'name_customer' => 'required|string|min:3|max:255',
                 'phone_customer' => 'required|string|min:10|max:11',
                 'address_customer' => 'required|string|min:3|max:255',
-                'email_customer' => 'required|email',
+                'email_customer' => 'max:255',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Nếu thông tin không hợp lệ thì báo lỗi và không thực hiện đặt hàng
@@ -128,6 +148,33 @@ class Navbar extends Component
             $this->customer_id = Customer::where('phone', $this->phone_customer)->first()->id;
             session()->put('customer_id', $this->customer_id);
         }
+
+        // Lưu lại  thông  tin đơn hàng vừa đặt hàng
+        $new_order = Order::create([
+            'status' => 'pending',
+            'customer_id' => $this->customer_id,
+            'payment_method' => $this->payment_method,
+        ]);
+        // Lưu lại chi tiết đơn hàng vào order_items
+        foreach ($this->cart as $cart_item) {
+            OrderItem::create([
+                'price' => $cart_item['price'],
+                'quantity' => $cart_item['quantity'],
+                'order_id' => $new_order->id,
+                'variant_id' => $cart_item['variant_id'],
+            ]);
+        }
+
+        // Trừ tồn kho của Variants
+        foreach ($this->cart as $cart_item) {
+            $variant = Variant::find($cart_item['variant_id']);
+            $variant->decrement('stock', $cart_item['quantity']);
+        }
+
+        // Gửi email cho chủ shop thanshoes99@gmail.com
+        Mail::to('thanshoes99@gmail.com')->send(new OrderShipped($new_order));
+        Mail::to('tranmanhhieu10@gmail.com')->send(new OrderShipped($new_order));
+        //
 
         // Cho  session giỏ hàng rỗng
         session()->forget('cart_' . $deviceId);

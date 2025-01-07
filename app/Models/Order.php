@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable = [
         'status',
         'customer_id',
+        'payment_method',
     ];
 
     public function customer()

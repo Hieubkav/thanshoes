@@ -111,13 +111,17 @@
 
                     <!-- Drawer -->
                     <div id="drawer_cart"
-                         class="fixed top-0 right-0 z-40 h-screen w-80 transition-transform translate-x-full bg-gradient-to-r from-orange-100 via-gray-100 to-blue-100  shadow-lg dark:bg-gray-900"
+                         class="fixed top-0 right-0 z-40 h-screen w-3/4 lg:w-1/5 transition-transform translate-x-full bg-gradient-to-r from-orange-100 via-gray-100 to-blue-100  shadow-lg dark:bg-gray-900"
                          tabindex="-1" aria-labelledby="drawer-title" aria-hidden="true">
                         <div class="p-4 flex flex-col h-full">
                             <!-- Tiêu đề và nút đóng -->
                             <div class="flex justify-between items-center border-b pb-0">
                                 <h5 id="drawer-title" class="text-lg font-bold text-gray-900 dark:text-white">
                                     Giỏ Hàng/Thanh Toán
+{{--                                    @if($qrCodeSvg)--}}
+{{--                                        <img class="h-16 w-16" src="data:image/svg+xml;base64,{{ $qrCodeSvg }}" alt="QR Code">--}}
+{{--                                    @endif--}}
+                                    <img class="w-1/2" src="https://img.vietqr.io/image/970437-{{ $accountNumber }}-qr_only.jpg?amount={{ array_reduce($cart, fn($total, $item) => $total + $item['quantity'] * $item['price'], 0)  }}&addInfo=Đơn giày ThanShoes Chất Lượng!&accountName={{ $accountHolder  }}" alt="Thanh toán">
                                 </h5>
                                 <button type="button" data-drawer-hide="drawer_cart"
                                         class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
@@ -178,7 +182,10 @@
                                 </div>
                                 <div class="mb-1">
                                     <label for="email"
-                                           class="block text-gray-700 dark:text-gray-300">Email:</label>
+                                           class="block text-gray-700 dark:text-gray-300">
+                                        Email
+                                        <span class="italic text-xs text-green-400">(Có thể trống):</span>
+                                    </label>
                                     <input type="email" id="email" wire:model="email_customer"
                                            class="w-full p-0 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                                 </div>
@@ -202,7 +209,7 @@
                                     </label>
                                     <label class="flex items-center text-gray-700 dark:text-gray-300">
                                         <input type="radio" id="bank_transfer" name="payment_method"
-                                               value="bank_transfer" class="mr-2" wire:model="payment_method">
+                                               value="bank" class="mr-2" wire:model="payment_method">
                                         Chuyển khoản
                                     </label>
                                 </div>
@@ -235,7 +242,7 @@
         </div>
     </nav>
 
-    <!-- Modal thông tin -->
+    <!-- Modal thông tin user -->
     <div id="info_user_modal" tabindex="-1" aria-hidden="true"
          class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-screen bg-black bg-opacity-50">
         <div class="relative p-4 w-full max-w-md max-h-full">
@@ -304,89 +311,7 @@
         </div>
     </div>
 
-    <!-- Modal Danh sách đơn đã dặt -->
-    {{--    <div id="info_user_order" tabindex="-1" aria-hidden="true"--}}
-    {{--         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">--}}
-    {{--        <div class="relative p-4 w-full max-w-2xl max-h-full">--}}
-    {{--            <!-- Modal content -->--}}
-    {{--            <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">--}}
-    {{--                <!-- Modal header -->--}}
-    {{--                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">--}}
-    {{--                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">--}}
-    {{--                        Thông tin đơn đã đặt--}}
-    {{--                    </h3>--}}
-    {{--                    <button type="button"--}}
-    {{--                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"--}}
-    {{--                            data-modal-hide="info_user_order">--}}
-    {{--                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"--}}
-    {{--                             viewBox="0 0 14 14">--}}
-    {{--                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"--}}
-    {{--                                  stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>--}}
-    {{--                        </svg>--}}
-    {{--                        <span class="sr-only">Close modal</span>--}}
-    {{--                    </button>--}}
-    {{--                </div>--}}
-    {{--                <!-- Modal body -->--}}
-    {{--                <div class="p-4 md:p-5 space-y-4 text-gray-700 dark:text-gray-300">--}}
-    {{--                    <div class="overflow-x-auto">--}}
-    {{--                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">--}}
-    {{--                            <thead class="bg-gray-50 dark:bg-gray-700">--}}
-    {{--                            <tr>--}}
-    {{--                                <th scope="col"--}}
-    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
-    {{--                                    STT--}}
-    {{--                                </th>--}}
-    {{--                                <th scope="col"--}}
-    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
-    {{--                                    Mã đơn--}}
-    {{--                                </th>--}}
-    {{--                                <th scope="col"--}}
-    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
-    {{--                                    Tổng tiền--}}
-    {{--                                </th>--}}
-    {{--                                <th scope="col"--}}
-    {{--                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">--}}
-    {{--                                    Tổng số món--}}
-    {{--                                </th>--}}
-    {{--                            </tr>--}}
-    {{--                            </thead>--}}
-    {{--                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700 ">--}}
-    {{--                            <tr>--}}
-    {{--                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">--}}
-    {{--                                    1--}}
-    {{--                                </td>--}}
-    {{--                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">--}}
-    {{--                                    OD123456--}}
-    {{--                                </td>--}}
-    {{--                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">--}}
-    {{--                                    1,000,000đ--}}
-    {{--                                </td>--}}
-    {{--                                <td class="flex justify-between px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">--}}
-    {{--                                    3--}}
-    {{--                                    <!-- icon mũi tên chỉ xuống trong  font awesome -->--}}
-    {{--                                    <i class="fa fa-chevron-down cursor-pointer hover:text-blue-500"--}}
-    {{--                                       data-dropdown-toggle="dropdownId" aria-hidden="true"></i>--}}
-
-    {{--                                </td>--}}
-
-    {{--                            </tr>--}}
-
-    {{--                            </tbody>--}}
-    {{--                        </table>--}}
-
-    {{--                    </div>--}}
-    {{--                </div>--}}
-    {{--                <!-- Modal footer -->--}}
-    {{--                <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">--}}
-    {{--                    <button data-modal-hide="info_user_order" type="button"--}}
-    {{--                            class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">--}}
-    {{--                        Đóng--}}
-    {{--                    </button>--}}
-    {{--                </div>--}}
-    {{--            </div>--}}
-    {{--        </div>--}}
-    {{--    </div>--}}
-    <!-- Modal Danh sách đơn đã đặt -->
+    <!-- Modal đơn đã  đặt -->
     <div id="info_user_order" tabindex="-1" aria-hidden="true"
          class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
         <div class="relative p-4 w-full max-w-4xl max-h-full">
@@ -420,7 +345,7 @@
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    Mã đơn
+                                    Tổng số món
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
@@ -428,7 +353,7 @@
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    Tổng số món
+                                    Ngày đặt
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
@@ -437,52 +362,77 @@
                             </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                            @for ($i = 1; $i <= 3; $i++)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ $i }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        OD{{ 100000 + $i }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ number_format(rand(100000, 2000000)) }}đ
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ rand(1, 5) }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        <button
-                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
-                                            onclick="toggleDetails({{ $i }})">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr id="details-{{ $i }}" class="hidden bg-gray-50 dark:bg-gray-700">
-                                    <td colspan="5" class="px-6 py-4">
-                                        <div class="text-sm text-gray-900 dark:text-gray-100">
-                                            <p><strong>Sản phẩm:</strong></p>
-                                            <ul class="list-disc list-inside">
-                                                @for ($j = 1; $j <= rand(1, 3); $j++)
-                                                    <li>Sản phẩm {{ $j }} - Số lượng: {{ rand(1, 3) }} -
-                                                        Giá: {{ number_format(rand(50000, 500000)) }}đ
-                                                    </li>
-                                                @endfor
-                                            </ul>
-                                            <p class="mt-2"><strong>Ngày
-                                                    đặt:</strong> {{ date('d/m/Y', strtotime('-'.rand(1, 30).' days')) }}
-                                            </p>
-                                            <p><strong>Trạng thái:</strong>
-                                                @php
-                                                    $statuses = ['Đang xử lý', 'Đang giao hàng', 'Đã giao hàng'];
-                                                    echo $statuses[array_rand($statuses)];
-                                                @endphp
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endfor
+                            @if ($order->count() > 0)
+                                @foreach( $order as $i => $order_in_list  )
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ $i+1 }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{ $order_in_list->order_items->sum('quantity')   }} món
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{ number_format($order_in_list->order_items->sum('price')) }}đ
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{ $order_in_list->created_at->format('d/m/Y')  }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            <button
+                                                class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
+                                                onclick="toggleDetails({{ $i }})">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr id="details-{{ $i }}" class="hidden bg-gray-50 dark:bg-gray-700">
+                                        <td colspan="5" class="px-6 py-4">
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">
+                                                <p><strong>Sản phẩm:</strong></p>
+                                                <ul class="list-disc list-inside">
+                                                    @foreach( $order_in_list->order_items as $j => $order_item )
+                                                        <li>Sản
+                                                            phẩm: {{$order_item->variant->product->name}} -
+                                                            phiên
+                                                            bản: {{ $order_item->variant->color }}
+                                                            /{{ $order_item->variant->size }} - Số
+                                                            lượng: {{ $order_item->quantity }} -
+                                                            Giá 1 sản
+                                                            phẩm: {{ number_format($order_item->price) }}
+                                                            đ -
+                                                            Tổng
+                                                            giá: {{ number_format($order_item->price*$order_item->quantity) }}
+                                                            đ
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                                <p><strong>Trạng thái:</strong>
+                                                    @php
+                                                        if ($order_in_list->status === 'pending') {
+                                                            echo 'Đang chờ xử lý';
+                                                        } else if ($order_in_list->status === 'processing') {
+                                                            echo 'Đã xử lý';
+                                                        } else if ($order_in_list->status === 'completed') {
+                                                            echo 'Hoàn thành';
+                                                        } else if ($order_in_list->status === 'declined') {
+                                                            echo 'Đơn hủy';
+                                                        }
+                                                    @endphp
+                                                </p>
+                                                <p><strong>Phương thức thanh toán:</strong>
+                                                    @php
+                                                        if ($order_in_list->payment_method === 'cod') {
+                                                            echo ' Thanh toán khi nhận hàng (COD)';
+                                                        } else if ($order_in_list->payment_method === 'bank') {
+                                                            echo 'Chuyển khoản ngân hàng';
+                                                        }
+                                                    @endphp
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endif
                             </tbody>
                         </table>
                     </div>
@@ -509,4 +459,6 @@
             }
         }
     </script>
+
+
 </div>

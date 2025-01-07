@@ -26,7 +26,7 @@
         @yield('content')
     </main>
 
-    @include('component.bottom_navbar')
+{{--    @include('component.bottom_navbar')--}}
 
     @include('component.footer')
 

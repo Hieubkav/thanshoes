@@ -71,6 +71,8 @@ class ProductOverview extends Component
         // Xoá session giỏ hàng
         session()->forget('cart_' . Cookie::get('device_id'));
         $this->cart = [];
+        $this->selectedColor = [];
+        $this->selectedSize = [];
     }
 
     // Xử lý khi người dùng chọn màu
@@ -138,6 +140,7 @@ class ProductOverview extends Component
                     ? $this->cart[$variant->id]['quantity'] + 1
                     : 1,
                 'image' => $variant->variant_images->first()->image,
+                'variant_id' => $variant->id,
             ];
 
             // Lưu giỏ hàng vào session dựa trên device_id
