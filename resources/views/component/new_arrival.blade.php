@@ -26,7 +26,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 md:gap-4">
         @foreach ($danh_sach_types as $item)
             <!-- Product Card 1 -->
-            <div class="border rounded-lg p-2 bg-white shadow hover:shadow-lg transition">
+            <a href="{{route('shop.product_overview',$item->id)}}" class="border rounded-lg p-2 bg-white shadow hover:shadow-lg transition">
                 <div class="relative group">
                     {{-- <img src="
                         {{ $item->variants->first()->variant_images->first()->image != "" ? $item->variants->first()->variant_images->first()->image : asset('images/logo.svg') }}
@@ -85,7 +85,7 @@
                         phiên bản
                     </span>
                 </div>
-            </div>
+            </a>
         @endforeach
     </div>
 </div>
