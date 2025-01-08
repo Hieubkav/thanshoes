@@ -37,6 +37,8 @@ class Navbar extends Component
     // mặc địnhh $order bằng một collection rỗng
     public $order;
 
+    public $isProcessingOrder = false;
+
     //*********** Cấu hình qrcode
     public $accountNumber = '0946775145';
     public $accountHolder = 'Nguyễn Nhật Tân';
@@ -93,6 +95,10 @@ class Navbar extends Component
 
     public function dat_hang()
     {
+        if ($this->isProcessingOrder) {
+            return;
+        }
+        $this->isProcessingOrder = true;
         $deviceId = Cookie::get('device_id');
 
         // Nếu không đủ 4 thông tin thì báo lỗi và không thực hiện đặt hàng
@@ -168,7 +174,11 @@ class Navbar extends Component
         // Trừ tồn kho của Variants
         foreach ($this->cart as $cart_item) {
             $variant = Variant::find($cart_item['variant_id']);
-            $variant->decrement('stock', $cart_item['quantity']);
+            // Nếu trừ mà lớn hơn hoặc bằng 0 thì trừ tồn kho
+            if ($variant->stock - $cart_item['quantity'] >= 0) {
+                $variant->stock -= $cart_item['quantity'];
+                $variant->save();
+            }
         }
 
         // Gửi email cho chủ shop thanshoes99@gmail.com
@@ -190,6 +200,8 @@ class Navbar extends Component
             ->duration(3000)
             ->body('Đặt - đặt nữa - đặt mãi!')
             ->send();
+
+        $this->isProcessingOrder = false;
     }
 
 

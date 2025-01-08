@@ -33,7 +33,7 @@
                             <ul class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
                                 @foreach ($brands as $brand)
                                     <li>
-                                        <a href="#"
+                                        <a href="{{ route('shop.cat_filter',['brand' => $brand]) }}"
                                            class="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                                             {{ $brand }}
                                         </a>
@@ -52,7 +52,7 @@
                             <ul class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
                                 @foreach ($types as $type)
                                     <li>
-                                        <a href="#"
+                                        <a href="{{ route('shop.cat_filter',['type' => $type]) }}"
                                            class="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                                             {{ $type }}
                                         </a>
@@ -61,8 +61,8 @@
                             </ul>
                         </div>
                     </li>
-                    <li><a href="#" class="hover:text-blue-600 dark:hover:text-blue-500">Các mẫu áo</a></li>
-                    <li><a href="#" class="hover:text-blue-600 dark:hover:text-blue-500">Phụ kiện</a></li>
+                    <li><a href="{{ route('shop.cat_filter',['tatvo' => 'true']) }}" class="hover:text-blue-600 dark:hover:text-blue-500">Tất vớ,dép</a></li>
+                    <li><a href="{{ route('shop.cat_filter',['phukien' => 'true']) }}" class="hover:text-blue-600 dark:hover:text-blue-500">Phụ kiện</a></li>
                     <li><a href="#" class="hover:text-blue-600 dark:hover:text-blue-500">Liên hệ</a></li>
                 </ul>
             </div>
@@ -118,10 +118,12 @@
                             <div class="flex justify-between items-center border-b pb-0">
                                 <h5 id="drawer-title" class="text-lg font-bold text-gray-900 dark:text-white">
                                     Giỏ Hàng/Thanh Toán
-{{--                                    @if($qrCodeSvg)--}}
-{{--                                        <img class="h-16 w-16" src="data:image/svg+xml;base64,{{ $qrCodeSvg }}" alt="QR Code">--}}
-{{--                                    @endif--}}
-                                    <img class="w-1/2" src="https://img.vietqr.io/image/970437-{{ $accountNumber }}-qr_only.jpg?amount={{ array_reduce($cart, fn($total, $item) => $total + $item['quantity'] * $item['price'], 0)  }}&addInfo=Đơn giày ThanShoes Chất Lượng!&accountName={{ $accountHolder  }}" alt="Thanh toán">
+                                    {{--                                    @if($qrCodeSvg)--}}
+                                    {{--                                        <img class="h-16 w-16" src="data:image/svg+xml;base64,{{ $qrCodeSvg }}" alt="QR Code">--}}
+                                    {{--                                    @endif--}}
+                                    <img class="w-1/2"
+                                         src="https://img.vietqr.io/image/970437-{{ $accountNumber }}-compact2.jpg?amount={{ array_reduce($cart, fn($total, $item) => $total + $item['quantity'] * $item['price'], 0)  }}&addInfo=Đơn giày ThanShoes Chất Lượng!&accountName={{ $accountHolder  }}"
+                                         alt="Thanh toán">
                                 </h5>
                                 <button type="button" data-drawer-hide="drawer_cart"
                                         class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
@@ -225,7 +227,21 @@
                                 </div>
                                 <div class="relative">
                                     <button wire:click="dat_hang()"
+                                            wire:loading.attr="disabled"
+                                            wire:target="dat_hang"
                                             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                                        <span wire:loading.remove wire:target="dat_hang">Đặt hàng</span>
+                                        <span wire:loading wire:target="dat_hang"
+                                              class="flex items-center justify-center">
+                                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                     viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Đang xử lý
+                                                <span class="dots ml-1"></span>
+                                        </span>
                                         Đặt hàng
                                     </button>
                                     <span

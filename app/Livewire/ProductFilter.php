@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Product;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Request;
 
 class ProductFilter extends Component
 {
@@ -20,6 +21,28 @@ class ProductFilter extends Component
     public $typeSelected = [];
     public $brandSelected = [];
     public $sort = 'latest';
+
+    public function mount()
+    {
+        // Kiểm tra xem có tham số 'type' trong URL không
+        $type = Request::query('type');
+        if ($type) {
+            $this->typeSelected = [$type];
+        }
+        $brand = Request::query('brand');
+        if ($brand) {
+            $this->brandSelected = [$brand];
+        }
+        $tatvo = Request::query('tatvo');
+        if ($tatvo) {
+            $this->tatvo = 'true';
+        }
+        $phukien = Request::query('phukien');
+        if ($phukien) {
+            $this->phukien = 'true';
+        }
+    }
+
 
     public function updatingSort()
     {
@@ -87,7 +110,10 @@ class ProductFilter extends Component
     public function render()
     {
         $query = Product::query()->where('name', 'like', '%' . $this->search . '%');
-
+        // Lấy những sản phẩm có số lượng lớn hơn 0, số lượng bằng tổng stock của variant thông qua quan hệ ->variants
+        $query->whereHas('variants', function ($q) {
+            $q->where('stock', '>', 0);
+        });
         if ($this->giay === 'true') {
             $query->where('name', 'like', '%giày%');
         }

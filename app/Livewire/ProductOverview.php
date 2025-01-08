@@ -25,11 +25,14 @@ class ProductOverview extends Component
     public $main_image;
     public $cart = [];
 
+    public $isProcessingAddtoCart = false;
+
 
     // Nhận dữ liệu từ component cha
     public function mount($product)
     {
         $this->product = $product;
+
         // Kiểm tra xem sản phẩm có phân loại theo color không
         if ($this->product->variants->where('color', '!=', null)->count() > 0) {
             $this->countfilter = 2;
@@ -85,6 +88,11 @@ class ProductOverview extends Component
 
     public function addToCart()
     {
+        if ($this->isProcessingAddtoCart) {
+            return;
+        }
+        $this->isProcessingAddtoCart = true;
+
         // Kiểm tra xem người dùng đã chọn phân loại sản phẩm chưa
         if (
             ($this->countfilter == 1 && empty($this->selectedSize)) ||
@@ -156,38 +164,8 @@ class ProductOverview extends Component
 
             $this->dispatch('cart_added');
         }
+        $this->isProcessingAddtoCart = false;
     }
-
-    // public function addCart($variant_id, $quantity = 1)
-    // {
-    //     $deviceId = Cookie::get('device_id'); // Lấy device_id từ cookie
-
-    //     // Truy xuất thông tin sản phẩm từ variant_id
-    //     $variant = Variant::find($variant_id); // Variant là model của bạn
-
-    //     if (!$variant) {
-    //         $this->dispatch('variant_cant_find');
-    //         return;
-    //     }
-
-    //     // Thêm sản phẩm vào giỏ hàng
-    //     $this->cart[$variant_id] = [
-    //         'product_name' => $variant->product->name,
-    //         'variant_color' => $variant->color,
-    //         'variant_size' => $variant->size,
-    //         'price' => $variant->price,
-    //         'quantity' => isset($this->cart[$variant_id])
-    //             ? $this->cart[$variant_id]['quantity'] + $quantity
-    //             : $quantity,
-    //     ];
-
-    //     // Lưu giỏ hàng vào session dựa trên device_id
-    //     session()->put('cart_' . $deviceId, $this->cart);
-
-    //     // Thông báo
-    //     $this->dispatch('cart_added');
-    // }
-
 
     // Xử lý khi người dùng chọn size
     public function updatingSelectedSize($value)

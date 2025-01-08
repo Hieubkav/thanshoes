@@ -1,36 +1,3 @@
-{{-- @php
-    use App\Models\Product;
-    $products = Product::all();
-
-    // Lấy ra danh sách những thuộc tính khác nhau có thể có của product->brand trừ rỗng
-    $brands = $products->pluck('brand')->filter()->unique();
-
-    // lấy ra danh sách những bảng ghi khác nhau có thể có của product->type
-    $types = $products->pluck('type')->filter()->unique();
-
-@endphp
-
-<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 p-6 max-w-screen-xl mx-auto">
-    @foreach ($types as $item)
-    @php
-        $product = $products->where('type', $item)->first();
-        $variantCount = $products->where('type', $item)->count();
-        $image = $product && $product->variants->first() ? $product->variants->first()->variant_images->first()->image : 'default_image.jpg';
-    @endphp
-    <div class="flex flex-col items-center p-4 bg-gray-50 rounded-lg text-center">
-        <img src="{{ $image }}" alt="{{ $item }}" class="mb-3 w-full h-auto object-cover">
-        <h3 class="font-semibold text-base">{{ $item }}</h3>
-        <p class="text-gray-500 text-sm">{{ $variantCount }} sản phẩm</p>
-    </div>
-    @endforeach
-</div>
-
-
-
- --}}
-
-
-
 @php
     use App\Models\Product;
     $products = Product::all();
@@ -51,12 +18,12 @@
                 $variantCount = $products->where('type', $item)->count();
                 $image = $product->variants->first()->variant_images->first()->image ?? 'default_image.jpg';
             @endphp
-            <div class="category-item flex flex-col items-center p-4 bg-gray-50 rounded-lg text-center">
+            <a href="{{ route('shop.cat_filter',['type' => $item]) }}" class="category-item flex flex-col items-center p-4 bg-gray-50 rounded-lg text-center">
                 <img src="{{ $image }}" alt="{{ $item }}"
                     class="mb-3 w-full h-auto object-cover rounded-md">
                 <h3 class="font-semibold text-base">{{ $item }}</h3>
                 <p class="text-gray-500 text-sm">{{ $variantCount }} sản phẩm</p>
-            </div>
+            </a>
         @endforeach
     </div>
     <div id="dropdown-button" class="text-center mt-4">

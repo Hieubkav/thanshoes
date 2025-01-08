@@ -1,6 +1,6 @@
 @php
-    
-       
+
+
 
     $product = App\Models\Product::where('type', $type_name)->first();
     $so_luong_types = App\Models\Product::where('type', $type_name)->count();
@@ -19,7 +19,7 @@
             {{ $type_name }}
             ( {{ $so_luong_types }} sản phẩm)
         </h2>
-        <a href="#" class="text-sm text-blue-600 hover:underline">Xem tất cả</a>
+        <a href="{{ route('shop.cat_filter',['type' => $type_name]) }}" class="text-sm text-blue-600 hover:underline">Xem tất cả</a>
     </div>
 
     <!-- Product List -->
@@ -40,12 +40,12 @@
                             ->random() // Lấy một variant ngẫu nhiên từ danh sách đã lọc
                             ->variant_images
                             ->random(); // Lấy ảnh ngẫu nhiên từ variant đã chọn
-                    
+
                         $image_variant = $variantWithImage && $variantWithImage->image ? $variantWithImage->image : asset('images/logo.svg');
                     @endphp
-                    
+
                     <img src="{{ $image_variant }}" alt="Product Image" class="rounded-lg w-full">
-                    
+
                     <!-- Discount Badge -->
                     @if ($item->variants->min('price') > 500000)
                         <span
