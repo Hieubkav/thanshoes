@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Rels;
 
 class ShopController extends Controller
@@ -24,5 +25,13 @@ class ShopController extends Controller
     {
         $product = Product::find($id);
         return view('shop.product_overview', compact('product'));
+    }
+
+    public function checkout()
+    {
+        if (!session()->has('cart_' . Cookie::get('device_id')) || empty(session('cart_' . Cookie::get('device_id')))) {
+            return redirect()->route('shop.store_front')->with('error', 'Giỏ hàng của bạn đang trống.');
+        }
+        return view('shop.checkout-page');
     }
 }
