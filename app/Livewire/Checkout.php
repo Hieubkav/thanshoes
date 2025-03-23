@@ -136,7 +136,8 @@ class Checkout extends Component
                 $variant->save();
             }
 
-            if ($this->email_customer) {
+            // Gửi email cho khách hàng nếu có email hợp lệ
+            if (!empty($this->email_customer) && filter_var($this->email_customer, FILTER_VALIDATE_EMAIL)) {
                 Mail::to($this->email_customer)->send(new OrderShipped($order));
             }
             
