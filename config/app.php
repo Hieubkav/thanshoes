@@ -218,4 +218,16 @@ return [
         
     ])->toArray(),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Bank Account Information
+    |--------------------------------------------------------------------------
+    |
+    | Thông tin tài khoản ngân hàng cho thanh toán qua VietQR
+    |
+    */
+    'bank_account_number' => env('BANK_ACCOUNT_NUMBER', '0946775145'),
+    'bank_account_holder' => env('BANK_ACCOUNT_HOLDER', 'Nguyễn Nhật Tân'),
+    'bank_code' => env('BANK_CODE', 'MB'),
+
 ];

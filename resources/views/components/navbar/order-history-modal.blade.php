@@ -78,7 +78,8 @@
                                             <p><strong>Sản phẩm:</strong></p>
                                             <ul class="list-disc list-inside">
                                                 @foreach( $order_in_list->order_items as $j => $order_item )
-                                                    <li>Sản phẩm: {{$order_item->variant->product->name}} - phiên bản: {{ $order_item->variant->color }}/{{ $order_item->variant->size }} - Số lượng: {{ $order_item->quantity }} - Giá 1 sản phẩm: {{ number_format($order_item->price) }} đ - Tổng giá: {{ number_format($order_item->price*$order_item->quantity) }} đ</li>
+                                                    <li>Sản phẩm: {{ optional($order_item->variant)->color ?? 'N/A' }}/{{ optional($order_item->variant)->size ?? 'N/A' }} 
+                                                        - Số lượng: {{ $order_item->quantity }} - Giá 1 sản phẩm: {{ number_format($order_item->price) }} đ - Tổng giá: {{ number_format($order_item->price*$order_item->quantity) }} đ</li>
                                                 @endforeach
                                             </ul>
                                             <p><strong>Trạng thái:</strong>

@@ -141,6 +141,7 @@ class ProductOverview extends Component
             // Thêm sản phẩm vào giỏ hàng
             $this->cart[$variant->id] = [
                 'product_name' => $variant->product->name,
+                'product_id' => $variant->product->id,
                 'variant_color' => $variant->color,
                 'variant_size' => $variant->size,
                 'price' => $variant->price,

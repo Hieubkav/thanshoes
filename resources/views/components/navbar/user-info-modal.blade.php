@@ -25,28 +25,28 @@
                     <i class="fas fa-user-circle text-3xl text-blue-600"></i>
                     <div>
                         <p class="font-semibold">Tên khách hàng</p>
-                        <p>{{ $name_customer }}</p>
+                        <p wire:model="name_customer">{{ $name_customer ?? 'Chưa có thông tin' }}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <i class="fas fa-phone-alt text-3xl text-green-600"></i>
                     <div>
                         <p class="font-semibold">Số điện thoại</p>
-                        <p>{{ $phone_customer }}</p>
+                        <p wire:model="phone_customer">{{ $phone_customer ?? 'Chưa có thông tin' }}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <i class="fas fa-envelope text-3xl text-red-600"></i>
                     <div>
                         <p class="font-semibold">Email</p>
-                        <p>{{ $email_customer }}</p>
+                        <p wire:model="email_customer">{{ $email_customer ?? 'Chưa có thông tin' }}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <i class="fas fa-map-marker-alt text-3xl text-yellow-600"></i>
                     <div>
                         <p class="font-semibold">Địa chỉ</p>
-                        <p>{{ $address_customer }}</p>
+                        <p wire:model="address_customer">{{ $address_customer ?? 'Chưa có thông tin' }}</p>
                     </div>
                 </div>
             </div>
