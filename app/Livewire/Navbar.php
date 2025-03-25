@@ -19,7 +19,8 @@ class Navbar extends Component
     public $products;
     public $brands;
     public $types;
-    public $search;
+    public $searchTerm = '';
+    public $searchResults = [];
 
     // Cart related properties
     public $cartItems;
@@ -175,5 +176,18 @@ class Navbar extends Component
 
         $this->brands = $this->products->pluck('brand')->filter()->unique();
         $this->types = $this->products->pluck('type')->filter()->unique();
+    }
+
+    public function updatedSearchTerm()
+    {
+        if (strlen($this->searchTerm) < 1) {
+            $this->searchResults = [];
+            return;
+        }
+
+        $this->searchResults = Product::where('name', 'like', '%' . $this->searchTerm . '%')
+            ->with(['variants.variant_images'])
+            ->take(100)
+            ->get();
     }
 }

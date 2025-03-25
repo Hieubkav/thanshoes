@@ -2,7 +2,8 @@
 <div class="flex space-x-4">
     <!-- Search -->
     <div class="text-xl cursor-pointer">
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <i class="fa-solid fa-magnifying-glass" data-modal-target="search_modal"
+           data-modal-toggle="search_modal"></i>
     </div>
 
     <!-- User -->

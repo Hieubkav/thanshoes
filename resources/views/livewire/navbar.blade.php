@@ -16,4 +16,5 @@
     @include('components.navbar.cart-drawer')
     @include('components.navbar.user-info-modal')
     @include('components.navbar.order-history-modal')
+    @include('components.navbar.search-modal')
 </div>
