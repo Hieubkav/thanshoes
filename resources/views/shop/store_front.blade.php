@@ -1,6 +1,9 @@
 @php
     use App\Models\Product;
+    use App\Models\WebsiteDesign;
+    
     $products = Product::all();
+    $websiteDesign = WebsiteDesign::first();
 
     // Lấy ra danh sách những thuộc tính khác nhau có thể có của product->brand trừ rỗng
     $brands = $products->pluck('brand')->filter()->unique();
@@ -18,7 +21,7 @@
 @section('content')
     @include('component.carousel')
 
-    @include('component.feature_benefit')
+    @include('component.feature_benefit', ['websiteDesign' => $websiteDesign])
 
     @include('component.product_categories')
 
@@ -28,7 +31,7 @@
         ])
     @endif
 
-    @include('component.shop.animate_banner')
+    @include('component.shop.animate_banner', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 2)
         @include('component.new_arrival', [
@@ -36,7 +39,7 @@
         ])
     @endif
 
-    @include('component.shop.cta')
+    @include('component.shop.cta', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 3)
         @include('component.new_arrival', [
@@ -44,7 +47,7 @@
         ])
     @endif
 
-    @include('component.sport_active')
+    @include('component.sport_active', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 4)
         @include('component.new_arrival', [
@@ -52,7 +55,7 @@
         ])
     @endif
 
-    @include('component.banner_pic')
+    @include('component.banner_pic', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 5)
         @include('component.new_arrival', [
@@ -60,7 +63,7 @@
         ])
     @endif
 
-    @include('component.carousel_slide')
+    @include('component.carousel_slide', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 6)
         @include('component.new_arrival', [
@@ -68,7 +71,7 @@
         ])
     @endif
 
-    @include('component.component_tech')
+    @include('component.component_tech', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 7)
         @include('component.new_arrival', [
@@ -76,7 +79,7 @@
         ])
     @endif
 
-    @include('component.video_banner')
+    @include('component.video_banner', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 8)
         @include('component.new_arrival', [
@@ -84,7 +87,7 @@
         ])
     @endif
 
-    @include('component.about_me')
+    @include('component.about_me', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 9)
         @for ($i = 9; $i <= $count_types; $i++)

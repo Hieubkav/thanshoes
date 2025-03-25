@@ -179,8 +179,8 @@ class WebsiteDesign extends Page implements Forms\Contracts\HasForms
         // Xử lý xóa file cũ khi upload file mới
         $oldData = $this->websiteDesign->toArray();
         foreach ($data as $key => $value) {
-            if (str_contains($key, '_pic') || str_contains($key, '_image') || str_contains($key, 'link') && is_string($oldData[$key])) {
-                if ($oldData[$key] !== $value) {
+            if ((str_contains($key, '_pic') || str_contains($key, '_image') || str_contains($key, 'link')) && isset($oldData[$key]) && !empty($oldData[$key])) {
+                if ($oldData[$key] !== $value && Storage::disk('public')->exists($oldData[$key])) {
                     Storage::disk('public')->delete($oldData[$key]);
                 }
             }
