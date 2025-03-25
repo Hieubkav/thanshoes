@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 class PostResource extends Resource
@@ -65,7 +66,8 @@ class PostResource extends Resource
                             ->offColor('danger'),
 
                         Forms\Components\Hidden::make('user_id')
-                            ->default(fn () => Auth::id()),
+                            ->default(auth()->id())
+                            ->required(),
                     ])->columns(1),
             ]);
     }
@@ -96,6 +98,13 @@ class PostResource extends Resource
                     ->label('Ngày tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Link bài viết')
+                    ->formatStateUsing(function ($record) {
+                        return route('posts.show', $record->id);
+                    })
+                    ->copyable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -109,6 +118,12 @@ class PostResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('view')
+                    ->label('Xem bài viết')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn (Post $record) => route('posts.show', $record))
+                    ->openUrlInNewTab()
+                    ->color('success'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

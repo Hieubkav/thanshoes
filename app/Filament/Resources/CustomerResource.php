@@ -19,6 +19,9 @@ class CustomerResource extends Resource
 
     protected static ?string $navigationGroup = 'Quản lý khách hàng';
 
+    protected static ?string $navigationLabel = 'Khách hàng';
+    protected static ?string $modelLabel = 'Khách hàng';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form

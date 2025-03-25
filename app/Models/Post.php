@@ -14,7 +14,7 @@ class Post extends Model
         'content',
         'thumbnail',
         'status',
-        'admin_id',
+        'user_id',
     ];
 
    public function user()

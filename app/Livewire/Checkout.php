@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Setting;
 use App\Models\Cart;
 use App\Models\Customer;
 use App\Models\Order;
@@ -49,9 +50,9 @@ class Checkout extends Component
             }
         }
         
-        $this->accountNumber = '0946775145';
-        $this->accountHolder = 'NGUYEN NHAT TAN';
-        $this->bankCode = 'MB';
+        $this->bankCode = Setting::first()->bank_name;
+        $this->accountNumber = Setting::first()->bank_number;
+        $this->accountHolder = Setting::first()->bank_account_name;
     }
 
     public function updatedPaymentMethod($value)

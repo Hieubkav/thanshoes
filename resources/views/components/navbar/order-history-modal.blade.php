@@ -90,15 +90,29 @@
                                                                      class="w-16 h-16 object-cover rounded-lg">
                                                             @else
                                                                 <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                                                                    <span class="text-gray-400">No image</span>
+                                                                    <span class="text-gray-400">Không có ảnh</span>
                                                                 </div>
                                                             @endif
                                                             <div class="flex-1">
-                                                                <h4 class="font-medium text-base mb-1">{{ optional($order_item->variant->product)->name ?? 'N/A' }}
-</h4>
-                                                                <p class="text-gray-600 dark:text-gray-400 mb-1">Màu: {{ optional($order_item->variant)->color ?? 'N/A' }} - Size: {{ optional($order_item->variant)->size ?? 'N/A' }}</p>
-                                                                <p class="text-gray-600 dark:text-gray-400">Số lượng: {{ $order_item->quantity }} - Giá: {{ number_format($order_item->price) }}đ</p>
-                                                               <p class="font-medium text-blue-600 dark:text-blue-400">Tổng: {{ number_format($order_item->price * $order_item->quantity) }}đ</p>
+                                                                @if ($order_item->variant && $order_item->variant->product)
+                                                                    <h4 class="font-medium text-base mb-1">{{ $order_item->variant->product->name }}</h4>
+                                                                    <p class="text-gray-600 dark:text-gray-400 mb-1">
+                                                                        Màu: {{ $order_item->variant->color }} - 
+                                                                        Size: {{ $order_item->variant->size }}
+                                                                    </p>
+                                                                @else
+                                                                    <h4 class="font-medium text-base mb-1">Sản phẩm không còn tồn tại</h4>
+                                                                    <p class="text-gray-600 dark:text-gray-400 mb-1">
+                                                                        Thông tin không khả dụng
+                                                                    </p>
+                                                                @endif
+                                                                <p class="text-gray-600 dark:text-gray-400">
+                                                                    Số lượng: {{ $order_item->quantity }} - 
+                                                                    Giá: {{ number_format($order_item->price) }}đ
+                                                                </p>
+                                                                <p class="font-medium text-blue-600 dark:text-blue-400">
+                                                                    Tổng: {{ number_format($order_item->price * $order_item->quantity) }}đ
+                                                                </p>
                                                             </div>
                                                         </li>
                                                     @endforeach

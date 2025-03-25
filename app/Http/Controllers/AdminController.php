@@ -18,11 +18,6 @@ class AdminController extends Controller
     {
         $filePath = public_path('uploads/data_shoes.xlsx');
 
-        // Xoá toàn bộ dữ liệu trong bảng Product và Variant và VarientImage
-        DB::table('products')->delete();
-        DB::table('variants')->delete();
-        DB::table('variant_images')->delete();
-
         $spreadsheet = IOFactory::load($filePath);
 
         // Lấy ra dữ liệu của sheet đầu tiên chỉ lấy cột A 
@@ -35,13 +30,21 @@ class AdminController extends Controller
         foreach ($data as $key => $value) {
             if ($value['A'] != '' && $key != 1) {
                 // Lưu dữ liệu vào bảng Product
-                $product = new Product();
-                $product->name = $value['A'];
-                $product->description = $value['D'];
-                $product->brand = $value['E'];
-                $product->type = $value['C'];
-                $product->save();
-
+                $product = Product::where('name', $value['A'])->first();
+                
+                if (!$product) {
+                    $product = new Product();
+                    $product->name = $value['A'];
+                    $product->description = $value['D'];
+                    $product->brand = $value['E'];
+                    $product->type = $value['C'];
+                    $product->save();
+                } else {
+                    $product->description = $value['D'];
+                    $product->brand = $value['E'];
+                    $product->type = $value['C'];
+                    $product->save();
+                }
 
                 // Xử lý tạo ra varient
                 $start = $key;
@@ -65,19 +68,30 @@ class AdminController extends Controller
                     ];
 
                     // Lưu dữ liệu vào bảng Variant
-                    $variant_data = new Variant();
-                    $variant_data->color = $data[$i]['J'];
-                    $variant_data->size = $data[$i]['H'];
-                    $variant_data->price = str_replace(',', '', $data[$i]['AF']);
-                    $variant_data->stock = str_replace(',', '', $data[$i]['AA']);
-                    $variant_data->product_id = $product->id;
-                    $variant_data->save();
+                    $variant_data = Variant::where('product_id', $product->id)
+                        ->where('color', $data[$i]['J'])
+                        ->where('size', $data[$i]['H'])
+                        ->first();
 
-                    // Lưu dữ liệu vào bảng VariantImage
-                    $variant_image = new VariantImage();
-                    $variant_image->variant_id = $variant_data->id;
-                    $variant_image->image = $data[$i]['R'];
-                    $variant_image->save();
+                    if (!$variant_data) {
+                        $variant_data = new Variant();
+                        $variant_data->color = $data[$i]['J'];
+                        $variant_data->size = $data[$i]['H'];
+                        $variant_data->price = str_replace(',', '', $data[$i]['AF']);
+                        $variant_data->stock = str_replace(',', '', $data[$i]['AA']);
+                        $variant_data->product_id = $product->id;
+                        $variant_data->save();
+
+                        // Lưu dữ liệu vào bảng VariantImage
+                        $variant_image = new VariantImage();
+                        $variant_image->variant_id = $variant_data->id;
+                        $variant_image->image = $data[$i]['R'];
+                        $variant_image->save();
+                    } else {
+                        $variant_data->price = str_replace(',', '', $data[$i]['AF']);
+                        $variant_data->stock = str_replace(',', '', $data[$i]['AA']);
+                        $variant_data->save();
+                    }
                 }
 
                 $object_data[] = [
