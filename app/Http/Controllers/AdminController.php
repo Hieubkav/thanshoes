@@ -13,96 +13,97 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AdminController extends Controller
 {
-
     public function excel()
     {
+        // Đọc file excel
         $filePath = public_path('uploads/data_shoes.xlsx');
 
+        // Load file excel
         $spreadsheet = IOFactory::load($filePath);
 
-        // Lấy ra dữ liệu của sheet đầu tiên chỉ lấy cột A 
+        // Lấy ra dữ liệu của sheet đầu tiên
         $data = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-        // Tạo ra một đối tượng object trong laravel là một mảng có object mỗi object trông đó có các trường như : Tên sản phẩm, loại sản phẩm, mô tả,nhãn hiệu, tags, một mảng object (trong mảng object này có các trường như: size, màu sắc, tên phiên bản, SKU, Barcode, khối lượng, đơn vị tính, giá bán lẻ, ảnh đại diện)
+        // Mảng lưu trữ SKU hiện tại để kiểm tra sau
+        $current_skus = [];
+
+        // Mảng lưu kết quả để trả về
         $object_data = [];
 
-        $process_data = [];
         foreach ($data as $key => $value) {
             if ($value['A'] != '' && $key != 1) {
-                // Lưu dữ liệu vào bảng Product
-                $product = Product::where('name', $value['A'])->first();
+                $sku = $value['N'];
+                // Thêm SKU vào mảng kiểm tra
+                $current_skus[] = $sku;
+
+                // Tách SKU để lấy mã sản phẩm (phần trước dấu -)
+                $sku_parts = explode('-', $sku);
+                $product_code = $sku_parts[0];
+
+                // Tìm sản phẩm dựa vào pattern của SKU
+                $existing_variant = Variant::where('sku', 'LIKE', $product_code.'-%')->first();
                 
-                if (!$product) {
-                    $product = new Product();
-                    $product->name = $value['A'];
-                    $product->description = $value['D'];
-                    $product->brand = $value['E'];
-                    $product->type = $value['C'];
-                    $product->save();
+                if ($existing_variant) {
+                    $product = $existing_variant->product;
                 } else {
-                    $product->description = $value['D'];
-                    $product->brand = $value['E'];
-                    $product->type = $value['C'];
-                    $product->save();
+                    // Tạo sản phẩm mới nếu không tìm thấy SKU pattern
+                    $product = new Product();
                 }
 
-                // Xử lý tạo ra varient
-                $start = $key;
-                $end = $start;
-                while ($end < count($data) && $data[$end + 1]['A'] == '') {
-                    $end++;
-                }
-                $variant = [];
-                for ($i = $start; $i < $end; $i++) {
-                    $variant[] = [
-                        'size' => $data[$i]['H'],
-                        'color' => $data[$i]['J'],
-                        'variant_name' => $data[$i]['A'],
-                        'sku' =>  $data[$i]['N'],
-                        'barcode' => $data[$i]['O'],
-                        'weight' => $data[$i]['P'],
-                        'unit' => $data[$i]['Q'],
-                        'price' => $data[$i]['AF'],
-                        'image' => $data[$i]['R'],
-                        'quantity' => $data[$i]['AA'],
-                    ];
+                // Cập nhật thông tin sản phẩm
+                $product->name = $value['A'];
+                $product->description = $value['D'];
+                $product->brand = $value['E'];
+                $product->type = $value['C'];
+                $product->save();
 
-                    // Lưu dữ liệu vào bảng Variant
-                    $variant_data = Variant::where('product_id', $product->id)
-                        ->where('color', $data[$i]['J'])
-                        ->where('size', $data[$i]['H'])
-                        ->first();
-
-                    if (!$variant_data) {
-                        $variant_data = new Variant();
-                        $variant_data->color = $data[$i]['J'];
-                        $variant_data->size = $data[$i]['H'];
-                        $variant_data->price = str_replace(',', '', $data[$i]['AF']);
-                        $variant_data->stock = str_replace(',', '', $data[$i]['AA']);
-                        $variant_data->product_id = $product->id;
-                        $variant_data->save();
-
-                        // Lưu dữ liệu vào bảng VariantImage
-                        $variant_image = new VariantImage();
-                        $variant_image->variant_id = $variant_data->id;
-                        $variant_image->image = $data[$i]['R'];
-                        $variant_image->save();
-                    } else {
-                        $variant_data->price = str_replace(',', '', $data[$i]['AF']);
-                        $variant_data->stock = str_replace(',', '', $data[$i]['AA']);
-                        $variant_data->save();
-                    }
+                // Xử lý biến thể
+                $variant = Variant::where('sku', $sku)->first();
+                if (!$variant) {
+                    $variant = new Variant();
+                    $variant->product_id = $product->id;
+                    $variant->sku = $sku;
                 }
 
+                // Cập nhật thông tin biến thể
+                $variant->color = $value['J'];
+                $variant->size = $value['H'];
+                $variant->price = str_replace(',', '', $value['AF']);
+                $variant->stock = str_replace(',', '', $value['AA']);
+                $variant->save();
+
+                // Thêm ảnh mới cho variant nếu có
+                if (!empty($value['R'])) {
+                    $variant_image = new VariantImage();
+                    $variant_image->variant_id = $variant->id;
+                    $variant_image->image = $value['R'];
+                    $variant_image->save();
+                }
+
+                // Thêm vào mảng kết quả
                 $object_data[] = [
                     'name' => $value['A'],
                     'type' => $value['C'],
                     'description' => $value['D'],
                     'brand' => $value['E'],
                     'tags' => $value['F'],
-                    'variants' => $variant
+                    'variants' => [
+                        [
+                            'size' => $value['H'],
+                            'color' => $value['J'],
+                            'sku' => $value['N'],
+                            'price' => $value['AF'],
+                            'stock' => $value['AA'],
+                            'image' => $value['R']
+                        ]
+                    ]
                 ];
             }
+        }
+
+        // Cập nhật số lượng về 0 cho các variant không có trong file Excel
+        if (!empty($current_skus)) {
+            Variant::whereNotIn('sku', $current_skus)->update(['stock' => 0]);
         }
 
         return $object_data;
@@ -123,22 +124,5 @@ class AdminController extends Controller
         $file->move(public_path('uploads'), 'data_shoes.xlsx');
 
         return "Nhập thành công";
-    }
-
-    public function phan_trang(Request $request)
-    {
-        // Lấy dữ liệu sản phẩm và phân trang
-        $products = Product::paginate(5);
-
-        if ($request->ajax()) {
-            // Trả về dữ liệu JSON gồm danh sách sản phẩm và phân trang
-            return response()->json([
-                'products' => view('partials.product_list_phan_trang', compact('products'))->render(),
-                'pagination' => (string) $products->links('pagination::tailwind')
-            ]);
-        }
-
-        // Trả về view bình thường nếu không phải yêu cầu AJAX
-        return view('shop.phan_trang', compact('products'));
     }
 }
