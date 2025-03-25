@@ -1,7 +1,3 @@
-@php
-    use Filament\Support\Enums\IconSize;
-@endphp
-
 @props([
     'aside' => false,
     'collapsed' => false,
@@ -14,24 +10,29 @@
     'heading' => null,
     'icon' => null,
     'iconColor' => 'gray',
-    'iconSize' => IconSize::Large,
+    'iconSize' => \Filament\Support\Enums\IconSize::Large,
     'persistCollapsed' => false,
 ])
 
 @php
+    use Filament\Support\Enums\IconSize;
+
     $headerActions = array_filter(
         $headerActions,
         fn ($headerAction): bool => $headerAction->isVisible(),
     );
+
+    $heading = is_string($heading) ? $heading : (string) $heading;
+    $description = is_string($description) ? $description : (string) $description;
+
     $hasHeaderActions = filled($headerActions);
-    $hasDescription = filled((string) $description);
+    $hasDescription = filled($description);
     $hasHeading = filled($heading);
     $hasIcon = filled($icon);
     $hasHeader = $hasIcon || $hasHeading || $hasDescription || $collapsible || $hasHeaderActions || filled((string) $headerEnd);
 @endphp
 
 <section
-    {{-- TODO: Investigate Livewire bug - https://github.com/filamentphp/filament/pull/8511 --}}
     x-data="{
         isCollapsed: @if ($persistCollapsed) $persist(@js($collapsed)).as(`section-${$el.id}-isCollapsed`) @else @js($collapsed) @endif,
     }"
@@ -42,15 +43,11 @@
         x-on:toggle-section.window="if ($event.detail.id == $el.id) isCollapsed = ! isCollapsed"
         x-bind:class="isCollapsed && 'fi-collapsed'"
     @endif
-    {{
-        $attributes->class([
-            'fi-section',
-            match ($aside) {
-                true => 'fi-aside grid grid-cols-1 items-start gap-x-6 gap-y-4 md:grid-cols-3',
-                false => 'rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10',
-            },
-        ])
-    }}
+    @class([
+        'fi-section',
+        'fi-aside grid grid-cols-1 items-start gap-x-6 gap-y-4 md:grid-cols-3' => $aside,
+        'rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10' => ! $aside,
+    ])
 >
     @if ($hasHeader)
         <header

@@ -2,88 +2,40 @@
 
 namespace App\Livewire;
 
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Variant;
+use App\Models\Product;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Cookie;
 use Livewire\Component;
-use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 
 class ProductOverview extends Component
 {
-    // $product là biến chứa dữ liệu sản phẩm được truyền từ component cha
+    // Product related properties
     public $product;
-    // $selectedColor chứa màu được chọn
-    public $selectedColor = [];
-    // $selectedSize chứa size được chọn
-    public $selectedSize = [];
-    // $countfilter chứa số lượng filter ( bộ lọc) : 1 là chỉ có size, 2 là có cả màu và size
-    public $countfilter = 1;
-    // $clicked chứa trạng thái người dùng đã chọn màu chưa
-    public $clicked = false;
-    // $main_image chứa ảnh chính của sản phẩm
     public $main_image;
-    public $cart = [];
 
+    // User selection properties
+    public $selectedColor = [];
+    public $selectedSize = [];
+    public $clicked = false;
+    public $countfilter = 1;
+
+    // Processing flag
     public $isProcessingAddtoCart = false;
 
-
-    // Nhận dữ liệu từ component cha
     public function mount($product)
     {
         $this->product = $product;
+        $this->initializeFilters();
+    }
 
-        // Kiểm tra xem sản phẩm có phân loại theo color không
+    private function initializeFilters()
+    {
         if ($this->product->variants->where('color', '!=', null)->count() > 0) {
             $this->countfilter = 2;
         }
-
-        // Kiểm tra xem cookie `device_id` có tồn tại không
-        if (!Cookie::has('device_id')) {
-            // Nếu chưa có, tạo UUID mới cho thiết bị và lưu vào cookie
-            $deviceId = (string)Str::uuid();
-            Cookie::queue('device_id', $deviceId, 60 * 24 * 365); // Lưu cookie trong 1 năm
-        } else {
-            // Lấy giỏ hàng từ cookie
-            $this->cart = session()->get('cart_' . Cookie::get('device_id'), []);
-        }
-    }
-
-    #[On('clear_cart')]
-    public function clear_cart_sucess()
-    {
-        // Xoá session giỏ hàng
-        session()->forget('cart_' . Cookie::get('device_id'));
-        // Clear cookie
-        Cookie::queue(Cookie::forget('device_id'));
-        $this->cart = [];
-
-        Notification::make()
-            ->title('Đã xoá giỏ hàng')
-            ->danger()
-            ->iconColor('danger')
-            ->icon('heroicon-o-x-mark')
-            ->duration(3000)
-            ->body('Thêm sản phẩm vào giỏ hàng để mua hàng!')
-            ->send();
-    }
-
-    #[On('clear_cart_after_dat_hang')]
-    public function clear_cart_after_dat_hang()
-    {
-        // Xoá session giỏ hàng
-        session()->forget('cart_' . Cookie::get('device_id'));
-        $this->cart = [];
-        $this->selectedColor = [];
-        $this->selectedSize = [];
-    }
-
-    // Xử lý khi người dùng chọn màu
-    public function updatingSelectedColor($color)
-    {
-        $this->clicked = true;
-        $this->selectedSize = [];
-        $this->dispatch('colorSelected', $color);
     }
 
     public function addToCart()
@@ -93,85 +45,126 @@ class ProductOverview extends Component
         }
         $this->isProcessingAddtoCart = true;
 
-        // Kiểm tra xem người dùng đã chọn phân loại sản phẩm chưa
-        if (
-            ($this->countfilter == 1 && empty($this->selectedSize)) ||
-            ($this->countfilter == 2 && (empty($this->selectedColor) || empty($this->selectedSize)))
-        ) {
-
-            Notification::make()
-                ->title('Chưa chọn phân loại sản phẩm')
-                ->danger()
-                ->iconColor('danger')
-                ->icon('heroicon-o-x-mark')
-                ->duration(3000)
-                ->body('Vui lòng chọn!')
-                ->send();
-        } else {
-            // Lấy ra device_id từ cookie
-            $deviceId = Cookie::get('device_id');
-
-            // Lấy ra variant dựa trên color và size dụa trên 2 trường hợp chỉ có size hoặc có cả màu và size
-            // Nếu chỉ có size thì lấy ra variant dựa trên size
-            if($this->countfilter == 1){
-                $variant = Variant::where('product_id', $this->product->id)
-                    ->where('size', $this->selectedSize)
-                    ->first();
-            } else {
-                $variant = Variant::where('product_id', $this->product->id)
-                    ->where('color', $this->selectedColor)
-                    ->where('size', $this->selectedSize)
-                    ->first();
-            }
-
-            // Kiểm tra xem người dùng có thêm nhiều hơn số lượng hàng tồn kho không
-            if (isset($this->cart[$variant->id]) and $variant->stock == $this->cart[$variant->id]['quantity']) {
-                Notification::make()
-                    ->title('Không thể thêm vào giỏ hàng vượt quá tồn kho ')
-                    ->danger()
-                    ->iconColor('danger')
-                    ->icon('heroicon-o-x-mark')
-                    ->duration(3000)
-                    ->body('Vui lòng chọn sản phẩm khác!')
-                    ->send();
-
+        try {
+            if (!$this->validateSelections()) {
+                $this->showError('Chưa chọn phân loại sản phẩm', 'Vui lòng chọn đầy đủ!');
                 return;
             }
 
-            // Thêm sản phẩm vào giỏ hàng
-            $this->cart[$variant->id] = [
-                'product_name' => $variant->product->name,
-                'product_id' => $variant->product->id,
-                'variant_color' => $variant->color,
-                'variant_size' => $variant->size,
-                'price' => $variant->price,
-                'quantity' => isset($this->cart[$variant->id])
-                    ? $this->cart[$variant->id]['quantity'] + 1
-                    : 1,
-                'image' => $variant->variant_images->first()->image,
-                'variant_id' => $variant->id,
-            ];
+            $variant = $this->getSelectedVariant();
+            if (!$variant) {
+                $this->showError('Lỗi hệ thống', 'Không tìm thấy phân loại sản phẩm');
+                return;
+            }
 
-            // Lưu giỏ hàng vào session dựa trên device_id
-            session()->put('cart_' . $deviceId, $this->cart);
+            if (!$this->validateStock($variant)) {
+                $this->showError('Không thể thêm vào giỏ hàng', 'Sản phẩm đã hết hàng hoặc thêm vượt quá số lượng tồn kho');
+                return;
+            }
 
-            //Gửi thông báo khi thêm vào giỏ hàng thành công
-            Notification::make()
-                ->title('Thêm giỏ hàng thành công')
-                ->success()
-                ->duration(3000)
-                ->body('Chúc mừng bạn')
-                ->send();
+            $this->addVariantToCart($variant);
+            $this->showSuccess();
 
-            $this->dispatch('cart_added');
+        } finally {
+            $this->isProcessingAddtoCart = false;
         }
-        $this->isProcessingAddtoCart = false;
     }
 
-    // Xử lý khi người dùng chọn size
+    private function validateSelections(): bool
+    {
+        if ($this->countfilter == 1 && empty($this->selectedSize)) {
+            return false;
+        }
+        if ($this->countfilter == 2 && (empty($this->selectedColor) || empty($this->selectedSize))) {
+            return false;
+        }
+        return true;
+    }
+
+    private function getSelectedVariant(): ?Variant
+    {
+        $query = Variant::where('product_id', $this->product->id);
+        
+        if ($this->countfilter == 1) {
+            return $query->where('size', $this->selectedSize)->first();
+        }
+        
+        return $query->where('color', $this->selectedColor)
+                    ->where('size', $this->selectedSize)
+                    ->first();
+    }
+
+    private function validateStock(Variant $variant): bool
+    {
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $existingItem = $cart->items()
+            ->where('product_id', $this->product->id)
+            ->where('variant_id', $variant->id)
+            ->first();
+
+        if (!$existingItem) {
+            return $variant->stock > 0;
+        }
+
+        return $variant->stock > $existingItem->quantity;
+    }
+
+    private function addVariantToCart(Variant $variant)
+    {
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        
+        $cartItem = $cart->items()
+            ->where('product_id', $this->product->id)
+            ->where('variant_id', $variant->id)
+            ->first();
+
+        if ($cartItem) {
+            $cartItem->increment('quantity');
+        } else {
+            $cart->items()->create([
+                'product_id' => $this->product->id,
+                'variant_id' => $variant->id,
+                'quantity' => 1,
+                'price' => $variant->price
+            ]);
+        }
+
+        $cart->updateTotal();
+        $this->dispatch('cart_updated');
+    }
+
+    private function showError(string $title, string $message)
+    {
+        Notification::make()
+            ->title($title)
+            ->danger()
+            ->iconColor('danger')
+            ->icon('heroicon-o-x-mark')
+            ->duration(3000)
+            ->body($message)
+            ->send();
+    }
+
+    private function showSuccess()
+    {
+        Notification::make()
+            ->title('Thêm giỏ hàng thành công')
+            ->success()
+            ->duration(3000)
+            ->body('Chúc mừng bạn')
+            ->send();
+    }
+
+    public function updatingSelectedColor($color)
+    {
+        $this->clicked = true;
+        $this->selectedSize = [];
+        $this->dispatch('colorSelected', $color);
+    }
+
     public function updatingSelectedSize($value)
     {
-        if ($this->clicked == false and $this->countfilter == 2) {
+        if ($this->clicked == false && $this->countfilter == 2) {
             $this->dispatch('checkcolorfirst');
         } else {
             $this->clicked = true;
@@ -179,48 +172,96 @@ class ProductOverview extends Component
         }
     }
 
+    #[On('clear_cart')]
+    public function clear_cart_sucess()
+    {
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart->items()->delete();
+        $cart->delete();
+
+        $this->showError('Đã xoá giỏ hàng', 'Thêm sản phẩm vào giỏ hàng để mua hàng!');
+    }
+
+    #[On('clear_cart_after_dat_hang')]
+    public function clear_cart_after_dat_hang()
+    {
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart->items()->delete();
+        $cart->delete();
+
+        $this->selectedColor = [];
+        $this->selectedSize = [];
+    }
+
     public function render()
     {
-        //
-        // Lấy ra tất cả ảnh của các biến thể của sản phẩm
-        $list_images_variants = $this->product->variants->map(function ($variant) {
-            return $variant->variant_images;
-        })->flatten();
-
-        // Lấy ra link ảnh của các biến thể
-        $list_link_images_variants = $list_images_variants->map(function ($image) {
-            return $image->image;
-        });
-
-        // Loại bỏ link trùng hoặc link rỗng
-        $list_link_images_variants = $list_link_images_variants->unique()->filter(function ($image) {
-            return $image != null;
-        });
-        // Lấy ra ảnh chính của sản phẩm
-
+        $list_link_images_variants = $this->getProductImages();
         $this->main_image = $list_link_images_variants->first();
-        $list_colors = $this->product->variants->map(function ($variant) {
-            return $variant->color;
-        })->unique()->filter(function ($color) {
-            return $color != null;
-        });
 
-        $list_sizes = $this->product->variants->map(function ($variant) {
-            return $variant->size;
-        })->unique()->filter(function ($size) {
-            return $size != null;
-        });
+        $list_colors = $this->getUniqueColors();
+        $list_sizes = $this->getUniqueSizes();
+        $related_products = $this->getRelatedProducts();
+        $same_brand_products = $this->getSameBrandProducts();
+
+        return view('livewire.product-overview', [
+            'list_images_variants' => $list_link_images_variants,
+            'main_image' => $this->main_image,
+            'product' => $this->product,
+            'related_products' => $related_products,
+            'same_brand_products' => $same_brand_products,
+            'list_colors' => $list_colors,
+            'list_sizes' => $list_sizes,
+        ]);
+    }
+
+    private function getProductImages()
+    {
+        return $this->product->variants
+            ->map(fn($variant) => $variant->variant_images)
+            ->flatten()
+            ->map(fn($image) => $image->image)
+            ->unique()
+            ->filter();
+    }
+
+    private function getRelatedProducts()
+    {
+        return Product::where('id', '!=', $this->product->id)
+            ->where('type', $this->product->type)
+            ->take(4)
+            ->get()
+            ->map(function ($product) {
+                $product->first_image = optional($product->variants->first()?->variant_images->first())->image;
+                return $product;
+            });
+    }
+
+    private function getSameBrandProducts()
+    {
+        return Product::where('id', '!=', $this->product->id)
+            ->where('brand', $this->product->brand)
+            ->take(4)
+            ->get()
+            ->map(function ($product) {
+                $product->first_image = optional($product->variants->first()?->variant_images->first())->image;
+                return $product;
+            });
+    }
 
 
-        return view(
-            'livewire.product-overview',
-            [
-                'list_images_variants' => $list_link_images_variants,
-                'main_image' => $this->main_image,
-                'product' => $this->product,
-                'list_colors' => $list_colors,
-                'list_sizes' => $list_sizes
-            ]
-        );
+    private function getUniqueColors()
+    {
+        return $this->product->variants
+            ->map(fn($variant) => $variant->color)
+            ->unique()
+            ->filter();
+    }
+
+    private function getUniqueSizes()
+    {
+        return $this->product->variants
+            ->map(fn($variant) => $variant->size)
+            ->unique()
+            ->filter();
     }
 }

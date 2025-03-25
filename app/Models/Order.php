@@ -20,9 +20,13 @@ class Order extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function order_items()
+    public function items()
     {
         return $this->hasMany(OrderItem::class);
     }
 
+    public function getTotalPriceAttribute()
+    {
+        return $this->items->sum(fn($item) => $item->price * $item->quantity);
+    }
 }

@@ -68,6 +68,12 @@
             <nav class="p-4">
                 <ul class="space-y-2">
                     <!-- Mobile Menu Items -->
+                    <li>
+                        <a href="{{ route('shop.cat_filter') }}" 
+                           @if(request()->get('phukien')) class="active-link block p-2.5 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-all duration-200" @else class="block p-2.5 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-all duration-200" @endif>
+                            Tất cả sản phẩm
+                        </a>
+                    </li>
                     <li class="mobile-dropdown">
                         <button class="w-full flex items-center justify-between p-2.5 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-all duration-200">
                             <span>Thương hiệu</span>
@@ -134,6 +140,12 @@
     <!-- Desktop Navigation -->
     <nav class="hidden lg:block">
         <ul class="flex items-center space-x-8">
+            <li>
+                <a href="{{ route('shop.cat_filter') }}" 
+                   class="py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    Tất cả sản phẩm
+                </a>
+            </li>
             <!-- Desktop Dropdown: Thương hiệu -->
             <li class="relative group">
                 <button class="flex items-center space-x-1 py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">

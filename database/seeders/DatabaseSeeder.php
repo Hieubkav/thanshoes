@@ -12,11 +12,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
-
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        // tạo  1 user với đủ email,, mật khẩu, và tên
+        \App\Models\User::factory()->create([
+            'email' => 'tranmanhhieu@gmail.com',
+            'password' => bcrypt('12345678'), // mã hóa thành chuỗi : 
+            'name' => 'Tran Manh Hieu',
+        ]);
     }
 }

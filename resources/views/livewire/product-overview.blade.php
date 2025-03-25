@@ -75,14 +75,14 @@
                                         class="group relative flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer shadow-sm
                                 @if ($product->variants->where('color', $color)->sum('stock') == 0) bg-gray-200 text-gray-400 cursor-not-allowed
                                 @else
-                                    bg-white text-gray-800 hover:shadow-md hover:border-blue-500 hover:text-blue-600 @endif
-                                @if ($countfilter == 2 and $color == $selectedColor) bg-blue-500 text-blue-400 font-bold shadow-md @endif">
+                                    bg-gray-100 text-gray-800 hover:shadow-[inset_-2px_-2px_10px_rgba(255,255,255,0.8),inset_2px_2px_10px_rgba(0,0,0,0.1)] transition-all duration-300 @endif
+                                @if ($countfilter == 2 and $color == $selectedColor) bg-white shadow-[inset_-4px_-4px_12px_rgba(255,255,255,0.9),inset_4px_4px_12px_rgba(0,0,0,0.1)] text-blue-600 font-bold @endif">
                                         <input wire:model.live.debounce.300ms="selectedColor"
                                             @if ($product->variants->where('color', $color)->sum('stock') == 0) disabled @endif
                                             value="{{ $color }}" type="radio" name="color"
                                             class="absolute opacity-0 w-0 h-0">
                                         <div
-                                            class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full shadow-sm overflow-hidden">
+                                            class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full overflow-hidden shadow-[inset_-2px_-2px_6px_rgba(255,255,255,0.7),inset_2px_2px_6px_rgba(0,0,0,0.1)]">
                                             <img src="{{ $link_src_color_pic }}" alt="{{ $color }}"
                                                 class="w-full h-full object-cover">
                                         </div>
@@ -108,8 +108,8 @@
                                                 $countfilter == 2 and
                                                     $product->variants->where('size', $size)->where('color', $selectedColor)->sum('stock') == 0) bg-gray-200 text-gray-400 cursor-not-allowed
                                         @else
-                                            bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-black hover:shadow-md @endif
-                                        @if ($size == $selectedSize) bg-green-700 border-2 border-green-500 shadow-lg font-bold @endif">
+                                            bg-gray-100 text-gray-800 hover:shadow-[inset_-2px_-2px_10px_rgba(255,255,255,0.8),inset_2px_2px_10px_rgba(0,0,0,0.1)] transition-all duration-300 @endif
+                                        @if ($size == $selectedSize) bg-white shadow-[inset_-4px_-4px_12px_rgba(255,255,255,0.9),inset_4px_4px_12px_rgba(0,0,0,0.1)] text-green-600 font-bold @endif">
                                         <input wire:model.live.debounce.300ms="selectedSize"
                                             @if (
                                                 $countfilter == 1 and $product->variants->where('size', $size)->sum('stock') == 0 or
@@ -157,6 +157,82 @@
             </p>
         </div>
     </div>
+
+    <!-- Sản phẩm cùng danh mục -->
+    @if($related_products->isNotEmpty())
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Sản phẩm cùng danh mục</h3>
+            <a href="/catfilter?type={{ urlencode($product->type) }}"
+               class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200">
+                Xem tất cả
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            @foreach($related_products as $related)
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
+                <a href="{{ route('shop.product_overview', $related->id) }}" class="block">
+                    <div class="relative pt-[100%]">
+                        <img src="{{ $related->first_image ?? asset('images/logo.svg') }}" 
+                             alt="{{ $related->name }}"
+                             class="absolute top-0 left-0 w-full h-full object-cover">
+                    </div>
+                    <div class="p-4">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">{{ $related->name }}</h4>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-lg font-bold text-blue-600">
+                                {{ number_format($related->variants->min('price'), 0, ',', '.') }}đ
+                            </span>
+                            <span class="text-sm text-gray-500 line-through">
+                                {{ number_format(($related->variants->min('price') * 149) / 100, 0, ',', '.') }}đ
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- Sản phẩm cùng thương hiệu -->
+    @if($same_brand_products->isNotEmpty())
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Sản phẩm cùng thương hiệu</h3>
+            <a href="/catfilter?brand={{ urlencode($product->brand) }}"
+               class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200">
+                Xem tất cả
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            @foreach($same_brand_products as $brand_product)
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
+                <a href="{{ route('shop.product_overview', $brand_product->id) }}" class="block">
+                    <div class="relative pt-[100%]">
+                        <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}" 
+                             alt="{{ $brand_product->name }}"
+                             class="absolute top-0 left-0 w-full h-full object-cover">
+                    </div>
+                    <div class="p-4">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">{{ $brand_product->name }}</h4>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-lg font-bold text-blue-600">
+                                {{ number_format($brand_product->variants->min('price'), 0, ',', '.') }}đ
+                            </span>
+                            <span class="text-sm text-gray-500 line-through">
+                                {{ number_format(($brand_product->variants->min('price') * 149) / 100, 0, ',', '.') }}đ
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     <script>
         function changeImage(src) {

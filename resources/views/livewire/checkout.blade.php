@@ -125,26 +125,27 @@
 
                     <!-- Danh sách sản phẩm -->
                     <div class="space-y-4 mb-6">
-                        @foreach ($cart as $item)
+                        @foreach ($cartItems as $item)
                             <div class="flex items-center border-b pb-4">
                                 <div class="relative">
-                                    <img src="{{ $item['image'] }}" alt="{{ $item['product_name'] }}"
-                                        class="w-16 h-16 object-cover rounded-md">
+                                    <img src="{{ $item->variant->variant_images->first()->image ?? '' }}" 
+                                         alt="{{ $item->product->name }}"
+                                         class="w-16 h-16 object-cover rounded-md">
                                     <span
                                         class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                        {{ $item['quantity'] }}
+                                        {{ $item->quantity }}
                                     </span>
                                 </div>
                                 <div class="ml-4 flex-1">
-                                    <h3 class="font-medium">{{ $item['product_name'] }}</h3>
+                                    <h3 class="font-medium">{{ $item->product->name }}</h3>
                                     <p class="text-sm text-gray-500">
-                                        {{ $item['variant_color'] }}/{{ $item['variant_size'] }}</p>
-                                    <p class="text-sm font-medium">{{ number_format($item['price'], 0, ',', '.') }}đ x
-                                        {{ $item['quantity'] }}</p>
+                                        {{ $item->variant->color }}/{{ $item->variant->size }}</p>
+                                    <p class="text-sm font-medium">{{ number_format($item->price, 0, ',', '.') }}đ x
+                                        {{ $item->quantity }}</p>
                                 </div>
                                 <div class="text-right">
                                     <p class="font-semibold">
-                                        {{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }}đ</p>
+                                        {{ number_format($item->price * $item->quantity, 0, ',', '.') }}đ</p>
                                 </div>
                             </div>
                         @endforeach

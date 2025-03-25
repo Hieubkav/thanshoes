@@ -2,98 +2,178 @@
 
 namespace App\Livewire;
 
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\Order;
-use Livewire\Component;
 use App\Models\Product;
-use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Str;
-use Livewire\Attributes\On;
+use App\Models\Variant;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Livewire\Component;
+use Livewire\Attributes\On;
 
 class Navbar extends Component
 {
     public $products;
-    public $search;
     public $brands;
     public $types;
-    public $cart = [];
-    public $order;
-    public $customer_id = null;
+    public $search;
 
-    // Thông tin khách hàng
+    // Cart related properties
+    public $cartItems;
+    public $cartCount = 0;
+    public $totalAmount = 0;
+
+    // Customer related properties
+    public $customer_id = null;
     public $name_customer = "";
     public $phone_customer = "";
     public $email_customer = "";
     public $address_customer = "";
 
+    // Order related properties
+    public $order;
+
     public function mount()
     {
+        $this->initializeOrder();
+        $this->updateCart();
+        $this->loadCustomerData();
+    }
+
+    private function initializeOrder()
+    {
         $this->order = new Collection();
+    }
 
-        if (!Cookie::has('device_id')) {
-            $deviceId = (string) Str::uuid();
-            Cookie::queue('device_id', $deviceId, 60 * 24 * 365);
-        } else {
-            $this->cart = session()->get('cart_' . Cookie::get('device_id'), []);
+    private function loadCustomerData()
+    {
+        if (!session()->has('customer_id')) {
+            return;
+        }
 
-            if (session()->has('customer_id')) {
-                $this->customer_id = session()->get('customer_id');
-                $customer = Customer::find($this->customer_id);
-                
-                if ($customer) {
-                    $this->name_customer = $customer->name;
-                    $this->phone_customer = $customer->phone;
-                    $this->email_customer = $customer->email;
-                    $this->address_customer = $customer->address;
-                    $this->order = Order::where('customer_id', $this->customer_id)
-                        ->latest()
-                        ->get();
-                }
-            }
+        $this->customer_id = session()->get('customer_id');
+        $customer = Customer::find($this->customer_id);
+        
+        if ($customer) {
+            $this->updateCustomerInfo($customer);
+            $this->loadCustomerOrders();
         }
     }
 
-    #[On('cart_added')]
-    public function add_cart_success()
+    private function updateCustomerInfo(Customer $customer)
     {
-        $this->cart = session()->get('cart_' . Cookie::get('device_id'), []);
+        $this->name_customer = $customer->name;
+        $this->phone_customer = $customer->phone;
+        $this->email_customer = $customer->email;
+        $this->address_customer = $customer->address;
+    }
+
+    private function loadCustomerOrders()
+    {
+        $this->order = Order::where('customer_id', $this->customer_id)
+            ->latest()
+            ->get();
+    }
+
+    #[On('cart_updated')]
+    public function updateCart()
+    {
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $this->cartItems = $cart->items()
+            ->with(['product', 'variant.variant_images'])
+            ->get();
+        $this->cartCount = $this->cartItems->sum('quantity');
+        $this->totalAmount = $cart->total_amount;
+    }
+
+    public function updateQuantity($itemId, $change)
+    {
+        $cartItem = CartItem::find($itemId);
+        if ($cartItem) {
+            $newQuantity = $cartItem->quantity + $change;
+            
+            if ($newQuantity <= 0) {
+                $this->removeItem($itemId);
+                return;
+            }
+
+            // Validate stock
+            if ($cartItem->variant->stock < $newQuantity) {
+                Notification::make()
+                    ->title("Chỉ còn {$cartItem->variant->stock} sản phẩm")
+                    ->warning()
+                    ->send();
+                return;
+            }
+
+            $cartItem->update(['quantity' => $newQuantity]);
+            $cartItem->cart->updateTotal();
+            $this->updateCart();
+        }
+    }
+
+    public function removeItem($itemId)
+    {
+        $cartItem = CartItem::with('product')->find($itemId);
+        if ($cartItem) {
+            $productName = $cartItem->product->name;
+            $cart = $cartItem->cart;
+            
+            $cartItem->delete();
+            $cart->updateTotal();
+            
+            if ($cart->items()->count() === 0) {
+                $cart->delete();
+            }
+
+            $this->updateCart();
+
+            Notification::make()
+                ->title('Đã xóa sản phẩm')
+                ->success()
+                ->body("Đã xóa {$productName} khỏi giỏ hàng")
+                ->duration(3000)
+                ->send();
+        }
     }
 
     #[On('clear_cart_after_dat_hang')]
     public function handle_clear_cart_after_dat_hang()
     {
-        $this->cart = [];
-        session()->forget('cart_' . Cookie::get('device_id'));
-        Cookie::queue(Cookie::forget('device_id'));
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart->items()->delete();
+        $cart->delete();
         
-        // Cập nhật thông tin khách hàng từ session mới
-        if (session()->has('customer_id')) {
-            $customer = Customer::find(session()->get('customer_id'));
-            if ($customer) {
-                $this->name_customer = $customer->name;
-                $this->phone_customer = $customer->phone;
-                $this->email_customer = $customer->email;
-                $this->address_customer = $customer->address;
-            }
-        }
+        $this->updateCart();
+        $this->loadCustomerData();
     }
 
     public function clear_cart()
     {
-        session()->forget('cart_' . Cookie::get('device_id'));
-        Cookie::queue(Cookie::forget('device_id'));
-        $this->cart = [];
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart->items()->delete();
+        $cart->delete();
+        
+        $this->updateCart();
         $this->dispatch('clear_cart');
     }
 
     public function render()
     {
-        $this->products = Product::all();
+        $this->loadProducts();
+        return view('livewire.navbar');
+    }
+
+    private function loadProducts()
+    {
+        $this->products = Cache::remember('all_products', 3600, function () {
+            return Product::all();
+        });
+
         $this->brands = $this->products->pluck('brand')->filter()->unique();
         $this->types = $this->products->pluck('type')->filter()->unique();
-        
-        return view('livewire.navbar');
     }
 }

@@ -25,5 +25,15 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Variant::class);
     }
-    
+
+    public function getProductLabel(): string
+    {
+        if (!$this->variant || !$this->variant->product) {
+            return 'Sản phẩm không tồn tại';
+        }
+
+        return $this->variant->product->name . 
+               ' - Size: ' . $this->variant->size . 
+               ' - Màu: ' . $this->variant->color;
+    }
 }

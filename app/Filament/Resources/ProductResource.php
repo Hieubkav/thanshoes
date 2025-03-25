@@ -6,13 +6,10 @@ use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProductResource extends Resource
 {
@@ -20,41 +17,34 @@ class ProductResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationLabel = 'Sản phẩm';
+
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Select::make('hiển thị')
-                    ->options([
-                        'Hiện' => 'Hiện',
-                        'Ẩn' => 'Ẩn',
-                    ])
-                    ->required(),
-                Forms\Components\DatePicker::make('date_of_birth')
-                    ->required()
-                    ->maxDate(now()),
-                Forms\Components\Select::make('variant_id')
-                    ->relationship('variants', 'size')
-                    ->searchable()
-                    ->preload()
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('color')
-                            ->required(),
-                        Forms\Components\TextInput::make('size')
-                            ->required(),
-                        Forms\Components\TextInput::make('price')
-                            ->required(),
-                        Forms\Components\TextInput::make('stock')
-                            ->required(),
-                        Forms\Components\TextInput::make('product_id')
-                            ->default('record.id')
-                            ->disabled(),
-                    ])
-                    ->required(),
-            ]);
+        return $form->schema([
+            Forms\Components\Group::make()
+                ->schema([
+                    Forms\Components\Section::make()
+                        ->heading('Thông tin cơ bản')
+                        ->description('Nhập các thông tin cơ bản của sản phẩm')
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Tên sản phẩm')
+                                ->required(),
+                            Forms\Components\TextInput::make('brand')
+                                ->label('Thương hiệu'),
+                            Forms\Components\TextInput::make('type')
+                                ->label('Loại sản phẩm'),
+                        ])->columns(2),
+                    
+                    Forms\Components\Section::make()
+                        ->heading('Mô tả sản phẩm')
+                        ->description('Thông tin chi tiết về sản phẩm')
+                        ->schema([
+                            Forms\Components\RichEditor::make('description')->label('Mô tả'),
+                        ])->columnSpan('full'),
+                ])->columnSpan('full')
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -62,17 +52,24 @@ class ProductResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Tên sản phẩm')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('brand'),
-                Tables\Columns\TextColumn::make('type'),
+                Tables\Columns\TextColumn::make('brand')
+                    ->label('Thương hiệu')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Loại sản phẩm')
+                    ->searchable()
+                    ->sortable(),
+                // Tables\Columns\TextColumn::make('created_at')
+                //     ->label('Ngày tạo')
+                //     ->dateTime()
+                //     ->sortable()
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('brand')
-                    ->options([
-                        'Hiện' => 'Hiện',
-                        'Ẩn' => 'Ẩn',
-                    ]),
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -87,7 +84,7 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\VariantsRelationManager::class,
         ];
     }
 

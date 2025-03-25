@@ -28,9 +28,6 @@
         ])
     @endif
 
-
-    @include('component.discount_coupons')
-
     @include('component.shop.animate_banner')
 
     @if ($count_types >= 2)

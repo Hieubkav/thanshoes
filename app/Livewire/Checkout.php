@@ -2,19 +2,20 @@
 
 namespace App\Livewire;
 
+use App\Models\Cart;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Variant;
+use App\Models\User;
 use App\Mail\OrderShipped;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
-use Illuminate\Support\Facades\Cookie;
 use Filament\Notifications\Notification;
 
 class Checkout extends Component
 {
-    public $cart = [];
+    public $cartItems;
     public $total = 0;
     public $name_customer = '';
     public $phone_customer = '';
@@ -28,12 +29,15 @@ class Checkout extends Component
     public function mount()
     {
         $this->payment_method = 'cod';
-        $this->cart = session('cart_' . Cookie::get('device_id'), []);
+        $cart = Cart::getCart(auth()->id(), session()->getId());
         
-        if (empty($this->cart)) {
+        if (!$cart || $cart->items()->count() === 0) {
             return redirect()->route('shop.store_front')
                 ->with('error', 'Giỏ hàng của bạn đang trống');
         }
+
+        $this->cartItems = $cart->items()->with(['product', 'variant.variant_images'])->get();
+        $this->total = $cart->total_amount;
         
         if (session()->has('customer_id')) {
             $customer = Customer::find(session('customer_id'));
@@ -45,7 +49,6 @@ class Checkout extends Component
             }
         }
         
-        $this->total = array_reduce($this->cart, fn($total, $item) => $total + $item['quantity'] * $item['price'], 0);
         $this->accountNumber = '0946775145';
         $this->accountHolder = 'NGUYEN NHAT TAN';
         $this->bankCode = 'MB';
@@ -102,6 +105,7 @@ class Checkout extends Component
         }
 
         try {
+            // Tạo hoặc cập nhật thông tin khách hàng
             $customer = Customer::updateOrCreate(
                 ['phone' => $this->phone_customer],
                 [
@@ -111,6 +115,7 @@ class Checkout extends Component
                 ]
             );
 
+            // Tạo đơn hàng mới
             $order = Order::create([
                 'customer_id' => $customer->id,
                 'total' => $this->total,
@@ -118,36 +123,45 @@ class Checkout extends Component
                 'status' => 'pending'
             ]);
 
-            foreach ($this->cart as $item) {
-                $variant = Variant::find($item['variant_id']);
-                
-                if (!$variant || $variant->stock < $item['quantity']) {
-                    throw new \Exception('Sản phẩm ' . $item['product_name'] . ' không đủ số lượng trong kho');
+            // Xử lý từng sản phẩm trong giỏ hàng
+            foreach ($this->cartItems as $item) {
+                // Kiểm tra tồn kho
+                if (!$item->variant || $item->variant->stock < $item->quantity) {
+                    throw new \Exception("Sản phẩm {$item->product->name} không đủ số lượng trong kho");
                 }
 
+                // Tạo chi tiết đơn hàng
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'variant_id' => $item['variant_id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price']
+                    'variant_id' => $item->variant_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price
                 ]);
 
-                $variant->stock -= $item['quantity'];
-                $variant->save();
+                // Cập nhật số lượng tồn kho
+                $item->variant->decrement('stock', $item->quantity);
             }
 
-            // Gửi email cho khách hàng nếu có email hợp lệ
-            if (!empty($this->email_customer) && filter_var($this->email_customer, FILTER_VALIDATE_EMAIL)) {
-                Mail::to($this->email_customer)->send(new OrderShipped($order));
+            // Gửi email cho tất cả user và admin
+            $users = User::all();
+            foreach ($users as $user) {
+                Mail::to($user->email)->send(new OrderShipped($order));
             }
-            
+
             Mail::to('tranmanhhieu10@gmail.com')->send(new OrderShipped($order));
 
-            session()->forget('cart_' . Cookie::get('device_id'));
+            // Xóa giỏ hàng
+            $cart = Cart::getCart(auth()->id(), session()->getId());
+            $cart->items()->delete();
+            $cart->delete();
+            
+            // Lưu ID khách hàng vào session
             session()->put('customer_id', $customer->id);
             
+            // Thông báo cho các component khác
             $this->dispatch('clear_cart_after_dat_hang');
 
+            // Hiển thị thông báo thành công
             Notification::make()
                 ->title('Đặt hàng thành công!')
                 ->body('Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ với bạn sớm nhất.')
@@ -155,7 +169,9 @@ class Checkout extends Component
                 ->send();
 
             return redirect()->route('shop.store_front');
+
         } catch (\Exception $e) {
+            // Xử lý lỗi và hiển thị thông báo
             Notification::make()
                 ->title('Đặt hàng không thành công')
                 ->body($e->getMessage())

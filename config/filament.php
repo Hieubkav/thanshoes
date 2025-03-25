@@ -71,4 +71,8 @@ return [
 
     'livewire_loading_delay' => 'default',
 
+    'components' => [
+        'section' => \Filament\Support\Components\Section::class,
+    ],
+
 ];

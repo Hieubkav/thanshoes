@@ -17,32 +17,37 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Resources\UserResource;
+use App\Filament\Resources\OrderResource;
+use App\Filament\Resources\CustomerResource;
 
-class DashboardPanelProvider extends PanelProvider
+class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
             ->default()
-            ->id('dashboard')
+            ->id('admin')
             ->path('dashboard')
             ->login()
-            ->brandLogo(asset('images/logo.png'))
-            // theme màu sắc của dashboard
+            ->brandName('ThanShoes Admin')
             ->colors([
                 'primary' => Color::Orange,
-                'gray' => Color::Slate,
             ])
-            // thêm các resource, page, widget vào dashboard
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->resources([
+                UserResource::class,
+                CustomerResource::class,
+                OrderResource::class,
+            ])
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

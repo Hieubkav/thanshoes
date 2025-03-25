@@ -21,6 +21,12 @@ return new class extends Migration
             $table->string('zalo')->nullable();
             $table->string('logo')->nullable();
             $table->string('app_name')->nullable();
+ 
+            $table->string('messenger')->nullable();
+            $table->string('link_tiktok')->nullable();
+            $table->string('bank_number')->nullable();
+            $table->string('bank_account_name')->nullable();
+            $table->string('bank_name')->nullable();
             
 
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));

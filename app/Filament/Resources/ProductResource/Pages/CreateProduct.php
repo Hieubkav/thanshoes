@@ -9,4 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateProduct extends CreateRecord
 {
     protected static string $resource = ProductResource::class;
+    
+    // Thêm thuộc tính heading
+    protected ?string $heading = 'Tạo sản phẩm mới';
 }

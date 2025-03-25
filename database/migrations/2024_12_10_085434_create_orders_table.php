@@ -17,6 +17,8 @@ return new class extends Migration
             $table->enum('status', ['pending', 'processing', 'completed', 'declined'])->default('pending');
             $table->enum('payment_method',['cod','bank']);
             $table->unsignedBigInteger('customer_id');
+            $table->decimal('total_price', 10, 2)->default(0);
+            $table->text('notes')->nullable();
 
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
 

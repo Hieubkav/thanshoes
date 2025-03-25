@@ -56,10 +56,10 @@
                                         {{ $i+1 }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ $order_in_list->order_items->sum('quantity')   }} món
+                                        {{ $order_in_list->items->sum('quantity')   }} món
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ number_format($order_in_list->order_items->sum('price')) }}đ
+                                        {{ number_format($order_in_list->total_price) }}đ
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                         {{ $order_in_list->created_at->format('d/m/Y')  }}
@@ -77,7 +77,7 @@
                                         <div class="text-sm text-gray-900 dark:text-gray-100">
                                             <p><strong>Sản phẩm:</strong></p>
                                             <ul class="list-disc list-inside">
-                                                @foreach( $order_in_list->order_items as $j => $order_item )
+                                                @foreach( $order_in_list->items as $j => $order_item )
                                                     <li>Sản phẩm: {{ optional($order_item->variant)->color ?? 'N/A' }}/{{ optional($order_item->variant)->size ?? 'N/A' }} 
                                                         - Số lượng: {{ $order_item->quantity }} - Giá 1 sản phẩm: {{ number_format($order_item->price) }} đ - Tổng giá: {{ number_format($order_item->price*$order_item->quantity) }} đ</li>
                                                 @endforeach

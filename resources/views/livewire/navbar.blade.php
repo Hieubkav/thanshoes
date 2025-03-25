@@ -8,7 +8,7 @@
             <!-- Include components -->
             @include('components.navbar.logo')
             @include('components.navbar.navigation')
-            @include('components.navbar.icons')
+            <x-navbar.icons :cartCount="$cartCount" />
         </div>
     </nav>
 

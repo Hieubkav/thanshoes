@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Rels;
 
 class ShopController extends Controller
 {
@@ -17,7 +17,6 @@ class ShopController extends Controller
 
     public function cat_filter(Request $request)
     {
-
         return view('shop.cat_filter');
     }
 
@@ -29,9 +28,13 @@ class ShopController extends Controller
 
     public function checkout()
     {
-        if (!session()->has('cart_' . Cookie::get('device_id')) || empty(session('cart_' . Cookie::get('device_id')))) {
-            return redirect()->route('shop.store_front')->with('error', 'Giỏ hàng của bạn đang trống.');
+        $cart = Cart::getCart(auth()->id(), session()->getId());
+        
+        if (!$cart || $cart->items()->count() === 0) {
+            return redirect()->route('shop.store_front')
+                ->with('error', 'Giỏ hàng của bạn đang trống.');
         }
+        
         return view('shop.checkout-page');
     }
 }

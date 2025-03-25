@@ -36,7 +36,7 @@
            aria-controls="drawer_cart" data-drawer-body-scrolling="true">
             <div
                 class="absolute inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-orange-700 p-2 border-2 border-white rounded-full -top-3 -end-3 dark:border-gray-900">
-                {{ collect($cart)->sum('quantity') }}
+                {{ $cartCount ?? 0 }}
             </div>
         </i>
     </div>

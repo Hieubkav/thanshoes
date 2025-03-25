@@ -33,7 +33,6 @@
     <meta name="HandheldFriendly" content="true">
     <meta http-equiv="x-dns-prefetch-control" content="on">
     <meta name="author" content="ThanShoes.vn">
-    <meta http-equiv="refresh" content="300">
     <!-- link icon -->
     <link rel="icon" href="{{ asset('images/logo.svg') }}" type="image/x-icon">
 
