@@ -28,9 +28,13 @@
                 <div class="flex items-center border-b py-1">
                     <!-- Product Image with Quantity Badge -->
                     <div class="relative inline-block">
-                        <img src="{{ optional($item->variant->variant_images->first())->image ?? '' }}" 
-                             alt="{{ optional($item->product)->name }}"
-                             class="w-6 h-6 lg:w-8 lg:h-8 rounded-md object-cover">
+                        {{-- Check if variant and variantImage exist before trying to access properties --}}
+                        @if(isset($item->variant) && $item->variant && $item->variant->variantImage)
+                            <img src="{{ $item->variant->variantImage->image_url }}" alt="{{ $item->product->name }}" class="w-6 h-6 lg:w-8 lg:h-8 rounded-md object-cover">
+                        @else
+                            {{-- Fallback to product thumbnail or default image --}}
+                            <img src="{{ $item->product->thumbnail ?? asset('images/default-product.jpg') }}" alt="{{ $item->product->name }}" class="w-6 h-6 lg:w-8 lg:h-8 rounded-md object-cover">
+                        @endif
                         <span class="absolute text-xs top-0 right-0 inline-flex items-center justify-center px-1 py-0 font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2 shadow-lg">
                             {{ $item->quantity }}
                         </span>

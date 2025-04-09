@@ -13,6 +13,7 @@ class Setting extends Model
         'phone',
         'email',
         'address',
+        'slogan',
         'facebook',
         'zalo',
         'logo',
@@ -21,6 +22,15 @@ class Setting extends Model
         'link_tiktok',
         'bank_number',
         'bank_account_name',
-        'bank_name'
+        'bank_name',
+        'ban_name_product_one',
+        'ban_name_product_two',
+        'ban_name_product_three',
+        'ban_name_product_four',
+        'ban_name_product_five',
+        'size_shoes_image',
+        'dec_product_price',
+        'round_price',
+        'apply_price',
     ];
 }

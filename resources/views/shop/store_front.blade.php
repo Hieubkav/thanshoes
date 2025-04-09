@@ -41,6 +41,8 @@
 
     @include('component.shop.cta', ['websiteDesign' => $websiteDesign])
 
+    @include('component.recent_posts')
+
     @if ($count_types >= 3)
         @include('component.new_arrival', [
             'type_name' => $types->values()->get(2),

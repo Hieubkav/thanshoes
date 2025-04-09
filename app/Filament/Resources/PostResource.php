@@ -17,6 +17,16 @@ class PostResource extends Resource
 {
     protected static ?string $model = Post::class;
 
+        public static function getNavigationBadge(): ?string
+        {
+            return static::getModel()::count();
+        }
+
+        public static function getNavigationBadgeColor(): ?string 
+        {
+            return 'success';
+        }
+
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationGroup = 'Quản lý nội dung';
     protected static ?string $navigationLabel = 'Bài viết';

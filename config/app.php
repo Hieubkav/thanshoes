@@ -55,10 +55,12 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\Filament\AdminPanelProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\FilamentServiceProvider::class,
+        App\Providers\ViewServiceProvider::class,
     ],
 
     'aliases' => Facade::defaultAliases()->merge([
-        'Excel' => Maatwebsite\Excel\Facades\Excel::class,
+        // 'Excel' => Maatwebsite\Excel\Facades\Excel::class,
     ])->toArray(),
 
     'bank_account_number' => env('BANK_ACCOUNT_NUMBER', '0946775145'),

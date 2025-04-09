@@ -22,7 +22,6 @@
                     <h3 class="text-2xl font-bold md:text-4xl">
                         Danh sách sản phẩm
                     </h3>
-                    <!-- <p class="text-sm text-[#808080] sm:text-base">tìm hết ở đây...</p> -->
                 </div>
                 <!-- Content -->
                 <div class="grid gap-8 md:gap-10 lg:grid-cols-[max-content_1fr]">
@@ -47,47 +46,34 @@
                                 <p class="font-semibold">Phân mục</p>
                                 <div class="flex flex-wrap items-center gap-2">
                                     <a href="#" wire:click="filterCategory('giay')"
-                                        class="category-filter flex gap-3 rounded-md 
-                                        @if ($giay == 'true') bg-blue-500
-                                        @else
-                                            bg-gray-200 @endif
-                                        p-3 font-semibold"
+                                        class="category-filter flex gap-3 rounded-md p-3 font-semibold transition-colors duration-200
+                                        {{ $giay == 'true' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 hover:bg-slate-200' }}"
                                         data-category="shoes">
                                         <i class="fa-solid fa-shoe-prints"></i>
                                         <p>Giày </p>
                                     </a>
                                     <a href="#" wire:click="filterCategory('ao')"
-                                        class="category-filter flex gap-3 rounded-md
-                                        @if ($ao == 'true') bg-blue-500
-                                        @else
-                                            bg-gray-200 @endif 
-                                        p-3 font-semibold"
+                                        class="category-filter flex gap-3 rounded-md p-3 font-semibold transition-colors duration-200
+                                        {{ $ao == 'true' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 hover:bg-slate-200' }}"
                                         data-category="shirts">
                                         <i class="fa-solid fa-shirt"></i>
                                         <p>Áo</p>
                                     </a>
                                     <a href="#" wire:click="filterCategory('tatvo')"
-                                        class="category-filter flex gap-3 rounded-md 
-                                        @if ($tatvo == 'true') bg-blue-500
-                                        @else
-                                            bg-gray-200 @endif
-                                         p-3 font-semibold"
+                                        class="category-filter flex gap-3 rounded-md p-3 font-semibold transition-colors duration-200
+                                        {{ $tatvo == 'true' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 hover:bg-slate-200' }}"
                                         data-category="socks">
                                         <i class="fa-solid fa-socks"></i>
                                         <p>Tất, vớ, dép</p>
                                     </a>
                                     <a href="#" wire:click="filterCategory('phukien')"
-                                        class="category-filter flex gap-3 rounded-md 
-                                        @if ($phukien == 'true') bg-blue-500
-                                        @else
-                                            bg-gray-200 @endif
-                                         p-3 font-semibold"
+                                        class="category-filter flex gap-3 rounded-md p-3 font-semibold transition-colors duration-200
+                                        {{ $phukien == 'true' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 hover:bg-slate-200' }}"
                                         data-category="accessories">
                                         <i class="fa-solid fa-suitcase-rolling"></i>
                                         <p>Phụ kiện</p>
                                     </a>
                                 </div>
-
                             </div>
 
                             <!-- Divider -->
@@ -97,9 +83,6 @@
                                 <div
                                     class="flex cursor-pointer items-center justify-between py-4 [border-top:1px_solid_rgba(0,_0,_0,_0)] md:py-0">
                                     <p class="font-semibold">Thương hiệu</p>
-                                    {{-- <a href="#" class="inline-block text-sm text-black">
-                                        <p>Clear</p>
-                                    </a> --}}
                                 </div>
                                 <div class="flex flex-col gap-3">
                                     @foreach ($brands as $brand)
@@ -119,9 +102,6 @@
                                 <div
                                     class="flex cursor-pointer items-center justify-between py-4 [border-top:1px_solid_rgba(0,_0,_0,_0)] md:py-0">
                                     <p class="font-semibold">Danh mục giày</p>
-                                    {{-- <a href="#" class="inline-block text-sm text-black">
-                                        <p>Clear</p>
-                                    </a> --}}
                                 </div>
                                 <div class="flex flex-col gap-3">
                                     @foreach ($types as $type)
@@ -131,16 +111,14 @@
                                                 class="mr-3 h-5 w-5 cursor-pointer rounded-sm border border-solid bg-[#f2f2f7]">
                                             <span class="inline-block cursor-pointer">
                                                 {{ $type }}
-                                                {{-- ({{ $products->where('type', $type)->count() }}) --}}
                                             </span>
                                         </label>
                                     @endforeach
-
                                 </div>
                             </div>
                         </form>
                     </div>
-                    <!-- Decor -->
+                    <!-- Product List -->
                     <div class="w-full [border-left:1px_solid_rgb(217,_217,_217)] px-2">
                         <!-- Hiện thị số sản phẩm tìm kiếm được và bộ lọc  -->
                         <div class="flex items-center justify-between py-4">
@@ -151,32 +129,27 @@
                                 <p class="text-sm font-medium">Sắp xếp theo:</p>
                                 <select wire:model.live.debouce.300ms="sort"
                                     class="h-9 rounded-md border border-solid border-[#cccccc] bg-[#f2f2f7] px-3 py-1 text-sm font-medium">
-                                    <option  value="latest">Mới nhất</option>
-                                    <option  value="price_asc">Giá: Thấp đến cao</option>
-                                    <option  value="price_desc">Giá: Cao đến thấp</option>
+                                    <option value="latest">Mới nhất</option>
+                                    <option value="price_asc">Giá: Thấp đến cao</option>
+                                    <option value="price_desc">Giá: Cao đến thấp</option>
                                 </select>
                             </div>
                         </div>
 
-
-                        <div class="h-full ">
+                        <div class="h-full">
                             @include('component.shop.product_cat_list', compact('products'))
                             <!-- Vùng tải thêm -->
                             @if ($tong_giay > $products->count())
                                 <div x-data x-intersect="$wire.loadMore()" class="mt-4 text-center">
                                     <p wire:loading wire:target="loadMore">
-                                        {{-- Đang tải thêm sản phẩm... --}}
                                         @include('partials.loading')
                                     </p>
                                 </div>
                             @endif
-
-                            <!--////////////////////////////////////// -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-
 </div>

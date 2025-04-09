@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Variant extends Model
 {
@@ -12,6 +13,7 @@ class Variant extends Model
     protected $fillable = [
         'color',
         'size',
+        'sku',
         'price',
         'stock',
         'product_id',
@@ -21,9 +23,10 @@ class Variant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    // có nhiều variant_images
-    public function variant_images(){
-        return $this->hasMany(VariantImage::class);
+    // Thay đổi thành quan hệ 1-1
+    public function variantImage(): HasOne
+    {
+        return $this->hasOne(VariantImage::class);
     }
 
     // có nhiều order_items

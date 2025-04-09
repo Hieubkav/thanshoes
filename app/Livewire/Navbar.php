@@ -83,9 +83,20 @@ class Navbar extends Component
     public function updateCart()
     {
         $cart = Cart::getCart(auth()->id(), session()->getId());
+        
+        // Make sure the cart exists
+        if (!$cart) {
+            $this->cartItems = collect();
+            $this->cartCount = 0;
+            $this->totalAmount = 0;
+            return;
+        }
+        
+        // Use the correct relationship name (singular: variantImage)
         $this->cartItems = $cart->items()
-            ->with(['product', 'variant.variant_images'])
+            ->with(['product', 'variant.variantImage'])
             ->get();
+        
         $this->cartCount = $this->cartItems->sum('quantity');
         $this->totalAmount = $cart->total_amount;
     }
@@ -186,7 +197,7 @@ class Navbar extends Component
         }
 
         $this->searchResults = Product::where('name', 'like', '%' . $this->searchTerm . '%')
-            ->with(['variants.variant_images'])
+            ->with(['variants.variantImage'])
             ->take(100)
             ->get();
     }

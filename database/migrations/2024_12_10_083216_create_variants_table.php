@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('color')->nullable();
             $table->string('size')->nullable();
+            $table->string('sku')->nullable();
             $table->integer('price')->default(0);
             $table->integer('stock')->default(0);
             $table->unsignedBigInteger('product_id');

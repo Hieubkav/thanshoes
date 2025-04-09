@@ -17,7 +17,7 @@ class OrderShipped extends Mailable
 
     public function __construct(Order $order)
     {
-        $this->order = $order->load(['items.variant.product', 'items.variant.variant_images', 'customer']);
+        $this->order = $order->load(['items.variant.product', 'items.variant.variantImage', 'customer']);
         $this->signedUrl = URL::signedRoute('filament.admin.resources.orders.edit', ['record' => $order->id]);
     }
 

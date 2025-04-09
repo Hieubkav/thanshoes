@@ -37,7 +37,7 @@ class Checkout extends Component
                 ->with('error', 'Giỏ hàng của bạn đang trống');
         }
 
-        $this->cartItems = $cart->items()->with(['product', 'variant.variant_images'])->get();
+        $this->cartItems = $cart->items()->with(['product', 'variant.variantImage'])->get();
         $this->total = $cart->total_amount;
         
         if (session()->has('customer_id')) {
@@ -50,9 +50,17 @@ class Checkout extends Component
             }
         }
         
-        $this->bankCode = Setting::first()->bank_name;
-        $this->accountNumber = Setting::first()->bank_number;
-        $this->accountHolder = Setting::first()->bank_account_name;
+        // Fix: Check if Setting exists before calling first()
+        $setting = Setting::first();
+        if ($setting) {
+            $this->bankCode = $setting->bank_name;
+            $this->accountNumber = $setting->bank_number;
+            $this->accountHolder = $setting->bank_account_name;
+        } else {
+            $this->bankCode = '';
+            $this->accountNumber = '';
+            $this->accountHolder = '';
+        }
     }
 
     public function updatedPaymentMethod($value)
@@ -144,12 +152,15 @@ class Checkout extends Component
             }
 
             // Gửi email cho tất cả user và admin
+            // Load the order with all relationships needed in the email template
+            $orderWithRelations = Order::with(['items.variant.variantImage', 'items.variant.product'])->find($order->id);
+            
             $users = User::all();
             foreach ($users as $user) {
-                Mail::to($user->email)->send(new OrderShipped($order));
+                Mail::to($user->email)->send(new OrderShipped($orderWithRelations));
             }
 
-            Mail::to('tranmanhhieu10@gmail.com')->send(new OrderShipped($order));
+            Mail::to('tranmanhhieu10@gmail.com')->send(new OrderShipped($orderWithRelations));
 
             // Xóa giỏ hàng
             $cart = Cart::getCart(auth()->id(), session()->getId());

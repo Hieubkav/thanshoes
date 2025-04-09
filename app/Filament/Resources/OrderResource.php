@@ -17,6 +17,17 @@ use Illuminate\Database\Eloquent\Builder;
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
     protected static ?string $navigationGroup = 'Quản lý bán hàng';
     protected static ?string $navigationLabel = 'Đơn hàng';
@@ -36,6 +47,28 @@ class OrderResource extends Resource
                         ->preload()
                         ->label('Khách hàng'),
 
+                    Forms\Components\Group::make()
+                        ->relationship('customer')
+                        ->schema([
+                            Forms\Components\TextInput::make('address')
+                                ->label('Địa chỉ')
+                                ->disabled(),
+                            Forms\Components\TextInput::make('phone')
+                                ->label('Số điện thoại')
+                                ->disabled(),
+                            Forms\Components\TextInput::make('email')
+                                ->label('Email')
+                                ->disabled(),
+                        ])
+                        ->columnSpanFull(),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('edit_customer')
+                            ->label('Chỉnh sửa thông tin khách hàng')
+                            ->url(fn ($record) => CustomerResource::getUrl('edit', ['record' => $record->customer_id]))
+                            ->button(),
+                    ])->columnSpanFull(),
+
                     Forms\Components\Select::make('status')
                         ->options([
                             'pending' => 'Đang xử lý',
@@ -48,7 +81,7 @@ class OrderResource extends Resource
                         ->live()
                         ->afterStateUpdated(function ($state, $old) {
                             if (!request()->route('record')) return;
-                            
+
                             $order = Order::find(request()->route('record'));
                             if (!$order) return;
 
@@ -82,52 +115,49 @@ class OrderResource extends Resource
                 ->schema([
                     Forms\Components\Repeater::make('items')
                         ->relationship('items')
-                        ->schema([
-                            Forms\Components\Select::make('variant_id')
-                                ->label('Sản phẩm')
-                                ->options(function () {
-                                    return Variant::with('product')
-                                        ->get()
-                                        ->mapWithKeys(function ($variant) {
-                                            return [
-                                                $variant->id => 
-                                                    optional($variant->product)->name . 
-                                                    ' - Size: ' . $variant->size . 
-                                                    ' - Màu: ' . $variant->color
-                                            ];
-                                        });
-                                })
-                                ->searchable()
-                                ->preload()
-                                ->disabled()
-                                ->dehydrated(),
-
-                            Forms\Components\TextInput::make('quantity')
-                                ->label('Số lượng')
-                                ->numeric()
-                                ->disabled()
-                                ->dehydrated(),
-
-                            Forms\Components\TextInput::make('price')
-                                ->label('Đơn giá')
-                                ->disabled()
-                                ->dehydrated()
-                                ->formatStateUsing(fn ($state) => 
-                                    number_format($state ?? 0, 0, ',', '.')
-                                ),
-                        ])
-                        ->columns(3)
                         ->disabled()
                         ->disableItemCreation()
                         ->disableItemDeletion()
                         ->disableItemMovement()
-                        ->columnSpanFull(),
+                        ->schema([
+                            Forms\Components\Grid::make([
+                                'default' => 3,
+                                'sm' => 1,
+                                'md' => 2,
+                                'lg' => 3
+                            ])
+                            ->schema([
+                                Forms\Components\Group::make([
+                                    Forms\Components\ViewField::make('variant_image')
+                                        ->view('filament.components.variant-image')
+                                        ->label('')
+                                        ->visible(fn ($record) => $record && $record->variant && $record->variant->variantImage),
+                                ])->columnSpan(1),
+
+                                Forms\Components\Group::make([
+                                    Forms\Components\TextInput::make('product_info')
+                                        ->label('Thông tin sản phẩm')
+                                        ->formatStateUsing(fn ($record) => $record->getProductLabel())
+                                        ->disabled(),
+                                    Forms\Components\TextInput::make('quantity')
+                                        ->label('Số lượng')
+                                        ->disabled(),
+                                ])->columnSpan(1),
+
+                                Forms\Components\Group::make([
+                                    Forms\Components\TextInput::make('price')
+                                        ->label('Đơn giá')
+                                        ->disabled()
+                                        ->formatStateUsing(fn ($state) => number_format($state ?? 0, 0, ',', '.') . 'đ'),
+                                ])->columnSpan(1),
+                            ])->columnSpanFull(),
+                        ]),
 
                     Forms\Components\Placeholder::make('total_price')
                         ->label('Tổng tiền')
                         ->content(function ($record) {
                             if (!$record?->total_price) return '0đ';
-                            
+
                             return number_format($record->total_price, 0, ',', '.') . 'đ';
                         }),
                 ])
@@ -142,7 +172,28 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('customer.name')
                     ->searchable()
                     ->sortable()
-                    ->label('Khách hàng'),
+                    ->label('Khách hàng')
+                    ->action(function ($record) {
+                        return action(
+                            \App\Filament\Resources\CustomerResource\Pages\EditCustomer::class,
+                            ['record' => $record->customer_id]
+                        );
+                    }),
+                Tables\Columns\TextColumn::make('customer.address')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable()
+                    ->label('Địa chỉ'),
+                Tables\Columns\TextColumn::make('customer.phone')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable()
+                    ->label('Số điện thoại'),
+                Tables\Columns\TextColumn::make('customer.email')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable()
+                    ->label('Email'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->colors([
@@ -183,12 +234,12 @@ class OrderResource extends Resource
                         return $query
                             ->when(
                                 $data['from'],
-                                fn (Builder $query, $date): Builder => 
+                                fn (Builder $query, $date): Builder =>
                                     $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['until'],
-                                fn (Builder $query, $date): Builder => 
+                                fn (Builder $query, $date): Builder =>
                                     $query->whereDate('created_at', '<=', $date),
                             );
                     })
@@ -218,10 +269,11 @@ class OrderResource extends Resource
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['items']);  // Eager load items relationship
+            ->with(['items.variant.product', 'items.variant.variantImage', 'customer'])
+            ->orderBy('created_at', 'desc');
     }
 }

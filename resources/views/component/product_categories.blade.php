@@ -16,7 +16,7 @@
             @php
                 $product = $products->where('type', $item)->first();
                 $variantCount = $products->where('type', $item)->count();
-                $image = $product->variants->first()->variant_images->first()->image ?? 'default_image.jpg';
+                $image = $product->variants->first()->variantImage->image ?? 'default_image.jpg';
             @endphp
             <a href="{{ route('shop.cat_filter',['type' => $item]) }}" class="category-item flex flex-col items-center p-4 bg-gray-50 rounded-lg text-center">
                 <img src="{{ $image }}" alt="{{ $item }}"

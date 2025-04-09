@@ -34,7 +34,7 @@
                     @foreach($order->items as $item)
                     <tr>
                         <td width="100" style="vertical-align: middle;">
-                            <img src="{{ $item->variant->variant_images->first()->image }}" alt="{{ $item->variant->variant_images->first()->image }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <img src="{{ $item->variant->variantImage->image }}" alt="{{ $item->variant->variantImage->image }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                         </td>
                         <td style="padding-left: 20px; vertical-align: middle;">
                             <p style="font-size: 18px; color: #2D3748; margin: 0 0 5px; font-weight: bold;">{{ $item->variant->product->name }}</p>

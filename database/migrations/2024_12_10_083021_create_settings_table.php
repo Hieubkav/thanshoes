@@ -17,10 +17,23 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
             $table->string('address')->nullable();
+            $table->text('slogan')->nullable();
             $table->string('facebook')->nullable();
             $table->string('zalo')->nullable();
             $table->string('logo')->nullable();
             $table->string('app_name')->nullable();
+
+            $table->string('ban_name_product_one')->nullable();
+            $table->string('ban_name_product_two')->nullable();
+            $table->string('ban_name_product_three')->nullable();
+            $table->string('ban_name_product_four')->nullable();
+            $table->string('ban_name_product_five')->nullable();
+
+            $table->text('size_shoes_image')->nullable();
+
+            $table->integer('dec_product_price')->default(0);
+            $table->enum('round_price',['up','down','balance'])->default('down');
+            $table->enum('apply_price',['apply','not_apply'])->default('not_apply');
  
             $table->string('messenger')->nullable();
             $table->string('link_tiktok')->nullable();

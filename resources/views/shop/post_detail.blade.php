@@ -37,9 +37,9 @@
         @if($post->thumbnail)
             <img src="{{ asset('storage/' . $post->thumbnail) }}" 
                  alt="{{ $post->title }}"
-                 class="w-full h-[400px] object-cover">
+                 class="w-full object-contain max-h-[600px]">
         @else
-            <div class="w-full h-[400px] bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 flex items-center justify-center">
+            <div class="w-full h-64 bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 flex items-center justify-center">
                 <svg class="w-24 h-24 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>

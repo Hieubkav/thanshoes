@@ -29,9 +29,9 @@
                 <div class="mt-4 space-y-4">
                     @foreach($searchResults as $product)
                     <a href="{{ route('shop.product_overview', $product->id) }}" class="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-lg transition-all duration-200">
-                        <img src="{{ asset(($product->variants && $product->variants->count() > 0 && $product->variants->first()->variant_images && $product->variants->first()->variant_images->count() > 0) 
-                            ? $product->variants->first()->variant_images->first()->image 
-                            : 'images/no-image.png') }}" 
+                        <img src="{{ ($product->variants && $product->variants->count() > 0 && $product->variants->first()->variantImage) 
+                            ? $product->variants->first()->variantImage->image_url 
+                            : asset('images/no-image.png') }}" 
                              class="w-16 h-16 object-cover rounded" alt="{{ $product->name }}">
                         <div>
                             <h4 class="text-lg font-medium text-gray-900 dark:text-white">{{ $product->name }}</h4>

@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\Setting;
 use App\Models\Variant;
 use App\Models\Product;
 use Filament\Notifications\Notification;
@@ -64,7 +65,6 @@ class ProductOverview extends Component
 
             $this->addVariantToCart($variant);
             $this->showSuccess();
-
         } finally {
             $this->isProcessingAddtoCart = false;
         }
@@ -84,14 +84,14 @@ class ProductOverview extends Component
     private function getSelectedVariant(): ?Variant
     {
         $query = Variant::where('product_id', $this->product->id);
-        
+
         if ($this->countfilter == 1) {
             return $query->where('size', $this->selectedSize)->first();
         }
-        
+
         return $query->where('color', $this->selectedColor)
-                    ->where('size', $this->selectedSize)
-                    ->first();
+            ->where('size', $this->selectedSize)
+            ->first();
     }
 
     private function validateStock(Variant $variant): bool
@@ -112,7 +112,7 @@ class ProductOverview extends Component
     private function addVariantToCart(Variant $variant)
     {
         $cart = Cart::getCart(auth()->id(), session()->getId());
-        
+
         $cartItem = $cart->items()
             ->where('product_id', $this->product->id)
             ->where('variant_id', $variant->id)
@@ -202,7 +202,8 @@ class ProductOverview extends Component
         $list_sizes = $this->getUniqueSizes();
         $related_products = $this->getRelatedProducts();
         $same_brand_products = $this->getSameBrandProducts();
-
+        $list_images_product = $this->product->productImages;
+            
         return view('livewire.product-overview', [
             'list_images_variants' => $list_link_images_variants,
             'main_image' => $this->main_image,
@@ -211,43 +212,78 @@ class ProductOverview extends Component
             'same_brand_products' => $same_brand_products,
             'list_colors' => $list_colors,
             'list_sizes' => $list_sizes,
+            'list_images_product' => $list_images_product,
         ]);
     }
 
     private function getProductImages()
     {
         return $this->product->variants
-            ->map(fn($variant) => $variant->variant_images)
-            ->flatten()
-            ->map(fn($image) => $image->image)
+            ->map(function ($variant) {
+                return $variant->variantImage?->image;
+            })
+            ->filter()
             ->unique()
-            ->filter();
+            ->values();
     }
 
     private function getRelatedProducts()
     {
-        return Product::where('id', '!=', $this->product->id)
-            ->where('type', $this->product->type)
-            ->take(4)
-            ->get()
+        $query = Product::where('id', '!=', $this->product->id)
+            ->where('type', $this->product->type);
+
+        // Lọc bỏ các sản phẩm bị cấm
+        $setting = Setting::first();
+        $bannedNames = array_filter([
+            $setting->ban_name_product_one,
+            $setting->ban_name_product_two,
+            $setting->ban_name_product_three,
+            $setting->ban_name_product_four,
+            $setting->ban_name_product_five
+        ]);
+        
+        foreach($bannedNames as $bannedName) {
+            if(!empty($bannedName)) {
+                $query->where('name', 'not like', '%' . $bannedName . '%');
+            }
+        }
+
+        return $query->take(8)->get()
             ->map(function ($product) {
-                $product->first_image = optional($product->variants->first()?->variant_images->first())->image;
+                $firstVariant = $product->variants->first();
+                $product->first_image = $firstVariant?->variantImage?->image;
                 return $product;
             });
     }
 
     private function getSameBrandProducts()
     {
-        return Product::where('id', '!=', $this->product->id)
-            ->where('brand', $this->product->brand)
-            ->take(4)
-            ->get()
+        $query = Product::where('id', '!=', $this->product->id)
+            ->where('brand', $this->product->brand);
+
+        // Lọc bỏ các sản phẩm bị cấm
+        $setting = Setting::first();
+        $bannedNames = array_filter([
+            $setting->ban_name_product_one,
+            $setting->ban_name_product_two,
+            $setting->ban_name_product_three,
+            $setting->ban_name_product_four,
+            $setting->ban_name_product_five
+        ]);
+        
+        foreach($bannedNames as $bannedName) {
+            if(!empty($bannedName)) {
+                $query->where('name', 'not like', '%' . $bannedName . '%');
+            }
+        }
+
+        return $query->take(8)->get()
             ->map(function ($product) {
-                $product->first_image = optional($product->variants->first()?->variant_images->first())->image;
+                $firstVariant = $product->variants->first();
+                $product->first_image = $firstVariant?->variantImage?->image;
                 return $product;
             });
     }
-
 
     private function getUniqueColors()
     {

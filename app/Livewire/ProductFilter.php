@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Product;
+use App\Models\Setting;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Request;
@@ -110,10 +111,27 @@ class ProductFilter extends Component
     public function render()
     {
         $query = Product::query()->where('name', 'like', '%' . $this->search . '%');
-        // Lấy những sản phẩm có số lượng lớn hơn 0, số lượng bằng tổng stock của variant thông qua quan hệ ->variants
+        
+        // Lấy những sản phẩm có số lượng lớn hơn 0
         $query->whereHas('variants', function ($q) {
             $q->where('stock', '>', 0);
         });
+
+        // Lọc bỏ các sản phẩm bị cấm
+        $setting = Setting::first();
+        $bannedNames = array_filter([
+            $setting->ban_name_product_one,
+            $setting->ban_name_product_two,
+            $setting->ban_name_product_three,
+            $setting->ban_name_product_four,
+            $setting->ban_name_product_five
+        ]);
+        
+        foreach($bannedNames as $bannedName) {
+            if(!empty($bannedName)) {
+                $query->where('name', 'not like', '%' . $bannedName . '%');
+            }
+        }
         if ($this->giay === 'true') {
             $query->where('name', 'like', '%giày%');
         }

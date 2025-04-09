@@ -17,28 +17,19 @@ Route::get('/product/{id}', [ShopController::class, 'product_overview'])
 Route::get('/checkout', [ShopController::class, 'checkout'])
     ->name('shop.checkout');
 
+// Blog routes
+Route::get('/posts', [ShopController::class, 'posts_list'])
+    ->name('posts.index');
+
+Route::get('/posts/{id}', [ShopController::class, 'post_detail'])
+    ->name('posts.show');
+
 // xử lý nhập liệu
 Route::get('/excel', [AdminController::class, 'excel'])
     ->name('shop.excel');
 Route::get('/form_import_excel', [AdminController::class, 'form_import_excel']);
 Route::post('/import_excel', [AdminController::class, 'import_excel'])
     ->name('shop.import_excel');
-
-// Blog routes
-Route::get('/posts', function () {
-    $posts = Post::where('status', 'show')
-        ->latest()
-        ->paginate(9);
-    return view('shop.post_list', compact('posts'));
-})
-    ->name('posts.index');
-
-Route::get('/posts/{id}', function ($id) {
-    $post = Post::where('status', 'show')
-        ->findOrFail($id);
-    return view('shop.post_detail', compact('post'));
-})->name('posts.show');
-
 
 Route::get('/run-storage-link', function () {
     try {
@@ -48,3 +39,8 @@ Route::get('/run-storage-link', function () {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 });
+
+// Product Image Organizer Routes
+Route::get('/admin/products/{product}/images/organize', [App\Http\Controllers\ProductImageOrganizerController::class, 'index'])->name('product.images.organize');
+Route::post('/admin/products/{product}/images/update-order', [App\Http\Controllers\ProductImageOrganizerController::class, 'updateOrder'])->name('product.images.update-order');
+Route::post('/admin/products/{product}/images/reset-order', [App\Http\Controllers\ProductImageOrganizerController::class, 'resetOrder'])->name('product.images.reset-order');

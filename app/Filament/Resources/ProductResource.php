@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
+use App\Models\ProductImage;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,6 +16,16 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string 
+    {
+        return 'primary';
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Quản lý bán hàng';
     protected static ?int $navigationSort = 1;
@@ -23,30 +34,27 @@ class ProductResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Forms\Components\Group::make()
-                ->schema([
-                    Forms\Components\Section::make()
-                        ->heading('Thông tin cơ bản')
-                        ->description('Nhập các thông tin cơ bản của sản phẩm')
-                        ->schema([
-                            Forms\Components\TextInput::make('name')
-                                ->label('Tên sản phẩm')
-                                ->required(),
-                            Forms\Components\TextInput::make('brand')
-                                ->label('Thương hiệu'),
-                            Forms\Components\TextInput::make('type')
-                                ->label('Loại sản phẩm'),
-                        ])->columns(2),
-                    
-                    Forms\Components\Section::make()
-                        ->heading('Mô tả sản phẩm')
-                        ->description('Thông tin chi tiết về sản phẩm')
-                        ->schema([
-                            Forms\Components\RichEditor::make('description')->label('Mô tả'),
-                        ])->columnSpan('full'),
-                ])->columnSpan('full')
-        ]);
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Thông tin sản phẩm')
+                    ->description('Nhập thông tin chi tiết sản phẩm')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Tên sản phẩm')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('brand')
+                            ->label('Thương hiệu')
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('type')
+                            ->label('Loại sản phẩm')
+                            ->maxLength(255),
+                        Forms\Components\RichEditor::make('description')
+                            ->label('Mô tả')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -56,7 +64,25 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label('Tên sản phẩm')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->limit(30)
+                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
+                        $state = $column->getState();
+                        
+                        if (strlen($state) <= 30) {
+                            return null;
+                        }
+                        
+                        return $state;
+                    })
+                    ->wrap(),
+                Tables\Columns\ImageColumn::make('productImages.image_url')
+                    ->label('Ảnh')
+                    ->circular()
+                    ->stacked()
+                    ->limit(3)
+                    ->limitedRemainingText()
+                    ->size(60),
                 Tables\Columns\TextColumn::make('brand')
                     ->label('Thương hiệu')
                     ->searchable()
@@ -65,13 +91,32 @@ class ProductResource extends Resource
                     ->label('Loại sản phẩm')
                     ->searchable()
                     ->sortable(),
-                // Tables\Columns\TextColumn::make('created_at')
-                //     ->label('Ngày tạo')
-                //     ->dateTime()
-                //     ->sortable()
+                Tables\Columns\TextColumn::make('variants_count')
+                    ->label('Số phiên bản')
+                    ->counts('variants')
+                    ->badge(),
             ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('brand')
+                    ->label('Thương hiệu')
+                    ->options(fn () => Product::whereNotNull('brand')
+                        ->where('brand', '!=', '')
+                        ->distinct()
+                        ->pluck('brand', 'brand')
+                        ->toArray()
+                    )
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Loại sản phẩm') 
+                    ->options(fn () => Product::whereNotNull('type')
+                        ->where('type', '!=', '')
+                        ->distinct()
+                        ->pluck('type', 'type')
+                        ->toArray()
+                    )
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -86,6 +131,7 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
+            RelationManagers\ProductImagesRelationManager::class,
             RelationManagers\VariantsRelationManager::class,
         ];
     }

@@ -84,8 +84,8 @@
                                                 <ul class="list-disc list-inside">
                                                     @foreach ($order_in_list->items as $order_item)
                                                         <li class="flex items-center gap-4 mb-4">
-                                                            @if($order_item->variant && $order_item->variant->variant_images->isNotEmpty())
-                                                                <img src="{{ $order_item->variant->variant_images->first()->image }}" 
+                                                            @if($order_item->variant && $order_item->variant->variantImage)
+                                                                <img src="{{ $order_item->variant->variantImage->image }}"
                                                                      alt="Hình ảnh sản phẩm"
                                                                      class="w-16 h-16 object-cover rounded-lg">
                                                             @else
@@ -97,7 +97,7 @@
                                                                 @if ($order_item->variant && $order_item->variant->product)
                                                                     <h4 class="font-medium text-base mb-1">{{ $order_item->variant->product->name }}</h4>
                                                                     <p class="text-gray-600 dark:text-gray-400 mb-1">
-                                                                        Màu: {{ $order_item->variant->color }} - 
+                                                                        Màu: {{ $order_item->variant->color }} -
                                                                         Size: {{ $order_item->variant->size }}
                                                                     </p>
                                                                 @else
@@ -107,7 +107,7 @@
                                                                     </p>
                                                                 @endif
                                                                 <p class="text-gray-600 dark:text-gray-400">
-                                                                    Số lượng: {{ $order_item->quantity }} - 
+                                                                    Số lượng: {{ $order_item->quantity }} -
                                                                     Giá: {{ number_format($order_item->price) }}đ
                                                                 </p>
                                                                 <p class="font-medium text-blue-600 dark:text-blue-400">

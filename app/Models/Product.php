@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -11,28 +12,19 @@ class Product extends Model
 
     protected $fillable = [
         'name',
-        'description',
         'brand',
         'type',
+        'description',
+        'sku',
     ];
 
-    // product quan hệ nhiều nhiều với cat
-    public function cats(){
-        return $this->belongsToMany(Cat::class);
-    }
-
-    // product quan hệ nhiều nhiều với tag
-    public function tags(){
-        return $this->belongsToMany(Tag::class);
-    }
-
-    // product quan hệ nhiều nhiều với group 
-    public function groups(){
-        return $this->belongsToMany(Group::class);
-    }
-
-    // một product có nhiều variant 
-    public function variants(){
+    public function variants(): HasMany
+    {
         return $this->hasMany(Variant::class);
+    }
+
+    public function productImages(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->ordered();
     }
 }

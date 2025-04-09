@@ -128,7 +128,7 @@
                         @foreach ($cartItems as $item)
                             <div class="flex items-center border-b pb-4">
                                 <div class="relative">
-                                    <img src="{{ $item->variant->variant_images->first()->image ?? '' }}" 
+                                    <img src="{{ $item->variant->variantImage->image_url ?? '' }}" 
                                          alt="{{ $item->product->name }}"
                                          class="w-16 h-16 object-cover rounded-md">
                                     <span

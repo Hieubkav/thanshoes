@@ -1,7 +1,7 @@
 <div class="topbar">
     <div class="bg-black text-white py-2 px-4 flex justify-between items-center">
         <div class="flex-1 flex justify-center">
-            <p class="text-center text-sm md:text-base">FREESHIP VỚI ĐƠN HÀNG TỪ 500K</p>
+            <p class="text-center text-sm md:text-base">{{ $setting->slogan ?? 'FREESHIP VỚI ĐƠN HÀNG TỪ 500K' }}</p>
         </div>
         <button class="text-gray-400 hover:text-white focus:outline-none">
             <i class="fas fa-times button_close_top_bar"></i>
