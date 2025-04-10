@@ -31,6 +31,17 @@ Route::get('/form_import_excel', [AdminController::class, 'form_import_excel']);
 Route::post('/import_excel', [AdminController::class, 'import_excel'])
     ->name('shop.import_excel');
 
+// Thêm route mới cho form nhập hàng
+Route::get('/tq', [AdminController::class, 'form_nhap_hang'])
+    ->name('admin.form_nhap_hang');
+Route::post('/nhap_hang', [AdminController::class, 'nhap_hang'])
+    ->name('admin.nhap_hang');
+
+// Import hàng
+Route::get('/form-nhap-hang', [AdminController::class, 'form_nhap_hang'])->name('admin.form_nhap_hang');
+Route::post('/nhap-hang', [AdminController::class, 'nhap_hang'])->name('admin.nhap_hang');
+Route::get('/download-nhap-hang-report', [AdminController::class, 'download_nhap_hang_report'])->name('admin.download_nhap_hang_report');
+
 Route::get('/run-storage-link', function () {
     try {
         Artisan::call('storage:link');
