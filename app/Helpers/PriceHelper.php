@@ -22,8 +22,18 @@ class PriceHelper
         }
         
         // Calculate discounted price
-        $discountPercentage = $settings->dec_product_price;
-        $discountedPrice = $originalPrice * (100 - $discountPercentage) / 100;
+        $discountAmount = $settings->dec_product_price;
+        $discountedPrice = $originalPrice;
+        
+        if ($settings->dec_product_price_type === 'percent') {
+            // Percentage-based discount
+            $discountedPrice = $originalPrice * (100 - $discountAmount) / 100;
+        } else {
+            // Fixed amount discount
+            $discountedPrice = $originalPrice - $discountAmount;
+            // Make sure price doesn't go below zero
+            $discountedPrice = max($discountedPrice, 0);
+        }
         
         // Round the price based on the setting (to the nearest thousand)
         return self::roundPrice($discountedPrice, $settings->round_price);
@@ -46,19 +56,13 @@ class PriceHelper
             return $originalPrice;
         }
         
-        // If we have settings and discount is applied, calculate the original price
-        if ($settings->dec_product_price > 0) {
-            // Calculate what the price would be before discount
-            return $originalPrice / ((100 - $settings->dec_product_price) / 100);
-        }
-        
-        return $originalPrice;
+        return $originalPrice; // Just return the original price as is
     }
     
     /**
      * Get the discount percentage to display
      * 
-     * @return int The discount percentage (0 if not applied)
+     * @return int|string The discount percentage or amount (0 if not applied)
      */
     public static function getDiscountPercentage()
     {
@@ -68,7 +72,28 @@ class PriceHelper
             return 0;
         }
         
-        return $settings->dec_product_price;
+        if ($settings->dec_product_price_type === 'percent') {
+            return $settings->dec_product_price;
+        } else {
+            // For fixed amount, return the actual amount with currency symbol
+            return $settings->dec_product_price;
+        }
+    }
+    
+    /**
+     * Get the discount display format (% or VND)
+     * 
+     * @return string The discount format ('percent' or 'price')
+     */
+    public static function getDiscountType()
+    {
+        $settings = Setting::first();
+        
+        if (!$settings || $settings->apply_price !== 'apply') {
+            return 'percent';
+        }
+        
+        return $settings->dec_product_price_type;
     }
     
     /**
@@ -92,6 +117,27 @@ class PriceHelper
         } else { // 'balance' - standard rounding
             // Round to the nearest thousand using standard rounding
             return round($price / 1000) * 1000;
+        }
+    }
+    
+    /**
+     * Calculate discount amount based on price and settings
+     * 
+     * @param float $originalPrice The original price
+     * @return float The discount amount in currency units
+     */
+    public static function getDiscountAmount($originalPrice)
+    {
+        $settings = Setting::first();
+        
+        if (!$settings || $settings->apply_price !== 'apply') {
+            return 0;
+        }
+        
+        if ($settings->dec_product_price_type === 'percent') {
+            return $originalPrice * $settings->dec_product_price / 100;
+        } else {
+            return min($settings->dec_product_price, $originalPrice);
         }
     }
 }

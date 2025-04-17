@@ -42,6 +42,9 @@ Route::get('/form-nhap-hang', [AdminController::class, 'form_nhap_hang'])->name(
 Route::post('/nhap-hang', [AdminController::class, 'nhap_hang'])->name('admin.nhap_hang');
 Route::get('/download-nhap-hang-report', [AdminController::class, 'download_nhap_hang_report'])->name('admin.download_nhap_hang_report');
 
+// Admin route to download Sapo file
+Route::get('/admin/download_nhap_hang_sapo', [AdminController::class, 'download_nhap_hang_sapo'])->name('admin.download_nhap_hang_sapo');
+
 Route::get('/run-storage-link', function () {
     try {
         Artisan::call('storage:link');

@@ -11,6 +11,7 @@ class Tag extends Model
 
     protected $fillable = [
         'name',
+        'image',
     ];
 
     // tag quan hệ nhiều nhiều với product

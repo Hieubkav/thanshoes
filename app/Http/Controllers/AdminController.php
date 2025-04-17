@@ -83,6 +83,33 @@ class AdminController extends Controller
                         $product->sku = $currentProductSku; // Lưu SKU cho sản phẩm
                         $product->save();
 
+                        // Xử lý tags nếu có trong cột F
+                        if (!empty($value['F'])) {
+                            $tagsString = $value['F'];
+                            $tagNames = array_map('trim', explode(',', $tagsString));
+                            
+                            $tagIds = [];
+                            foreach ($tagNames as $tagName) {
+                                if (!empty($tagName)) {
+                                    // Tìm tag hiện có hoặc tạo mới mà không thay đổi hình ảnh của tag đã tồn tại
+                                    $tag = \App\Models\Tag::where('name', $tagName)->first();
+                                    
+                                    if (!$tag) {
+                                        // Nếu tag không tồn tại, tạo mới
+                                        $tag = new \App\Models\Tag();
+                                        $tag->name = $tagName;
+                                        $tag->save();
+                                    }
+                                    // Nếu tag đã tồn tại, không thay đổi gì cả, đặc biệt là trường image
+                                    
+                                    $tagIds[] = $tag->id;
+                                }
+                            }
+                            
+                            // Đồng bộ tags với sản phẩm (remove tags cũ, thêm tags mới)
+                            $product->tags()->sync($tagIds);
+                        }
+
                         $currentProduct = $product;
                     }
                     // Nếu không có tên sản phẩm nhưng có SKU và chưa có SKU sản phẩm
@@ -213,6 +240,9 @@ class AdminController extends Controller
      */
     public function nhap_hang(Request $request)
     {
+        // Tăng thời gian thực thi lên 240 giây
+        set_time_limit(300);
+
         // Validate đầu vào - sử dụng file thay vì mimes để tránh lỗi MIME type
         $request->validate([
             'excel_products' => 'required|file',  // Chỉ kiểm tra có phải file không
@@ -264,6 +294,9 @@ class AdminController extends Controller
             // Tạo file báo cáo chi tiết với cả sheet chính và sheet log
             $this->generateDetailedReport($reportData, $excludedProducts);
 
+            // Tạo file nhập hàng cho Sapo
+            $this->generateSapoFile($reportData);
+
             // Thay vì trả về file để download, trả về với thông báo thành công
             $reportFilename = 'nhap_hang_trung_quoc.xlsx'; // Tên file báo cáo
             return back()->with([
@@ -288,6 +321,22 @@ class AdminController extends Controller
             return response()->download($reportPath, 'Báo cáo nhập hàng trung quốc.xlsx');
         } else {
             return back()->with('error', 'Không tìm thấy file báo cáo. Vui lòng tạo báo cáo trước.');
+        }
+    }
+
+    /**
+     * Trả về file nhập hàng Sapo để tải xuống
+     * 
+     * @return \Illuminate\Http\Response
+     */
+    public function download_nhap_hang_sapo()
+    {
+        $reportPath = public_path('uploads/nhap_hang_sapo.xlsx');
+        
+        if (file_exists($reportPath)) {
+            return response()->download($reportPath, 'Nhập hàng Sapo.xlsx');
+        } else {
+            return back()->with('error', 'Không tìm thấy file nhập hàng Sapo. Vui lòng tạo báo cáo trước.');
         }
     }
 
@@ -353,14 +402,26 @@ class AdminController extends Controller
             // Xử lý cột I - Cần xử lý nhiều định dạng số (ví dụ: "1,000" hoặc "1.0")
             $needToOrderRaw = $lowStockData[$row]['I'] ?? null;
             
-            // Nếu cột I trống, tự động tính theo công thức G-H+1
+            // Tách SKU để xác định size
+            $skuParts = explode('-', $sku);
+            $baseSku = $skuParts[0];  // SKU gốc của sản phẩm
+            $size = $skuParts[1] ?? ''; // Size của phiên bản
+            
+            // Nếu cột I trống, tính theo công thức
             if (empty($needToOrderRaw) || !is_numeric(str_replace([',', '.'], '', $needToOrderRaw))) {
                 $needG = (int)($lowStockData[$row]['G'] ?? 0);
                 $needH = (int)($lowStockData[$row]['H'] ?? 0);
-                $needToOrder = $needG - $needH + 1;
+                
+                // Đối với size 36, chỉ lấy đúng G-H (cần bao nhiêu thì nhập bấy nhiêu)
+                if ($size === '36') {
+                    $needToOrder = $needG - $needH;
+                } else {
+                    // Các size khác áp dụng công thức cũ G-H+1
+                    $needToOrder = $needG - $needH + 1;
+                }
                 
                 // Log ra để debug
-                \Illuminate\Support\Facades\Log::info("Dòng $row: Cột I trống, tính từ G-H+1: $needG - $needH + 1 = $needToOrder");
+                \Illuminate\Support\Facades\Log::info("Dòng $row: Size $size, Cột I trống, tính từ công thức: $needG - $needH" . ($size !== '36' ? " + 1" : "") . " = $needToOrder");
             } else {
                 // Xử lý định dạng số có thể chứa dấu phẩy/chấm nghìn
                 if (is_string($needToOrderRaw)) {
@@ -369,15 +430,11 @@ class AdminController extends Controller
                 $needToOrder = (int)$needToOrderRaw;
                 
                 // Log ra để debug
-                \Illuminate\Support\Facades\Log::info("Dòng $row: Lấy từ cột I: $needToOrderRaw => $needToOrder");
+                \Illuminate\Support\Facades\Log::info("Dòng $row: Size $size, Lấy từ cột I: $needToOrderRaw => $needToOrder");
             }
 
             // Ghi lại thông tin nếu không cần đặt thêm
             if ($needToOrder <= 0) {
-                $skuParts = explode('-', $sku);
-                $baseSku = $skuParts[0];  // SKU gốc của sản phẩm
-                $size = $skuParts[1] ?? ''; // Size của phiên bản
-                
                 // Thu thập thông tin sản phẩm bị loại
                 if (!isset($excludedProducts[$baseSku])) {
                     $excludedProducts[$baseSku] = [
@@ -400,11 +457,6 @@ class AdminController extends Controller
                 
                 continue; // Bỏ qua nếu không cần đặt thêm
             }
-
-            // Tách SKU để phân tích (VD: APUREBLUEDAWN-39 -> SKU: APUREBLUEDAWN, size: 39)
-            $skuParts = explode('-', $sku);
-            $baseSku = $skuParts[0];  // SKU gốc của sản phẩm
-            $size = $skuParts[1] ?? ''; // Size của phiên bản
 
             // Nhóm thông tin theo SKU gốc
             if (!isset($groupedProducts[$baseSku])) {
@@ -1287,7 +1339,8 @@ class AdminController extends Controller
             
             // Thêm cột hình ảnh với công thức IMAGE
             if (!empty($imageUrl)) {
-                $warehouseSheet->setCellValue('A' . $warehouseRow, '=IMAGE("' . $imageUrl . '",2)');
+                // $warehouseSheet->setCellValue('A' . $warehouseRow, '=IMAGE("' . $imageUrl . '",2)');
+                $warehouseSheet->setCellValue('A' . $warehouseRow, $imageUrl); // Chỉ điền link ảnh
             }
             
             // Điền dữ liệu về size (B-K)
@@ -1576,5 +1629,109 @@ class AdminController extends Controller
         
         // Nếu tất cả size 41,42,43 đều có tồn kho tối thiểu là 0
         return true;
+    }
+
+    /**
+     * Tạo file định dạng nhập hàng cho Sapo
+     *
+     * @param array $reportData Dữ liệu sản phẩm đã được tối ưu
+     * @return void
+     */
+    private function generateSapoFile($reportData)
+    {
+        // Đường dẫn đến file mẫu và file đích
+        $templateFilePath = public_path('uploads/nhap_hang_sapo_template.xlsx');
+        $outputFilePath = public_path('uploads/nhap_hang_sapo.xlsx');
+        
+        // Nếu không có file mẫu, kiểm tra xem có file hiện tại không để sử dụng như template
+        if (!file_exists($templateFilePath) && file_exists($outputFilePath)) {
+            // Sao chép file hiện tại làm template cho lần sau
+            copy($outputFilePath, $templateFilePath);
+        } 
+        // Nếu không có cả hai file, tạo một file trống làm template
+        else if (!file_exists($templateFilePath)) {
+            // Tạo một spreadsheet trống
+            $emptySpreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $emptySpreadsheet->getActiveSheet();
+            
+            // Thiết lập header cơ bản cho file Sapo
+            $sheet->setCellValue('A7', 'Mã SKU');
+            $sheet->setCellValue('B7', 'Mã Barcode');
+            $sheet->setCellValue('C7', 'Tên sản phẩm');
+            $sheet->setCellValue('D7', 'Số lượng');
+            $sheet->setCellValue('I7', 'Đơn giá');
+            
+            // Lưu file template
+            $writer = IOFactory::createWriter($emptySpreadsheet, 'Xlsx');
+            $writer->save($templateFilePath);
+        }
+        
+        // Sao chép file mẫu sang file đích (tạo file mới cho mỗi lần sử dụng)
+        if (file_exists($outputFilePath)) {
+            unlink($outputFilePath); // Xóa file cũ nếu tồn tại
+        }
+        copy($templateFilePath, $outputFilePath);
+        
+        // Đọc file Sapo đã tạo
+        $spreadsheet = IOFactory::load($outputFilePath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Lấy dữ liệu từ file data_shoes.xlsx để lấy giá bán buôn (cột AB)
+        $productsFilePath = public_path('uploads/data_shoes.xlsx');
+        $productsData = $this->readExcelFile($productsFilePath);
+        
+        // Mảng lưu trữ giá bán buôn theo SKU
+        $wholesalePrices = [];
+        
+        // Thu thập giá bán buôn từ file data_shoes.xlsx
+        foreach ($productsData as $row) {
+            if (isset($row['N']) && !empty($row['N'])) {
+                $skuParts = explode('-', $row['N']);
+                $baseSku = $skuParts[0];
+                $size = $skuParts[1] ?? '';
+                
+                // Lấy giá bán buôn từ cột AB (PL_Giá bán buôn)
+                if (isset($row['AB']) && is_numeric(str_replace([',', '.'], '', $row['AB']))) {
+                    $wholesalePrice = str_replace([',', '.'], '', $row['AB']);
+                    $wholesalePrices[$baseSku.'-'.$size] = (float)$wholesalePrice;
+                }
+            }
+        }
+
+        // Điền dữ liệu vào file Sapo bắt đầu từ dòng 8
+        $rowIndex = 8;
+        
+        foreach ($reportData as $data) {
+            $baseSku = $data['sku'];
+            $productName = $data['name'];
+            
+            // Điền dữ liệu cho từng size
+            foreach ($data['sizes'] as $size => $quantity) {
+                if ($quantity > 0) {
+                    $sku = $baseSku . '-' . $size;
+                    
+                    // Cột A: Mã SKU
+                    $sheet->setCellValue('A' . $rowIndex, $sku);
+                    
+                    // Cột B: Mã Barcode (giống SKU)
+                    $sheet->setCellValue('B' . $rowIndex, $sku);
+                    
+                    // Cột C: Tên sản phẩm
+                    $sheet->setCellValue('C' . $rowIndex, $productName . ' - Size ' . $size);
+                    
+                    // Cột D: Số lượng
+                    $sheet->setCellValue('D' . $rowIndex, $quantity);
+                    
+                    // Cột I: Đơn giá (từ cột AB của data_shoes.xlsx)
+                    $sheet->setCellValue('I' . $rowIndex, $wholesalePrices[$sku] ?? 0);
+                    
+                    $rowIndex++;
+                }
+            }
+        }
+        
+        // Lưu file nhập hàng Sapo
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($outputFilePath);
     }
 }

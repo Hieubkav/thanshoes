@@ -49,6 +49,18 @@ class ProductResource extends Resource
                         Forms\Components\TextInput::make('type')
                             ->label('Loại sản phẩm')
                             ->maxLength(255),
+                        Forms\Components\Select::make('tags')
+                            ->label('Thẻ gán')
+                            ->relationship('tags', 'name')
+                            ->multiple()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Tên thẻ')
+                                    ->required()
+                                    ->maxLength(255),
+                            ])
+                            ->columnSpanFull(),
                         Forms\Components\RichEditor::make('description')
                             ->label('Mô tả')
                             ->columnSpanFull(),
@@ -91,6 +103,13 @@ class ProductResource extends Resource
                     ->label('Loại sản phẩm')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('tags.name')
+                    ->label('Thẻ gán')
+                    ->badge()
+                    ->color('primary')
+                    ->separator()
+                    ->searchable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('variants_count')
                     ->label('Số phiên bản')
                     ->counts('variants')
@@ -117,6 +136,12 @@ class ProductResource extends Resource
                         ->toArray()
                     )
                     ->searchable(),
+                Tables\Filters\SelectFilter::make('tags')
+                    ->label('Thẻ gán')
+                    ->relationship('tags', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -133,6 +158,7 @@ class ProductResource extends Resource
         return [
             RelationManagers\ProductImagesRelationManager::class,
             RelationManagers\VariantsRelationManager::class,
+            RelationManagers\TagsRelationManager::class,
         ];
     }
 

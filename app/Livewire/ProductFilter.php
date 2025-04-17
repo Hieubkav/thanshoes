@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\Tag;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Request;
@@ -21,6 +22,7 @@ class ProductFilter extends Component
     public $tong_giay = 0;
     public $typeSelected = [];
     public $brandSelected = [];
+    public $tagSelected = [];
     public $sort = 'latest';
 
     public function mount()
@@ -33,6 +35,10 @@ class ProductFilter extends Component
         $brand = Request::query('brand');
         if ($brand) {
             $this->brandSelected = [$brand];
+        }
+        $tag = Request::query('tag');
+        if ($tag) {
+            $this->tagSelected = [$tag];
         }
         $tatvo = Request::query('tatvo');
         if ($tatvo) {
@@ -94,6 +100,12 @@ class ProductFilter extends Component
         $this->on_page = 12;
         $this->resetPage();
     }
+    
+    public function updatingTagSelected($value)
+    {
+        $this->on_page = 12;
+        $this->resetPage();
+    }
 
     public function clearfilter(){
         $this->search = '';
@@ -103,6 +115,7 @@ class ProductFilter extends Component
         $this->phukien = 'false';
         $this->typeSelected = [];
         $this->brandSelected = [];
+        $this->tagSelected = [];
         $this->sort = 'latest';
         $this->on_page = 12;
         $this->resetPage();
@@ -170,6 +183,12 @@ class ProductFilter extends Component
         if (count($this->brandSelected) > 0) {
             $query->whereIn('brand', $this->brandSelected);
         }
+        
+        if (count($this->tagSelected) > 0) {
+            $query->whereHas('tags', function($q) {
+                $q->whereIn('name', $this->tagSelected);
+            });
+        }
 
         if ($this->sort === 'latest') {
             $query = $query->orderBy('updated_at', 'desc');
@@ -193,10 +212,14 @@ class ProductFilter extends Component
 
         $products = $query->latest()->take($this->on_page)->get();
         $this->tong_giay = $query->count();
+        
+        // Lấy danh sách các tag để hiển thị trong bộ lọc
+        $tags = Tag::withCount('products')->orderByDesc('products_count')->take(15)->get();
 
         return view('livewire.product-filter', [
             'products' => $products,
-            'tong_giay' => $this->tong_giay
+            'tong_giay' => $this->tong_giay,
+            'tags' => $tags
         ]);
     }
 }

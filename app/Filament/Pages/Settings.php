@@ -117,8 +117,23 @@ class Settings extends Page implements Forms\Contracts\HasForms
                             
                         Forms\Components\Tabs\Tab::make('Cấu hình giá')
                             ->schema([
+                                Forms\Components\Select::make('dec_product_price_type')
+                                    ->label('Kiểu giảm giá')
+                                    ->options([
+                                        'percent' => 'Theo phần trăm (%)',
+                                        'price' => 'Theo giá tiền (VND)',
+                                    ])
+                                    ->default('percent')
+                                    ->live()
+                                    ->afterStateUpdated(fn ($state, callable $set) => 
+                                        $state === 'percent' ? 
+                                            $set('dec_product_price_label', 'Giảm giá sản phẩm (%)') : 
+                                            $set('dec_product_price_label', 'Giảm giá sản phẩm (VND)')
+                                    ),
+                                Forms\Components\Hidden::make('dec_product_price_label')
+                                    ->default('Giảm giá sản phẩm (%)'),
                                 Forms\Components\TextInput::make('dec_product_price')
-                                    ->label('Giảm giá sản phẩm (%)')
+                                    ->label(fn (callable $get) => $get('dec_product_price_label') ?? 'Giảm giá sản phẩm (%)')
                                     ->numeric()
                                     ->default(0),
                                 Forms\Components\Select::make('round_price')

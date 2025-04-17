@@ -42,6 +42,9 @@
                         
                         // Calculate discount percentage
                         $discountPercent = PriceHelper::getDiscountPercentage();
+                        
+                        // Get discount type
+                        $discountType = PriceHelper::getDiscountType();
                     @endphp
 
                     <img src="{{ $image_variant }}" loading="lazy" alt="Product Image" class="rounded-lg w-full">
@@ -63,7 +66,13 @@
                         @if($discountPercent > 0)
                             <p class="text-gray-500 line-through text-sm ml-2">
                                 {{ number_format($originalPrice, 0, ',', '.') }}₫</p>
-                            <span class="text-xs text-red-500 font-semibold ml-1">-{{ $discountPercent }}%</span>
+                            <span class="text-xs text-red-500 font-semibold ml-1">
+                                @if($discountType == 'percent')
+                                    -{{ $discountPercent }}%
+                                @else
+                                    -{{ number_format($discountPercent, 0, ',', '.') }}₫
+                                @endif
+                            </span>
                         @endif
                     </div>
                 </div>

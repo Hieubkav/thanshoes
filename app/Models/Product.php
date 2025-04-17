@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
@@ -26,5 +27,11 @@ class Product extends Model
     public function productImages(): HasMany
     {
         return $this->hasMany(ProductImage::class)->ordered();
+    }
+
+    // Quan hệ nhiều-nhiều với Tag
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class);
     }
 }

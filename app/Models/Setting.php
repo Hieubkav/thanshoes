@@ -32,5 +32,6 @@ class Setting extends Model
         'dec_product_price',
         'round_price',
         'apply_price',
+        'dec_product_price_type',
     ];
 }

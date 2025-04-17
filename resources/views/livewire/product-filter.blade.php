@@ -116,6 +116,31 @@
                                     @endforeach
                                 </div>
                             </div>
+                            <!-- Divider -->
+                            <div class="mb-6 mt-6 h-px w-full bg-[#d9d9d9]"></div>
+                            <!-- Filter Tags -->
+                            <div class="flex flex-col gap-6">
+                                <div
+                                    class="flex cursor-pointer items-center justify-between py-4 [border-top:1px_solid_rgba(0,_0,_0,_0)] md:py-0">
+                                    <p class="font-semibold">Thẻ gán</p>
+                                </div>
+                                <div class="flex flex-col gap-3">
+                                    @forelse ($tags as $tag)
+                                        <label class="flex items-center text-sm font-medium">
+                                            <input type="checkbox" value="{{ $tag->name }}"
+                                                wire:model.live.debounce.300ms="tagSelected"
+                                                class="mr-3 h-5 w-5 cursor-pointer rounded-sm border border-solid bg-[#f2f2f7]">
+                                            <span class="inline-block cursor-pointer">
+                                                {{ $tag->name }} 
+                                                {{-- <span class="text-xs text-gray-500">({{ $tag->products_count }})</span> --}}
+                                            </span>
+                                        </label>
+                                    @empty
+                                        <p class="text-sm text-gray-500">Không có thẻ gán</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                            <div class="mb-6 mt-6 h-px w-full bg-[#d9d9d9]"></div>
                         </form>
                     </div>
                     <!-- Product List -->

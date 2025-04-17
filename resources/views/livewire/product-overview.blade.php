@@ -4,6 +4,7 @@
         use App\Models\Setting;
         $settings = Setting::first();
         $discountPercent = PriceHelper::getDiscountPercentage();
+        $discountType = PriceHelper::getDiscountType();
     @endphp
     <div class="bg-gray-50 dark:bg-gray-800 py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,7 +21,11 @@
                         @endif
                         @if($discountPercent > 0)
                         <div class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded-bl-lg">
-                            -{{ $discountPercent }}%
+                            @if($discountType === 'percentage')
+                                -{{ $discountPercent }}%
+                            @else
+                                -{{ number_format($discountPercent, 0, ',', '.') }}vnd
+                            @endif
                         </div>
                         @endif
                     </div>

@@ -34,6 +34,8 @@ return new class extends Migration
             $table->integer('dec_product_price')->default(0);
             $table->enum('round_price',['up','down','balance'])->default('down');
             $table->enum('apply_price',['apply','not_apply'])->default('not_apply');
+            // chọn giữa giảm tiền theo % hay giá tiền
+            $table->enum('dec_product_price_type',['percent','price'])->default('percent');
  
             $table->string('messenger')->nullable();
             $table->string('link_tiktok')->nullable();
