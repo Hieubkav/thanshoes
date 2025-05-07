@@ -19,7 +19,7 @@
     <meta property="og:description"
           content="ThanShoes.vn cung cấp đa dạng các mẫu giày thể thao chính hãng từ Nike, Adidas, New Balance, Onitsuka Tiger, MLB và Converse. Chất lượng đảm bảo, giá cả cạnh tranh, dịch vụ chăm sóc khách hàng tận tình. Nâng tầm phong cách của bạn với ThanShoes.vn."/>
     <meta property="og:url" content="{{ request()->url() }}">
-    <meta property="og:image" content="{{asset('images/og_img.webp')}}">
+    <meta property="og:image" content="{{ \App\Models\Setting::first()->og_img ? asset('storage/' . \App\Models\Setting::first()->og_img) : asset('images/og_img.webp') }}">
     <script type="application/ld+json">
         {
           "@context": "https://schema.org",

@@ -19,7 +19,7 @@
             $firstVariant = $product->variants->first();
             $firstImage = optional($firstVariant->variantImage)->image;
         @endphp
-        <a href="{{ route('shop.product_overview', $product->id) }}"
+        <a href="{{ route('shop.product_overview', $product->slug) }}"
             class="group block bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
             <div class="relative pt-[100%]">
                 <img src="{{ $firstImage ?? asset('images/logo.svg') }}" alt="{{ $product->name }}"

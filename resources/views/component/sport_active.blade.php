@@ -17,7 +17,7 @@
         
         <div class="tag-carousel-container relative">
             <div class="tag-carousel overflow-hidden">
-                <div class="flex gap-4 tag-carousel-inner transition-all duration-300">
+                <div class="flex gap-4 tag-carousel-inner transition-all duration-500">
                     @foreach($tags as $tag)
                     <div class="tag-item flex-shrink-0" style="width: 240px;">
                         <a href="{{ route('shop.cat_filter', ['tag' => $tag->name]) }}" class="block group">
@@ -73,24 +73,60 @@
         const nextBtn = document.getElementById('nextBtn');
         const dotsContainer = document.getElementById('carousel-dots');
         
-        const itemWidth = 240 + 16; // Item width + gap
-        const itemsPerView = Math.floor(carousel.offsetWidth / itemWidth);
-        const totalGroups = Math.ceil(items.length / itemsPerView);
+        // Số lượng items hiển thị cố định là 5
+        const visibleItems = 5;
+        let itemWidth = 240 + 16; // Item width + gap
         let currentIndex = 0;
+        let autoSlideInterval;
+        let totalItems = items.length;
         
-        // Create indicator dots
-        for (let i = 0; i < totalGroups; i++) {
-            const dot = document.createElement('button');
-            dot.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'hover:bg-gray-500', 'focus:outline-none');
-            if (i === 0) dot.classList.add('bg-blue-600');
-            dot.setAttribute('data-index', i);
-            dot.addEventListener('click', () => {
-                goToSlide(i);
+        // Tính số trang (nhóm)
+        const totalGroups = Math.max(1, totalItems - visibleItems + 1);
+        
+        // Khởi tạo carousel
+        function initCarousel() {
+            // Cập nhật chiều rộng của mỗi item theo không gian hiển thị
+            const carouselWidth = document.querySelector('.tag-carousel').offsetWidth;
+            if (window.innerWidth >= 1024) {
+                // Trên desktop, hiển thị 5 items
+                itemWidth = (carouselWidth - (16 * (visibleItems - 1))) / visibleItems;
+            } else if (window.innerWidth >= 768) {
+                // Trên tablet, hiển thị 3 items
+                itemWidth = (carouselWidth - (16 * 2)) / 3;
+            } else {
+                // Trên mobile, hiển thị 1 item
+                itemWidth = carouselWidth;
+            }
+            
+            // Cập nhật kích thước cho các items
+            items.forEach(item => {
+                item.style.width = `${itemWidth}px`;
             });
-            dotsContainer.appendChild(dot);
+            
+            // Làm sạch các dots hiện tại
+            dotsContainer.innerHTML = '';
+            
+            // Tạo lại các dots chỉ báo
+            for (let i = 0; i < totalGroups; i++) {
+                const dot = document.createElement('button');
+                dot.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'hover:bg-gray-500', 'focus:outline-none', 'transition-colors', 'duration-300');
+                if (i === 0) dot.classList.add('bg-blue-600');
+                dot.setAttribute('data-index', i);
+                dot.addEventListener('click', () => {
+                    goToSlide(i);
+                });
+                dotsContainer.appendChild(dot);
+            }
+            
+            // Đảm bảo chỉ số hiện tại không vượt quá tổng số nhóm
+            currentIndex = Math.min(currentIndex, totalGroups - 1);
+            if (currentIndex < 0) currentIndex = 0;
+            
+            // Cập nhật vị trí carousel
+            goToSlide(currentIndex, false);
         }
         
-        // Update indicator dots
+        // Cập nhật chỉ báo dots
         function updateDots() {
             const dots = dotsContainer.querySelectorAll('button');
             dots.forEach((dot, index) => {
@@ -104,69 +140,99 @@
             });
         }
         
-        // Go to specific slide
-        function goToSlide(index) {
+        // Đi đến slide cụ thể
+        function goToSlide(index, animate = true) {
+            if (index < 0) index = 0;
+            if (index >= totalGroups) index = totalGroups - 1;
+            
             currentIndex = index;
-            const offset = -index * itemsPerView * itemWidth;
-            carousel.style.transform = `translateX(${offset}px)`;
+            const offset = -index * itemWidth;
+            
+            if (!animate) {
+                carousel.style.transition = 'none';
+                carousel.style.transform = `translateX(${offset}px)`;
+                // Force reflow
+                carousel.offsetHeight;
+                carousel.style.transition = 'transform 500ms ease';
+            } else {
+                carousel.style.transform = `translateX(${offset}px)`;
+            }
+            
             updateDots();
         }
         
-        // Previous slide
-        prevBtn.addEventListener('click', () => {
+        // Chuyển slide trước đó
+        function goToPrevSlide() {
             if (currentIndex > 0) {
                 goToSlide(currentIndex - 1);
             } else {
-                goToSlide(totalGroups - 1); // Loop to end
+                // Chuyển đến cuối nếu đang ở đầu
+                goToSlide(totalGroups - 1);
             }
-        });
+        }
         
-        // Next slide
-        nextBtn.addEventListener('click', () => {
+        // Chuyển slide tiếp theo
+        function goToNextSlide() {
             if (currentIndex < totalGroups - 1) {
                 goToSlide(currentIndex + 1);
             } else {
-                goToSlide(0); // Loop to beginning
-            }
-        });
-        
-        // Auto slide
-        let autoSlideInterval = setInterval(() => {
-            if (currentIndex < totalGroups - 1) {
-                goToSlide(currentIndex + 1);
-            } else {
+                // Chuyển về đầu nếu đang ở cuối
                 goToSlide(0);
             }
-        }, 5000);
+        }
         
-        // Pause auto slide on hover
+        // Thiết lập cuộn tự động
+        function setAutoSlide() {
+            clearInterval(autoSlideInterval);
+            autoSlideInterval = setInterval(goToNextSlide, 5000);
+        }
+        
+        // Thêm các event listeners
+        prevBtn.addEventListener('click', goToPrevSlide);
+        nextBtn.addEventListener('click', goToNextSlide);
+        
+        // Dừng cuộn tự động khi hover
         const carouselContainer = document.querySelector('.tag-carousel-container');
         carouselContainer.addEventListener('mouseenter', () => {
             clearInterval(autoSlideInterval);
         });
         
-        carouselContainer.addEventListener('mouseleave', () => {
-            autoSlideInterval = setInterval(() => {
-                if (currentIndex < totalGroups - 1) {
-                    goToSlide(currentIndex + 1);
-                } else {
-                    goToSlide(0);
-                }
-            }, 5000);
-        });
+        carouselContainer.addEventListener('mouseleave', setAutoSlide);
         
-        // Handle window resize
+        // Xử lý khi thay đổi kích thước màn hình
+        let resizeTimer;
         window.addEventListener('resize', function() {
-            const newItemsPerView = Math.floor(carousel.offsetWidth / itemWidth);
-            if (newItemsPerView !== itemsPerView) {
-                // Reload the page to recalculate everything
-                // This is a simple approach; a more complex one would dynamically adjust
-                location.reload();
-            }
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                initCarousel();
+            }, 250);
         });
         
-        // Initial setup
-        goToSlide(0);
+        // Thêm hỗ trợ vuốt cho thiết bị di động
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        carouselContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+        
+        carouselContainer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+        
+        function handleSwipe() {
+            const threshold = 75; // Ngưỡng khoảng cách để tính là vuốt
+            if (touchStartX - touchEndX > threshold) {
+                goToNextSlide(); // Vuốt sang trái -> slide tiếp theo
+            } else if (touchEndX - touchStartX > threshold) {
+                goToPrevSlide(); // Vuốt sang phải -> slide trước đó
+            }
+        }
+        
+        // Khởi tạo carousel và bắt đầu cuộn tự động
+        initCarousel();
+        setAutoSlide();
     });
 </script>
 @endif

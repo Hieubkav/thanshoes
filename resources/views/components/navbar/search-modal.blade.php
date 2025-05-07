@@ -28,7 +28,7 @@
                 @if($searchResults && count($searchResults) > 0)
                 <div class="mt-4 space-y-4">
                     @foreach($searchResults as $product)
-                    <a href="{{ route('shop.product_overview', $product->id) }}" class="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-lg transition-all duration-200">
+                    <a href="{{ route('shop.product_overview', $product->slug) }}" class="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-lg transition-all duration-200">
                         <img src="{{ ($product->variants && $product->variants->count() > 0 && $product->variants->first()->variantImage) 
                             ? $product->variants->first()->variantImage->image_url 
                             : asset('images/no-image.png') }}" 

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('zalo')->nullable();
             $table->string('logo')->nullable();
             $table->string('app_name')->nullable();
+            $table->string('og_img')->nullable();
 
             $table->string('ban_name_product_one')->nullable();
             $table->string('ban_name_product_two')->nullable();

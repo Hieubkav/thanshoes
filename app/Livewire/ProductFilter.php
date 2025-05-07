@@ -24,6 +24,7 @@ class ProductFilter extends Component
     public $brandSelected = [];
     public $tagSelected = [];
     public $sort = 'latest';
+    public $showFiltersMobile = false; // Thêm biến để theo dõi trạng thái hiển thị của bộ lọc trên mobile
 
     public function mount()
     {
@@ -50,6 +51,11 @@ class ProductFilter extends Component
         }
     }
 
+    // Thêm phương thức để bật/tắt hiển thị bộ lọc trên mobile
+    public function toggleFiltersMobile()
+    {
+        $this->showFiltersMobile = !$this->showFiltersMobile;
+    }
 
     public function updatingSort()
     {

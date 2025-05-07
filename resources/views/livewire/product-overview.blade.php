@@ -21,10 +21,10 @@
                         @endif
                         @if($discountPercent > 0)
                         <div class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded-bl-lg">
-                            @if($discountType === 'percentage')
+                            @if($discountType === 'percent')
                                 -{{ $discountPercent }}%
                             @else
-                                -{{ number_format($discountPercent, 0, ',', '.') }}vnd
+                                -{{ number_format($discountPercent, 0, ',', '.') }}đ
                             @endif
                         </div>
                         @endif
@@ -297,7 +297,7 @@
                         @endphp
                         <div
                             class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                            <a href="{{ route('shop.product_overview', $related->id) }}" class="block">
+                            <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
                                 <div class="relative pt-[100%]">
                                     <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
                                         alt="{{ $related->name }}" class="absolute inset-0 w-full h-full object-cover">
@@ -333,7 +333,7 @@
                                 <div class="carousel-item flex-none w-1/2 md:w-1/4 min-w-[50%] md:min-w-[25%]">
                                     <div
                                         class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                                        <a href="{{ route('shop.product_overview', $related->id) }}" class="block">
+                                        <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
                                             <div class="relative pt-[100%]">
                                                 <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
                                                     alt="{{ $related->name }}"
@@ -404,7 +404,7 @@
                         @endphp
                         <div
                             class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                            <a href="{{ route('shop.product_overview', $brand_product->id) }}" class="block">
+                            <a href="{{ route('shop.product_overview', $brand_product->slug) }}" class="block">
                                 <div class="relative pt-[100%]">
                                     <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
                                         alt="{{ $brand_product->name }}"
@@ -441,7 +441,7 @@
                                 <div class="carousel-item flex-none w-1/2 md:w-1/4 min-w-[50%] md:min-w-[25%]">
                                     <div
                                         class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                                        <a href="{{ route('shop.product_overview', $brand_product->id) }}"
+                                        <a href="{{ route('shop.product_overview', $brand_product->slug) }}"
                                             class="block">
                                             <div class="relative pt-[100%]">
                                                 <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"

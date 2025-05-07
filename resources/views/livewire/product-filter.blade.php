@@ -25,8 +25,17 @@
                 </div>
                 <!-- Content -->
                 <div class="grid gap-8 md:gap-10 lg:grid-cols-[max-content_1fr]">
+                    <!-- Mobile filter toggle button - Hiển thị chỉ trên thiết bị di động -->
+                    <div class="mb-4 lg:hidden">
+                        <button wire:click="toggleFiltersMobile" 
+                                class="flex items-center justify-between w-full p-3 bg-blue-500 text-white rounded-lg">
+                            <span class="font-semibold">{{ $showFiltersMobile ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc' }}</span>
+                            <i class="fa-solid {{ $showFiltersMobile ? 'fa-chevron-up' : 'fa-chevron-down' }}"></i>
+                        </button>
+                    </div>
+                    
                     <!-- Filters -->
-                    <div class="mb-4 max-w-none 2xl:max-w-sm">
+                    <div class="mb-4 max-w-none 2xl:max-w-sm {{ $showFiltersMobile ? 'block' : 'hidden lg:block' }} transition-all duration-300 ease-in-out">
                         <form method="get" class="flex-col gap-6" action="{{ route('shop.cat_filter') }}">
                             <!-- Filters title -->
                             <div
@@ -41,10 +50,17 @@
                                 class="mb-10 block h-9 min-h-[44px] w-full rounded-md border border-solid border-[#cccccc] bg-[#f2f2f7] bg-[16px_center] bg-no-repeat py-3 pl-11 pr-4 text-sm font-bold text-[#333333] [background-size:18px] [border-bottom:1px_solid_rgb(215,_215,_221)]"
                                 placeholder="Tìm kiếm" wire:model.live.debounce.300ms="search"
                                 style="background-image: url('https://assets.website-files.com/6458c625291a94a195e6cf3a/64b7a3a33cd5dc368f46daaa_MagnifyingGlass.svg');" />
+                            
                             <!-- Categories -->
                             <div class="flex flex-col gap-6">
-                                <p class="font-semibold">Phân mục</p>
-                                <div class="flex flex-wrap items-center gap-2">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-semibold">Phân mục</p>
+                                    <button type="button" class="lg:hidden text-gray-500" 
+                                            onclick="toggleSection(this)" data-target="categories-container">
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div id="categories-container" class="flex flex-wrap items-center gap-2">
                                     <a href="#" wire:click="filterCategory('giay')"
                                         class="category-filter flex gap-3 rounded-md p-3 font-semibold transition-colors duration-200
                                         {{ $giay == 'true' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 hover:bg-slate-200' }}"
@@ -78,13 +94,17 @@
 
                             <!-- Divider -->
                             <div class="mb-6 mt-6 h-px w-full bg-[#d9d9d9]"></div>
-                            <!-- FIlter One -->
+                            
+                            <!-- Filter Brands -->
                             <div class="flex flex-col gap-6">
-                                <div
-                                    class="flex cursor-pointer items-center justify-between py-4 [border-top:1px_solid_rgba(0,_0,_0,_0)] md:py-0">
+                                <div class="flex justify-between items-center py-4 md:py-0">
                                     <p class="font-semibold">Thương hiệu</p>
+                                    <button type="button" class="lg:hidden text-gray-500" 
+                                            onclick="toggleSection(this)" data-target="brands-container">
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
                                 </div>
-                                <div class="flex flex-col gap-3">
+                                <div id="brands-container" class="flex flex-col gap-3">
                                     @foreach ($brands as $brand)
                                         <label class="flex items-center text-sm font-medium">
                                             <input type="checkbox" value="{{ $brand }}"
@@ -95,15 +115,20 @@
                                     @endforeach
                                 </div>
                             </div>
+                            
                             <!-- Divider -->
                             <div class="mb-6 mt-6 h-px w-full bg-[#d9d9d9]"></div>
-                            <!-- FIlter Two -->
+                            
+                            <!-- Filter Types -->
                             <div class="flex flex-col gap-6">
-                                <div
-                                    class="flex cursor-pointer items-center justify-between py-4 [border-top:1px_solid_rgba(0,_0,_0,_0)] md:py-0">
+                                <div class="flex justify-between items-center py-4 md:py-0">
                                     <p class="font-semibold">Danh mục giày</p>
+                                    <button type="button" class="lg:hidden text-gray-500" 
+                                            onclick="toggleSection(this)" data-target="types-container">
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
                                 </div>
-                                <div class="flex flex-col gap-3">
+                                <div id="types-container" class="flex flex-col gap-3">
                                     @foreach ($types as $type)
                                         <label class="flex items-center text-sm font-medium">
                                             <input type="checkbox" value="{{ $type }}"
@@ -116,15 +141,20 @@
                                     @endforeach
                                 </div>
                             </div>
+                            
                             <!-- Divider -->
                             <div class="mb-6 mt-6 h-px w-full bg-[#d9d9d9]"></div>
+                            
                             <!-- Filter Tags -->
                             <div class="flex flex-col gap-6">
-                                <div
-                                    class="flex cursor-pointer items-center justify-between py-4 [border-top:1px_solid_rgba(0,_0,_0,_0)] md:py-0">
+                                <div class="flex justify-between items-center py-4 md:py-0">
                                     <p class="font-semibold">Thẻ gán</p>
+                                    <button type="button" class="lg:hidden text-gray-500" 
+                                            onclick="toggleSection(this)" data-target="tags-container">
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
                                 </div>
-                                <div class="flex flex-col gap-3">
+                                <div id="tags-container" class="flex flex-col gap-3">
                                     @forelse ($tags as $tag)
                                         <label class="flex items-center text-sm font-medium">
                                             <input type="checkbox" value="{{ $tag->name }}"
@@ -143,11 +173,12 @@
                             <div class="mb-6 mt-6 h-px w-full bg-[#d9d9d9]"></div>
                         </form>
                     </div>
+                    
                     <!-- Product List -->
-                    <div class="w-full [border-left:1px_solid_rgb(217,_217,_217)] px-2">
+                    <div class="w-full lg:[border-left:1px_solid_rgb(217,_217,_217)] px-2">
                         <!-- Hiện thị số sản phẩm tìm kiếm được và bộ lọc  -->
-                        <div class="flex items-center justify-between py-4">
-                            <p class="text-sm font-medium">
+                        <div class="flex flex-col sm:flex-row items-center justify-between py-4">
+                            <p class="text-sm font-medium mb-3 sm:mb-0">
                                 Hiển thị {{ $products->count() }} trong {{ $tong_giay }} sản phẩm
                             </p>
                             <div class="flex items-center gap-4">
@@ -178,3 +209,34 @@
         </div>
     </section>
 </div>
+
+<!-- JavaScript để xử lý ẩn hiện từng mục trong bộ lọc trên mobile -->
+<script>
+    function toggleSection(button) {
+        const targetId = button.getAttribute('data-target');
+        const targetSection = document.getElementById(targetId);
+        
+        if (targetSection.classList.contains('hidden')) {
+            targetSection.classList.remove('hidden');
+            button.querySelector('i').classList.remove('fa-chevron-down');
+            button.querySelector('i').classList.add('fa-chevron-up');
+        } else {
+            targetSection.classList.add('hidden');
+            button.querySelector('i').classList.remove('fa-chevron-up');
+            button.querySelector('i').classList.add('fa-chevron-down');
+        }
+    }
+    
+    // Đảm bảo các mục trong bộ lọc hiển thị mặc định trên desktop
+    function updateFilterSectionsVisibility() {
+        if (window.innerWidth >= 1024) { // lg breakpoint
+            document.querySelectorAll('[id$="-container"]').forEach(container => {
+                container.classList.remove('hidden');
+            });
+        }
+    }
+    
+    // Chạy khi trang được tải và khi resize window
+    window.addEventListener('load', updateFilterSectionsVisibility);
+    window.addEventListener('resize', updateFilterSectionsVisibility);
+</script>

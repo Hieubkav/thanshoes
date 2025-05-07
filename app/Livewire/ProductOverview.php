@@ -290,7 +290,8 @@ class ProductOverview extends Component
         return $this->product->variants
             ->map(fn($variant) => $variant->color)
             ->unique()
-            ->filter();
+            ->filter()
+            ->sort(); // Add sorting in ascending order
     }
 
     private function getUniqueSizes()
@@ -298,6 +299,7 @@ class ProductOverview extends Component
         return $this->product->variants
             ->map(fn($variant) => $variant->size)
             ->unique()
-            ->filter();
+            ->filter()
+            ->sort(); // Add sorting in ascending order
     }
 }

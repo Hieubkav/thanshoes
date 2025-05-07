@@ -20,7 +20,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 md:gap-4">
         @foreach ($danh_sach_types ?? [] as $item)
             <!-- Product Card -->
-            <a href="{{route('shop.product_overview',$item->id)}}" class="border rounded-lg p-2 bg-white shadow hover:shadow-lg transition">
+            <a href="{{route('shop.product_overview',$item->slug)}}" class="border rounded-lg p-2 bg-white shadow hover:shadow-lg transition">
                 <div class="relative group">
                     <!-- Product Image -->
                     @php

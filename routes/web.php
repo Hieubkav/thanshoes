@@ -5,6 +5,7 @@ use App\Http\Controllers\ShopController;
 use App\Models\Post;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\SitemapController;
 
 
 Route::get('/', [ShopController::class, 'store_front'])
@@ -12,8 +13,9 @@ Route::get('/', [ShopController::class, 'store_front'])
     ->lazy();
 Route::get('/catfilter', [ShopController::class, 'cat_filter'])
     ->name('shop.cat_filter');
-Route::get('/product/{id}', [ShopController::class, 'product_overview'])
-    ->name('shop.product_overview');
+Route::get('/product/{slug}', [ShopController::class, 'product_overview'])
+    ->name('shop.product_overview')
+    ->where('slug', '[a-z0-9-]+');
 Route::get('/checkout', [ShopController::class, 'checkout'])
     ->name('shop.checkout');
 
@@ -58,3 +60,6 @@ Route::get('/run-storage-link', function () {
 Route::get('/admin/products/{product}/images/organize', [App\Http\Controllers\ProductImageOrganizerController::class, 'index'])->name('product.images.organize');
 Route::post('/admin/products/{product}/images/update-order', [App\Http\Controllers\ProductImageOrganizerController::class, 'updateOrder'])->name('product.images.update-order');
 Route::post('/admin/products/{product}/images/reset-order', [App\Http\Controllers\ProductImageOrganizerController::class, 'resetOrder'])->name('product.images.reset-order');
+
+// Sitemap route
+Route::get('sitemap.xml', [SitemapController::class, 'index']);

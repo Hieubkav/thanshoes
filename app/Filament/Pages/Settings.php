@@ -73,6 +73,15 @@ class Settings extends Page implements Forms\Contracts\HasForms
                                     ->directory('uploads/settings')
                                     ->deleteUploadedFileUsing(fn ($file) => Storage::disk('public')->delete($file))
                                     ->image()
+                                    ->imageEditor(),
+                                
+                                Forms\Components\FileUpload::make('og_img')
+                                    ->label('Hình chia sẻ mạng xã hội (OG Image)')
+                                    ->helperText('Hình ảnh hiển thị khi chia sẻ trang web lên mạng xã hội')
+                                    ->disk('public')
+                                    ->directory('uploads/settings')
+                                    ->deleteUploadedFileUsing(fn ($file) => Storage::disk('public')->delete($file))
+                                    ->image()
                                     ->imageEditor()
                             ])->columns(2),
 

@@ -33,5 +33,6 @@ class Setting extends Model
         'round_price',
         'apply_price',
         'dec_product_price_type',
+        'og_img',
     ];
 }

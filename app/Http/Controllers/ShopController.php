@@ -21,9 +21,9 @@ class ShopController extends Controller
         return view('shop.cat_filter');
     }
 
-    public function product_overview($id)
+    public function product_overview($slug)
     {
-        $product = Product::find($id);
+        $product = Product::where('slug', $slug)->firstOrFail();
         return view('shop.product_overview', compact('product'));
     }
 
