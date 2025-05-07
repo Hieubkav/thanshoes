@@ -87,13 +87,13 @@ class AdminController extends Controller
                         if (!empty($value['F'])) {
                             $tagsString = $value['F'];
                             $tagNames = array_map('trim', explode(',', $tagsString));
-                            
+
                             $tagIds = [];
                             foreach ($tagNames as $tagName) {
                                 if (!empty($tagName)) {
                                     // Tìm tag hiện có hoặc tạo mới mà không thay đổi hình ảnh của tag đã tồn tại
                                     $tag = \App\Models\Tag::where('name', $tagName)->first();
-                                    
+
                                     if (!$tag) {
                                         // Nếu tag không tồn tại, tạo mới
                                         $tag = new \App\Models\Tag();
@@ -101,11 +101,11 @@ class AdminController extends Controller
                                         $tag->save();
                                     }
                                     // Nếu tag đã tồn tại, không thay đổi gì cả, đặc biệt là trường image
-                                    
+
                                     $tagIds[] = $tag->id;
                                 }
                             }
-                            
+
                             // Đồng bộ tags với sản phẩm (remove tags cũ, thêm tags mới)
                             $product->tags()->sync($tagIds);
                         }
@@ -225,6 +225,877 @@ class AdminController extends Controller
         ]);
     }
 
+
+    public function nhap_hang(Request $request)
+    {
+        // Tăng thời gian thực thi lên 300 giây
+        set_time_limit(300);
+
+        // Validate đầu vào
+        $request->validate([
+            'excel_products' => 'required|file',
+            'excel_low_stock' => 'required|file',
+            'exchange_rate' => 'required|numeric',
+        ]);
+
+        try {
+            // Kiểm tra phần mở rộng file
+            $allowedExtensions = ['xlsx', 'xls'];
+            $productsExtension = strtolower($request->file('excel_products')->getClientOriginalExtension());
+            $lowStockExtension = strtolower($request->file('excel_low_stock')->getClientOriginalExtension());
+
+            if (!in_array($productsExtension, $allowedExtensions)) {
+                return back()->with('error', 'File danh sách sản phẩm phải có định dạng .xlsx hoặc .xls');
+            }
+            if (!in_array($lowStockExtension, $allowedExtensions)) {
+                return back()->with('error', 'File báo cáo sản phẩm sắp hết phải có định dạng .xlsx hoặc .xls');
+            }
+
+            // Đảm bảo thư mục uploads tồn tại
+            $directory = public_path('uploads');
+            if (!file_exists($directory)) {
+                if (!mkdir($directory, 0777, true)) {
+                    throw new \Exception("Không thể tạo thư mục: " . $directory);
+                }
+            }
+
+            // Lưu file với tên cố định
+            $request->file('excel_products')->move($directory, 'data_shoes.xlsx');
+            $request->file('excel_low_stock')->move($directory, 'cannhap.xls');
+
+            // Đường dẫn file
+            $productsFilePath = public_path('uploads/data_shoes.xlsx');
+            $lowStockFilePath = public_path('uploads/cannhap.xls');
+
+            // Đọc dữ liệu từ file Excel
+            $productsSpreadsheet = IOFactory::load($productsFilePath);
+            $productsData = $productsSpreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+            $lowStockSpreadsheet = IOFactory::load($lowStockFilePath);
+            $lowStockData = $lowStockSpreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+            // Xử lý dữ liệu từ file báo cáo sản phẩm sắp hết
+            $groupedProducts = [];
+            $excludedProducts = [];
+
+            for ($row = 6; isset($lowStockData[$row]); $row++) {
+                $sku = $lowStockData[$row]['B'] ?? '';
+                if (empty($sku)) continue;
+
+                $needToOrderRaw = $lowStockData[$row]['I'] ?? null;
+                $skuParts = explode('-', $sku);
+                $baseSku = $skuParts[0];
+                $size = $skuParts[1] ?? '';
+
+                if (empty($needToOrderRaw) || !is_numeric(str_replace([',', '.'], '', $needToOrderRaw))) {
+                    $needG = (int)($lowStockData[$row]['G'] ?? 0);
+                    $needH = (int)($lowStockData[$row]['H'] ?? 0);
+                    $needToOrder = ($size === '36') ? $needG - $needH : $needG - $needH + 1;
+                } else {
+                    $needToOrderRaw = str_replace(',', '.', $needToOrderRaw);
+                    $needToOrder = (int)$needToOrderRaw;
+                }
+
+                if ($needToOrder <= 0) {
+                    if (!isset($excludedProducts[$baseSku])) {
+                        $excludedProducts[$baseSku] = [
+                            'sizes' => [],
+                            'reasons' => [],
+                            'original_data' => [],
+                        ];
+                    }
+                    $excludedProducts[$baseSku]['sizes'][$size] = 0;
+                    $excludedProducts[$baseSku]['reasons'][$size] = "Không cần nhập thêm";
+                    $excludedProducts[$baseSku]['original_data'][$size] = [
+                        'need' => (int)($lowStockData[$row]['G'] ?? 0),
+                        'coming' => (int)($lowStockData[$row]['H'] ?? 0),
+                        'cần_nhập' => $needToOrder,
+                        'row' => $row,
+                        'raw_value' => $needToOrderRaw
+                    ];
+                    continue;
+                }
+
+                if (!isset($groupedProducts[$baseSku])) {
+                    $groupedProducts[$baseSku] = [
+                        'sizes' => [],
+                        'total_need' => 0,
+                        'images' => [],
+                        'version_count' => 0,
+                        'original_data' => []
+                    ];
+                }
+
+                $groupedProducts[$baseSku]['sizes'][$size] = $needToOrder;
+                $groupedProducts[$baseSku]['total_need'] += $needToOrder;
+                $groupedProducts[$baseSku]['version_count']++;
+                $groupedProducts[$baseSku]['original_data'][$size] = [
+                    'need' => (int)($lowStockData[$row]['G'] ?? 0),
+                    'coming' => (int)($lowStockData[$row]['H'] ?? 0),
+                    'cần_nhập' => $needToOrder,
+                    'row' => $row,
+                    'raw_value' => $needToOrderRaw
+                ];
+            }
+
+            // Lọc sản phẩm có tổng số lượng < 6
+            foreach ($groupedProducts as $baseSku => $productInfo) {
+                if ($productInfo['total_need'] < 6) {
+                    if (!isset($excludedProducts[$baseSku])) {
+                        $excludedProducts[$baseSku] = [
+                            'sizes' => $productInfo['sizes'],
+                            'reasons' => [],
+                            'original_data' => $productInfo['original_data'] ?? [],
+                            'total_need' => $productInfo['total_need'],
+                            'version_count' => $productInfo['version_count']
+                        ];
+                    } else {
+                        $excludedProducts[$baseSku]['sizes'] = array_merge(
+                            $excludedProducts[$baseSku]['sizes'] ?? [],
+                            $productInfo['sizes']
+                        );
+                        $excludedProducts[$baseSku]['original_data'] = array_merge(
+                            $excludedProducts[$baseSku]['original_data'] ?? [],
+                            $productInfo['original_data']
+                        );
+                        $excludedProducts[$baseSku]['total_need'] = ($excludedProducts[$baseSku]['total_need'] ?? 0) + $productInfo['total_need'];
+                        $excludedProducts[$baseSku]['version_count'] = ($excludedProducts[$baseSku]['version_count'] ?? 0) + $productInfo['version_count'];
+                    }
+
+                    foreach ($productInfo['sizes'] as $size => $amount) {
+                        $excludedProducts[$baseSku]['reasons'][$size] = "Tổng số lượng cần nhập chỉ có {$productInfo['total_need']} (cần tối thiểu 6)";
+                    }
+                    unset($groupedProducts[$baseSku]);
+                }
+            }
+
+            // Lọc productsData dựa trên SKU hợp lệ
+            $validBaseSkus = array_keys($groupedProducts);
+            $filteredProductsData = array_filter($productsData, function ($row) use ($validBaseSkus) {
+                if (!isset($row['N'])) return false;
+                $skuParts = explode('-', $row['N']);
+                $baseSku = $skuParts[0];
+                return in_array($baseSku, $validBaseSkus);
+            });
+
+            // Thu thập thông tin và tối ưu số lượng cho sản phẩm hợp lệ
+            foreach ($groupedProducts as $baseSku => &$productInfo) {
+                // Thu thập tên sản phẩm
+                $productInfo['name'] = $baseSku;
+                foreach ($filteredProductsData as $row) {
+                    if (isset($row['N']) && strpos($row['N'], $baseSku) === 0 && !empty($row['A'])) {
+                        $productInfo['name'] = $row['A'];
+                        break;
+                    }
+                }
+
+                // Thu thập hình ảnh
+                $productInfo['images'] = [];
+                foreach ($filteredProductsData as $row) {
+                    if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
+                        if (!in_array($row['R'], $productInfo['images']) && !empty($row['R'])) {
+                            $productInfo['images'][] = $row['R'];
+                        }
+                        foreach (['P', 'Q'] as $col) {
+                            if (!in_array($row[$col], $productInfo['images']) && !empty($row[$col])) {
+                                $productInfo['images'][] = $row[$col];
+                            }
+                        }
+                    }
+                }
+
+                // Tối ưu số lượng nếu 6 <= total_need < 12
+                if ($productInfo['total_need'] >= 6 && $productInfo['total_need'] < 12) {
+                    $originalSizes = [];
+                    $originalTotalNeed = $productInfo['total_need'];
+                    $originalSizesData = $productInfo['sizes'];
+                    foreach ($productInfo['sizes'] as $size => $quantity) {
+                        if ($quantity > 0) {
+                            $originalSizes[] = $size;
+                        }
+                    }
+                    $productInfo['original_sizes'] = $originalSizes;
+
+                    // Kiểm tra giày nữ
+                    $checkSizes = ['41', '42', '43'];
+                    $foundSizes = [];
+                    $isWomensShoe = true;
+                    foreach ($filteredProductsData as $row) {
+                        if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
+                            $skuParts = explode('-', $row['N']);
+                            $size = $skuParts[1] ?? '';
+                            if (in_array($size, $checkSizes)) {
+                                $minStock = isset($row['AC']) ? intval($row['AC']) : -1;
+                                $foundSizes[$size] = $minStock;
+                            }
+                        }
+                    }
+                    foreach ($checkSizes as $size) {
+                        if (!isset($foundSizes[$size]) || $foundSizes[$size] !== 0) {
+                            $isWomensShoe = false;
+                            break;
+                        }
+                    }
+                    $productInfo['is_womens_shoe'] = $isWomensShoe;
+
+                    // Xác định ưu tiên size
+                    $priorities = $isWomensShoe ? ['37', '38'] : ['42', '41', '43'];
+                    $additionalNeeded = 12 - $productInfo['total_need'];
+
+                    // Thu thập thông tin tồn kho và hàng đang về
+                    $targetStocks = [];
+                    $comingData = [];
+                    $minStocks = [];
+                    foreach ($priorities as $size) {
+                        $targetStocks[$size] = ['stock' => 0, 'current' => 0];
+                        $comingData[$size] = 0; // Khởi tạo mặc định là 0
+                        $minStocks[$size] = 0;
+                    }
+
+                    // Lấy dữ liệu tồn kho và tồn tối thiểu từ data_shoes.xlsx
+                    foreach ($filteredProductsData as $row) {
+                        if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
+                            $skuParts = explode('-', $row['N']);
+                            $size = $skuParts[1] ?? '';
+                            if (in_array($size, $priorities)) {
+                                $targetStocks[$size]['stock'] = (int)($row['AA'] ?? 0);
+                                $targetStocks[$size]['current'] = $productInfo['sizes'][$size] ?? 0;
+                                $minStocks[$size] = (int)($row['AC'] ?? 0);
+                            }
+                        }
+                    }
+
+                    // Lấy dữ liệu hàng đang về từ cannhap.xls cho tất cả các size ưu tiên
+                    for ($row = 6; isset($lowStockData[$row]); $row++) {
+                        $sku = $lowStockData[$row]['B'] ?? '';
+                        if (empty($sku)) continue;
+                        $skuParts = explode('-', $sku);
+                        if ($skuParts[0] !== $baseSku) continue;
+                        $size = $skuParts[1] ?? '';
+                        if (in_array($size, $priorities)) {
+                            $comingData[$size] = (int)($lowStockData[$row]['H'] ?? 0);
+                        }
+                    }
+
+                    // Kiểm tra khả năng đạt 12 đôi và tạo ghi chú chi tiết cho size ưu tiên
+                    $totalCanAdd = 0;
+                    $notes = [];
+                    foreach ($priorities as $size) {
+                        $currentStock = $targetStocks[$size]['stock'] ?? 0;
+                        $currentOrder = $productInfo['sizes'][$size] ?? 0;
+                        $coming = $comingData[$size] ?? 0;
+                        $minStock = $minStocks[$size] ?? 0;
+                        $futureStock = $currentStock + $coming + $currentOrder;
+                        $canAdd = max(0, 6 - $futureStock);
+                        $totalCanAdd += $canAdd;
+
+                        // Tạo ghi chú chi tiết cho size này
+                        $note = "Size $size: Tồn $currentStock, Tồn tối thiểu $minStock, Đang về $coming";
+                        if ($currentOrder > 0) {
+                            $note .= ", Nhập $currentOrder";
+                        }
+                        $note .= ", Tồn lý thuyết $futureStock -> " . ($canAdd > 0 ? "Có thể nhập thêm $canAdd" : "Không thể nhập thêm");
+                        $notes[] = $note;
+                    }
+
+                    // Nếu không thể đạt 12 đôi, giữ nguyên số lượng ban đầu
+                    if ($totalCanAdd < $additionalNeeded) {
+                        $notes[] = "Tổng có thể nhập thêm $totalCanAdd đôi, không đủ $additionalNeeded đôi để đạt 12 -> Chỉ nhập $originalTotalNeed đôi";
+                    } else {
+                        // Phân bổ số lượng bổ sung nếu có thể đạt 12 đôi
+                        $totalAdded = 0;
+                        $currentTotal = $productInfo['total_need'];
+                        $remainingToAdd = 12 - $currentTotal;
+                        $addedSizes = [];
+
+                        foreach ($priorities as $size) {
+                            $currentStock = $targetStocks[$size]['stock'] ?? 0;
+                            $currentOrder = $productInfo['sizes'][$size] ?? 0;
+                            $coming = $comingData[$size] ?? 0;
+                            $minStock = $minStocks[$size] ?? 0;
+                            $futureStockBefore = $currentStock + $coming + $currentOrder;
+                            $canAdd = max(0, 6 - $futureStockBefore);
+                            $addAmount = min($canAdd, $remainingToAdd - $totalAdded);
+
+                            if ($addAmount > 0) {
+                                $productInfo['sizes'][$size] = ($productInfo['sizes'][$size] ?? 0) + $addAmount;
+                                $totalAdded += $addAmount;
+                                $futureStockAfter = $futureStockBefore + $addAmount;
+                                $addedSizes[$size] = [
+                                    'added' => $addAmount,
+                                    'futureStockBefore' => $futureStockBefore,
+                                    'futureStockAfter' => $futureStockAfter
+                                ];
+                            }
+                            if ($totalAdded >= $remainingToAdd) break;
+                        }
+
+                        // Cập nhật total_need sau khi tối ưu
+                        $productInfo['total_need'] = $currentTotal + $totalAdded;
+
+                        // Tạo ghi chú chi tiết cho trường hợp tối ưu thành công
+                        $updatedNotes = [];
+                        foreach ($priorities as $size) {
+                            $currentStock = $targetStocks[$size]['stock'] ?? 0;
+                            $currentOrder = $originalSizesData[$size] ?? 0;
+                            $coming = $comingData[$size] ?? 0;
+                            $minStock = $minStocks[$size] ?? 0;
+                            $futureStockBefore = $currentStock + $coming + $currentOrder;
+                            $added = $addedSizes[$size]['added'] ?? 0;
+                            $futureStockAfter = $addedSizes[$size]['futureStockAfter'] ?? $futureStockBefore;
+                            $note = "Size $size: Tồn $currentStock, Tồn tối thiểu $minStock, Đang về $coming";
+                            if ($currentOrder > 0) {
+                                $note .= ", Nhập ban đầu $currentOrder";
+                            }
+                            $note .= ", Tồn lý thuyết trước $futureStockBefore";
+                            if ($added > 0) {
+                                $note .= " -> Nhập thêm $added, Tồn lý thuyết sau $futureStockAfter";
+                            }
+                            $updatedNotes[] = $note;
+                        }
+                        $notes = $updatedNotes;
+                        $notes[] = "Tổng nhập thêm $totalAdded đôi, đạt $productInfo[total_need] đôi";
+                    }
+
+                    // Thêm thông tin chi tiết về tất cả các size cần nhập
+                    $notes[] = "Chi tiết các size cần nhập:";
+                    foreach (array_keys($productInfo['sizes']) as $size) {
+                        $currentStock = 0;
+                        $coming = 0;
+                        $minStock = 0;
+                        $orderAmount = $productInfo['sizes'][$size] ?? 0;
+
+                        // Lấy tồn kho và tồn tối thiểu từ data_shoes.xlsx
+                        foreach ($filteredProductsData as $row) {
+                            if (isset($row['N']) && $row['N'] === $baseSku . '-' . $size) {
+                                $currentStock = (int)($row['AA'] ?? 0);
+                                $minStock = (int)($row['AC'] ?? 0);
+                                break;
+                            }
+                        }
+
+                        // Lấy hàng đang về từ cannhap.xls
+                        for ($row = 6; isset($lowStockData[$row]); $row++) {
+                            $sku = $lowStockData[$row]['B'] ?? '';
+                            if (empty($sku)) continue;
+                            $skuParts = explode('-', $sku);
+                            if ($skuParts[0] !== $baseSku) continue;
+                            if ($skuParts[1] === $size) {
+                                $coming = (int)($lowStockData[$row]['H'] ?? 0);
+                                break;
+                            }
+                        }
+
+                        $futureStockAfter = $currentStock + $coming + $orderAmount;
+                        $notes[] = "- Size $size: Tồn $currentStock, Tồn tối thiểu $minStock, Đang về $coming, Nhập $orderAmount, Tồn lý thuyết sau nhập $futureStockAfter";
+                    }
+
+                    // Thêm danh sách nhập hàng cuối cùng
+                    $notes[] = "Nhập hàng: " . implode(", ", array_map(function ($size, $quantity) {
+                        return "$size: $quantity";
+                    }, array_keys($productInfo['sizes']), $productInfo['sizes']));
+                    $productInfo['optimization_note'] = implode("\n", $notes);
+
+                    // Tính stock_after_order
+                    $productInfo['stock_after_order'] = [];
+                    foreach (array_merge($priorities, ['36', '38', '39', '40', '44', '45']) as $size) {
+                        $currentStock = 0;
+                        $coming = $productInfo['original_data'][$size]['coming'] ?? 0;
+                        $orderAmount = $productInfo['sizes'][$size] ?? 0;
+                        foreach ($filteredProductsData as $row) {
+                            if (isset($row['N']) && $row['N'] === $baseSku . '-' . $size) {
+                                $currentStock = (int)($row['AA'] ?? 0);
+                                break;
+                            }
+                        }
+                        $productInfo['stock_after_order'][$size] = $currentStock + $coming + $orderAmount;
+                    }
+                } else {
+                    // Nếu total_need >= 12 hoặc < 6, tính stock_after_order mà không tối ưu
+                    $productInfo['stock_after_order'] = [];
+                    foreach (['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] as $size) {
+                        $currentStock = 0;
+                        $coming = $productInfo['original_data'][$size]['coming'] ?? 0;
+                        $orderAmount = $productInfo['sizes'][$size] ?? 0;
+                        foreach ($filteredProductsData as $row) {
+                            if (isset($row['N']) && $row['N'] === $baseSku . '-' . $size) {
+                                $currentStock = (int)($row['AA'] ?? 0);
+                                break;
+                            }
+                        }
+                        $productInfo['stock_after_order'][$size] = $currentStock + $coming + $orderAmount;
+                    }
+                }
+            }
+
+            // Thu thập thông tin cho sản phẩm bị loại
+            foreach ($excludedProducts as $baseSku => &$productInfo) {
+                $productInfo['images'] = [];
+                $productInfo['name'] = $baseSku;
+
+                foreach ($filteredProductsData as $row) {
+                    if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
+                        if (!in_array($row['R'], $productInfo['images']) && !empty($row['R'])) {
+                            $productInfo['images'][] = $row['R'];
+                        }
+                        foreach (['P', 'Q'] as $col) {
+                            if (!in_array($row[$col], $productInfo['images']) && !empty($row[$col])) {
+                                $productInfo['images'][] = $row[$col];
+                            }
+                        }
+                        if (!empty($row['A'])) {
+                            $productInfo['name'] = $row['A'];
+                        }
+                    }
+                }
+            }
+
+            // Tạo file kết quả và báo cáo
+            $reportData = [];
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle(date('d_m_Y'));
+
+            // Thiết lập header file kết quả
+            $sheet->setCellValue('A1', 'Hình ảnh');
+            $sheet->setCellValue('B1', 'Tên sản phẩm');
+            for ($i = 0; $i <= 9; $i++) {
+                $sheet->setCellValue(chr(67 + $i) . '1', 36 + $i);
+            }
+            $sheet->setCellValue('L1', 'Tổng');
+            $sheet->setCellValue('M1', 'Giá');
+            $sheet->setCellValue('N1', 'Thành tiền');
+            $sheet->setCellValue('O1', 'SKU');
+
+            // Điền dữ liệu
+            $row = 2;
+            foreach ($groupedProducts as $baseSku => $productInfo) {
+                if ($productInfo['total_need'] >= 6) { // Chỉ xử lý sản phẩm có total_need >= 6
+                    $imageLinks = $productInfo['images'] ?? [];
+                    $sheet->setCellValue('A' . $row, implode("\n", $imageLinks));
+                    $sheet->getRowDimension($row)->setRowHeight(-1);
+
+                    $productName = $productInfo['name'] ?? $baseSku;
+                    $sheet->setCellValue('B' . $row, $productName);
+
+                    $total = 0;
+                    for ($i = 0; $i <= 9; $i++) {
+                        $size = 36 + $i;
+                        $amount = $productInfo['sizes'][$size] ?? 0;
+                        $sheet->setCellValue(chr(67 + $i) . $row, $amount);
+                        $total += $amount;
+                    }
+
+                    $reportData[] = [
+                        'sku' => $baseSku,
+                        'name' => $productName,
+                        'images' => $imageLinks,
+                        'sizes' => $productInfo['sizes'],
+                        'total' => $total,
+                        'amount' => $productInfo['total_need'],
+                        'optimized' => ($productInfo['total_need'] >= 12 ? 'Đã tối ưu' : ($productInfo['optimization_note'] ?? 'Chưa tối ưu')),
+                        'optimization_note' => $productInfo['optimization_note'] ?? ($productInfo['total_need'] >= 12 ? 'Đã tối ưu' : 'Chưa tối ưu'),
+                        'original_sizes' => $productInfo['original_sizes'] ?? []
+                    ];
+
+                    $sheet->setCellValue('L' . $row, $total);
+                    $sheet->setCellValue('M' . $row, 10);
+                    $sheet->setCellValue('N' . $row, '=L' . $row . '*M' . $row);
+                    $sheet->setCellValue('O' . $row, $baseSku);
+                    $row++;
+                }
+            }
+
+            // Định dạng file kết quả
+            $lastRow = $sheet->getHighestRow();
+            $sheet->getStyle('A1:O1')->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4A90E2']],
+            ]);
+            $sheet->getStyle('A1:O' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            $sheet->getStyle('L2:N' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
+            foreach (range('A', 'O') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            $sheet->getColumnDimension('A')->setWidth(50);
+            $sheet->getStyle('A2:A' . $lastRow)->getAlignment()->setWrapText(true);
+
+            $outputPath = public_path('uploads/nhap_hang_trung_quoc.xlsx');
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer->save($outputPath);
+
+            // Tạo file báo cáo chi tiết
+            $reportSpreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $reportSheet = $reportSpreadsheet->getActiveSheet();
+            $reportSheet->setTitle('Báo cáo nhập hàng');
+
+            // Thiết lập header báo cáo
+            $reportSheet->setCellValue('A1', 'Hình ảnh URL');
+            $reportSheet->setCellValue('B1', 'Hình ảnh');
+            $reportSheet->setCellValue('C1', 'Tên sản phẩm');
+            $reportSheet->setCellValue('D1', 'SKU');
+            for ($i = 0; $i <= 9; $i++) {
+                $reportSheet->setCellValue(chr(69 + $i) . '1', 'Size ' . (36 + $i));
+            }
+            $reportSheet->setCellValue('O1', 'Tổng');
+            $reportSheet->setCellValue('P1', 'Ghi chú');
+
+            // Điền dữ liệu báo cáo
+            $reportRow = 2;
+            foreach ($reportData as $data) {
+                $imageUrl = isset($data['images'][0]) ? $data['images'][0] : '';
+                $reportSheet->setCellValue('A' . $reportRow, $imageUrl);
+                $reportSheet->setCellValue('B' . $reportRow, '=IMAGE(A' . $reportRow . ',2)');
+                $reportSheet->setCellValue('C' . $reportRow, $data['name'] ?? $data['sku']);
+                $reportSheet->setCellValue('D' . $reportRow, $data['sku']);
+
+                $total = 0;
+                $originalSizes = $data['original_sizes'] ?? [];
+                for ($i = 0; $i <= 9; $i++) {
+                    $size = 36 + $i;
+                    $amount = $data['sizes'][$size] ?? 0;
+                    $reportSheet->setCellValue(chr(69 + $i) . $reportRow, $amount);
+                    $total += $amount;
+
+                    if (in_array($size, $originalSizes) && $amount > 0) {
+                        $reportSheet->getStyle(chr(69 + $i) . $reportRow)->applyFromArray([
+                            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'A9DFBF']]
+                        ]);
+                    } else if ($amount > 0) {
+                        $reportSheet->getStyle(chr(69 + $i) . $reportRow)->applyFromArray([
+                            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFF3CD']]
+                        ]);
+                    }
+                }
+                $reportSheet->setCellValue('O' . $reportRow, $total);
+                $reportSheet->setCellValue('P' . $reportRow, $data['optimization_note']);
+                $reportRow++;
+            }
+
+            // Format báo cáo
+            $lastRow = $reportSheet->getHighestRow();
+            $reportSheet->getStyle('A1:P1')->applyFromArray([
+                'font' => ['bold' => true],
+                'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
+            ]);
+            $reportSheet->getStyle('A1:P' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            foreach (range('A', 'P') as $col) {
+                $reportSheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            $reportSheet->getColumnDimension('A')->setWidth(50);
+            $reportSheet->getStyle('A2:A' . $lastRow)->getAlignment()->setWrapText(true);
+            $reportSheet->getColumnDimension('B')->setWidth(20);
+            $reportSheet->getColumnDimension('C')->setWidth(30);
+            $reportSheet->getStyle('C2:C' . $lastRow)->getAlignment()->setWrapText(true);
+            $reportSheet->getColumnDimension('P')->setWidth(60);
+            $reportSheet->getStyle('P2:P' . $lastRow)->getAlignment()->setWrapText(true);
+            foreach (range('D', 'O') as $col) {
+                if (ord($col) <= ord('P')) {
+                    $reportSheet->getStyle($col . '2:' . $col . $lastRow)
+                        ->getAlignment()
+                        ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                }
+            }
+
+            // Sheet Log
+            $logSheet = $reportSpreadsheet->createSheet();
+            $logSheet->setTitle('Log');
+            $logSheet->setCellValue('A1', 'Hình ảnh URL');
+            $logSheet->setCellValue('B1', 'Hình ảnh');
+            $logSheet->setCellValue('C1', 'Tên sản phẩm');
+            $logSheet->setCellValue('D1', 'SKU');
+            for ($i = 0; $i <= 9; $i++) {
+                $logSheet->setCellValue(chr(69 + $i) . '1', 'Size ' . (36 + $i));
+            }
+            $logSheet->setCellValue('O1', 'Tổng');
+            $logSheet->setCellValue('P1', 'Cần');
+            $logSheet->setCellValue('Q1', 'Đang về');
+            $logSheet->setCellValue('R1', 'Lý do không nhập');
+
+            $logRow = 2;
+            foreach ($excludedProducts as $baseSku => $data) {
+                $imageUrl = isset($data['images'][0]) ? $data['images'][0] : '';
+                $logSheet->setCellValue('A' . $logRow, $imageUrl);
+                $logSheet->setCellValue('B' . $logRow, '=IMAGE(A' . $logRow . ',2)');
+                $logSheet->setCellValue('C' . $logRow, $data['name'] ?? $baseSku);
+                $logSheet->setCellValue('D' . $logRow, $baseSku);
+
+                $total = 0;
+                $allReasons = [];
+                for ($i = 0; $i <= 9; $i++) {
+                    $size = 36 + $i;
+                    $amount = $data['sizes'][$size] ?? 0;
+                    $logSheet->setCellValue(chr(69 + $i) . $logRow, $amount);
+                    $total += $amount;
+                    if (isset($data['reasons'][$size]) && !empty($data['reasons'][$size])) {
+                        $allReasons[$size] = $data['reasons'][$size];
+                    }
+                }
+
+                $logSheet->setCellValue('O' . $logRow, $total);
+                $totalNeed = 0;
+                $totalComing = 0;
+                if (isset($data['original_data'])) {
+                    foreach ($data['original_data'] as $size => $info) {
+                        $totalNeed += $info['need'] ?? 0;
+                        $totalComing += $info['coming'] ?? 0;
+                    }
+                }
+                $logSheet->setCellValue('P' . $logRow, $totalNeed);
+                $logSheet->setCellValue('Q' . $logRow, $totalComing);
+
+                if (count($allReasons) > 1) {
+                    $formattedReasons = array_map(function ($size, $reason) {
+                        return "Size $size: $reason";
+                    }, array_keys($allReasons), $allReasons);
+                    $logSheet->setCellValue('R' . $logRow, implode("\n", $formattedReasons));
+                } else {
+                    $mainReason = reset($allReasons) ?: "Không xác định";
+                    $logSheet->setCellValue('R' . $logRow, $mainReason);
+                }
+                $logRow++;
+            }
+
+            // Format Log
+            $lastRow = $logSheet->getHighestRow();
+            $logSheet->getStyle('A1:R1')->applyFromArray([
+                'font' => ['bold' => true],
+                'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
+            ]);
+            $logSheet->getStyle('A1:R' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            foreach (range('A', 'R') as $col) {
+                $logSheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            $logSheet->getColumnDimension('A')->setWidth(50);
+            $logSheet->getStyle('A2:A' . $lastRow)->getAlignment()->setWrapText(true);
+            $logSheet->getColumnDimension('B')->setWidth(20);
+            $logSheet->getColumnDimension('C')->setWidth(30);
+            $logSheet->getStyle('C2:C' . $lastRow)->getAlignment()->setWrapText(true);
+            $logSheet->getColumnDimension('R')->setWidth(40);
+            $logSheet->getStyle('R2:R' . $lastRow)->getAlignment()->setWrapText(true);
+            foreach (range('D', 'Q') as $col) {
+                if (ord($col) <= ord('R')) {
+                    $logSheet->getStyle($col . '2:' . $col . $lastRow)
+                        ->getAlignment()
+                        ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                }
+            }
+
+            // Sheet File gửi kho Trung Quốc
+            $warehouseSheet = $reportSpreadsheet->createSheet();
+            $warehouseSheet->setTitle('File gửi kho trung quốc');
+            $warehouseSheet->setCellValue('A1', 'Hình ảnh');
+            for ($i = 0; $i <= 9; $i++) {
+                $warehouseSheet->setCellValue(chr(66 + $i) . '1', 'Size ' . (36 + $i));
+            }
+            $warehouseSheet->setCellValue('L1', 'Tổng');
+            $warehouseSheet->setCellValue('M1', 'SKU');
+            $warehouseSheet->setCellValue('N1', 'Giá nhập');
+            $warehouseSheet->setCellValue('O1', 'Thành tiền');
+            $warehouseSheet->setCellValue('P1', 'Tỷ giá');
+            $warehouseSheet->setCellValue('Q1', 'Tổng tiền VND');
+
+            $exchangeRate = $request->input('exchange_rate', 3500);
+            $priceData = [];
+            foreach ($productsData as $row) {
+                if (isset($row['N']) && !empty($row['N'])) {
+                    $skuParts = explode('-', $row['N']);
+                    $baseSku = $skuParts[0];
+                    if (isset($row['AG']) && is_numeric(str_replace([',', '.'], '', $row['AG']))) {
+                        $importPrice = str_replace([',', '.'], '', $row['AG']);
+                        $priceData[$baseSku] = (float)$importPrice;
+                    }
+                }
+            }
+
+            $warehouseRow = 2;
+            foreach ($reportData as $data) {
+                $baseSku = $data['sku'];
+                $imageUrl = isset($data['images'][0]) ? $data['images'][0] : '';
+                $importPrice = isset($priceData[$baseSku]) ? $priceData[$baseSku] : 0;
+
+                $warehouseSheet->setCellValue('A' . $warehouseRow, $imageUrl);
+                $total = 0;
+                for ($i = 0; $i <= 9; $i++) {
+                    $size = 36 + $i;
+                    $amount = $data['sizes'][$size] ?? 0;
+                    // Chỉ ghi số lượng nếu amount > 0, nếu không thì để trống
+                    if ($amount > 0) {
+                        $warehouseSheet->setCellValue(chr(66 + $i) . $warehouseRow, $amount);
+                    }
+                    $total += $amount;
+                }
+
+                $warehouseSheet->setCellValue('L' . $warehouseRow, $total);
+                $warehouseSheet->setCellValue('M' . $warehouseRow, $baseSku);
+                $warehouseSheet->setCellValue('N' . $warehouseRow, $importPrice);
+                $warehouseSheet->setCellValue('O' . $warehouseRow, '=L' . $warehouseRow . '*N' . $warehouseRow);
+                $warehouseSheet->setCellValue('P' . $warehouseRow, $exchangeRate);
+                $warehouseSheet->setCellValue('Q' . $warehouseRow, '=O' . $warehouseRow . '*P' . $warehouseRow);
+
+                $warehouseRow += 2;
+                if ($warehouseRow <= (count($reportData) * 2)) {
+                    $warehouseSheet->setCellValue('A' . ($warehouseRow - 1), 'Hình ảnh');
+                    for ($i = 0; $i <= 9; $i++) {
+                        $warehouseSheet->setCellValue(chr(66 + $i) . ($warehouseRow - 1), 'Size ' . (36 + $i));
+                    }
+                    $warehouseSheet->setCellValue('L' . ($warehouseRow - 1), 'Tổng');
+                    $warehouseSheet->setCellValue('M' . ($warehouseRow - 1), 'SKU');
+                    $warehouseSheet->setCellValue('N' . ($warehouseRow - 1), 'Giá nhập');
+                    $warehouseSheet->setCellValue('O' . ($warehouseRow - 1), 'Thành tiền');
+                    $warehouseSheet->setCellValue('P' . ($warehouseRow - 1), 'Tỷ giá');
+                    $warehouseSheet->setCellValue('Q' . ($warehouseRow - 1), 'Tổng tiền VND');
+                    $warehouseSheet->getStyle('A' . ($warehouseRow - 1) . ':Q' . ($warehouseRow - 1))->applyFromArray([
+                        'font' => ['bold' => true],
+                        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
+                        'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
+                    ]);
+                }
+            }
+
+            // Format warehouse sheet
+            $lastRow = $warehouseRow - 1;
+            $warehouseSheet->getStyle('A1:Q1')->applyFromArray([
+                'font' => ['bold' => true],
+                'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
+                'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
+            ]);
+            $warehouseSheet->getStyle('A1:Q' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            $warehouseSheet->getStyle('N2:Q' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
+            foreach (range('A', 'Q') as $col) {
+                $warehouseSheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            $warehouseSheet->getColumnDimension('A')->setWidth(20);
+            foreach (range('B', 'L') as $col) {
+                if (ord($col) <= ord('Q')) {
+                    $warehouseSheet->getStyle($col . '2:' . $col . $lastRow)
+                        ->getAlignment()
+                        ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                }
+            }
+
+            $reportWriter = IOFactory::createWriter($reportSpreadsheet, 'Xlsx');
+            $reportWriter->setPreCalculateFormulas(false);
+            $reportWriter->save(public_path('uploads/nhap_hang_trung_quoc.xlsx'));
+
+            // Tạo file Sapo
+            $templateFilePath = public_path('uploads/nhap_hang_sapo_template.xlsx');
+            $outputFilePath = public_path('uploads/nhap_hang_sapo.xlsx');
+
+            if (!file_exists($templateFilePath) && file_exists($outputFilePath)) {
+                copy($outputFilePath, $templateFilePath);
+            } else if (!file_exists($templateFilePath)) {
+                $emptySpreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+                $sheet = $emptySpreadsheet->getActiveSheet();
+                $sheet->setCellValue('A7', 'Mã SKU');
+                $sheet->setCellValue('B7', 'Mã Barcode');
+                $sheet->setCellValue('C7', 'Tên sản phẩm');
+                $sheet->setCellValue('D7', 'Số lượng');
+                $sheet->setCellValue('I7', 'Đơn giá');
+                $writer = IOFactory::createWriter($emptySpreadsheet, 'Xlsx');
+                $writer->save($templateFilePath);
+            }
+
+            if (file_exists($outputFilePath)) {
+                unlink($outputFilePath);
+            }
+            copy($templateFilePath, $outputFilePath);
+
+            $sapoSpreadsheet = IOFactory::load($outputFilePath);
+            $sapoSheet = $sapoSpreadsheet->getActiveSheet();
+
+            $wholesalePrices = [];
+            foreach ($productsData as $row) {
+                if (isset($row['N']) && !empty($row['N'])) {
+                    $skuParts = explode('-', $row['N']);
+                    $baseSku = $skuParts[0];
+                    $size = $skuParts[1] ?? '';
+                    if (isset($row['AB']) && is_numeric(str_replace([',', '.'], '', $row['AB']))) {
+                        $wholesalePrice = str_replace([',', '.'], '', $row['AB']);
+                        $wholesalePrices[$baseSku . '-' . $size] = (float)$wholesalePrice;
+                    }
+                }
+            }
+
+            $rowIndex = 8;
+            foreach ($reportData as $data) {
+                $baseSku = $data['sku'];
+                $productName = $data['name'];
+                foreach ($data['sizes'] as $size => $quantity) {
+                    if ($quantity > 0) {
+                        $sku = $baseSku . '-' . $size;
+                        $sapoSheet->setCellValue('A' . $rowIndex, $sku);
+                        $sapoSheet->setCellValue('B' . $rowIndex, $sku);
+                        $sapoSheet->setCellValue('C' . $rowIndex, $productName . ' - Size ' . $size);
+                        $sapoSheet->setCellValue('D' . $rowIndex, $quantity);
+                        $sapoSheet->setCellValue('I' . $rowIndex, $wholesalePrices[$sku] ?? 0);
+                        $rowIndex++;
+                    }
+                }
+            }
+
+            $sapoWriter = IOFactory::createWriter($sapoSpreadsheet, 'Xlsx');
+            $sapoWriter->save($outputFilePath);
+
+            // Cập nhật file cannhap.xls
+            $sheet = $lowStockSpreadsheet->getActiveSheet();
+            if (empty($sheet->getCell('J1')->getValue())) {
+                $sheet->setCellValue('J1', 'Kết quả xử lý');
+                $sheet->setCellValue('K1', 'Lý do');
+                $sheet->getStyle('J1:K1')->applyFromArray([
+                    'font' => ['bold' => true],
+                    'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
+                    'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
+                ]);
+            }
+
+            foreach ($groupedProducts as $baseSku => $productInfo) {
+                if (isset($productInfo['original_data'])) {
+                    foreach ($productInfo['original_data'] as $size => $info) {
+                        $row = $info['row'];
+                        $sheet->setCellValue('J' . $row, 'Đưa vào DS nhập');
+                        $needToOrder = $productInfo['sizes'][$size] ?? 0;
+                        $originalAmount = $info['need'] - $info['coming'] + ($size !== '36' ? 1 : 0);
+                        $sheet->setCellValue('K' . $row, $needToOrder != $originalAmount ? "Được điều chỉnh từ $originalAmount lên $needToOrder" : "Giữ nguyên số lượng");
+                        $sheet->getStyle('J' . $row)->applyFromArray([
+                            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D4EDDA']],
+                        ]);
+                    }
+                }
+            }
+
+            foreach ($excludedProducts as $baseSku => $productInfo) {
+                if (isset($productInfo['original_data'])) {
+                    foreach ($productInfo['original_data'] as $size => $info) {
+                        $row = $info['row'];
+                        $sheet->setCellValue('J' . $row, 'Loại bỏ');
+                        $reason = $productInfo['reasons'][$size] ?? 'Không đủ điều kiện';
+                        $sheet->setCellValue('K' . $row, $reason);
+                        $sheet->getStyle('J' . $row)->applyFromArray([
+                            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F8D7DA']],
+                        ]);
+                    }
+                }
+            }
+
+            foreach (range('J', 'K') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            $writer = IOFactory::createWriter($lowStockSpreadsheet, 'Xls');
+            $writer->save($lowStockFilePath);
+
+            $reportFilename = 'nhap_hang_trung_quoc.xlsx';
+            return back()->with([
+                'success' => 'Xử lý thành công! File báo cáo đã được tạo.',
+                'report_filename' => $reportFilename
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Lỗi khi xử lý: ' . $e->getMessage());
+        }
+    }
+    
+
     /**
      * Xử lý nhập hàng từ file Excel
      * Logic nghiệp vụ:
@@ -238,7 +1109,7 @@ class AdminController extends Controller
      *    - exchange_rate: Tỉ giá tiền tệ (bắt buộc, kiểu số)
      * @return \Illuminate\Http\Response download file chính và lưu file báo cáo
      */
-    public function nhap_hang(Request $request)
+    public function nhap_hang_old(Request $request)
     {
         // Tăng thời gian thực thi lên 240 giây
         set_time_limit(300);
@@ -255,11 +1126,11 @@ class AdminController extends Controller
             $allowedExtensions = ['xlsx', 'xls'];
             $productsExtension = strtolower($request->file('excel_products')->getClientOriginalExtension());
             $lowStockExtension = strtolower($request->file('excel_low_stock')->getClientOriginalExtension());
-            
+
             if (!in_array($productsExtension, $allowedExtensions)) {
                 return back()->with('error', 'File danh sách sản phẩm phải có định dạng .xlsx hoặc .xls');
             }
-            
+
             if (!in_array($lowStockExtension, $allowedExtensions)) {
                 return back()->with('error', 'File báo cáo sản phẩm sắp hết phải có định dạng .xlsx hoặc .xls');
             }
@@ -275,22 +1146,34 @@ class AdminController extends Controller
             // Đọc dữ liệu từ file
             $productsData = $this->readExcelFile($productsFilePath);
             $lowStockData = $this->readExcelFile($lowStockFilePath);
-            
+
             // Xử lý dữ liệu từ file báo cáo sản phẩm sắp hết
             $processedData = $this->processLowStockData($lowStockData);
             $groupedProducts = $processedData['valid']; // Sản phẩm hợp lệ
             $excludedProducts = $processedData['excluded']; // Sản phẩm bị loại
-            
+
+            // ==== SỬA LỖI: Chỉ lấy SKU có trong file tồn kho dưới định mức ====
+            // Lấy danh sách SKU gốc hợp lệ từ file tồn kho dưới định mức
+            $validBaseSkus = array_keys($groupedProducts);
+            // Lọc lại productsData chỉ giữ các dòng có SKU gốc nằm trong validBaseSkus
+            $filteredProductsData = array_filter($productsData, function ($row) use ($validBaseSkus) {
+                if (!isset($row['N'])) return false;
+                $skuParts = explode('-', $row['N']);
+                $baseSku = $skuParts[0];
+                return in_array($baseSku, $validBaseSkus);
+            });
+            // ==== END SỬA LỖI ====
+
             // Thu thập thông tin hình ảnh và tối ưu số lượng cho cả sản phẩm hợp lệ và bị loại
-            $groupedProducts = $this->optimizeProductsData($groupedProducts, $productsData);
-            $excludedProducts = $this->collectProductDetailsForExcluded($excludedProducts, $productsData);
-            
+            $groupedProducts = $this->optimizeProductsData($groupedProducts, $filteredProductsData);
+            $excludedProducts = $this->collectProductDetailsForExcluded($excludedProducts, $filteredProductsData);
+
             // Tạo file Excel kết quả và file báo cáo
             $reportData = [];
             $logData = []; // Dữ liệu cho sheet log
-            
+
             $outputPath = $this->generateResultFile($groupedProducts, $reportData);
-            
+
             // Tạo file báo cáo chi tiết với cả sheet chính và sheet log
             $this->generateDetailedReport($reportData, $excludedProducts);
 
@@ -300,7 +1183,7 @@ class AdminController extends Controller
             // Thay vì trả về file để download, trả về với thông báo thành công
             $reportFilename = 'nhap_hang_trung_quoc.xlsx'; // Tên file báo cáo
             return back()->with([
-                'success' => 'Xử lý thành công! File báo cáo đã được tạo.', 
+                'success' => 'Xử lý thành công! File báo cáo đã được tạo.',
                 'report_filename' => $reportFilename
             ]);
         } catch (\Exception $e) {
@@ -316,7 +1199,7 @@ class AdminController extends Controller
     public function download_nhap_hang_report()
     {
         $reportPath = public_path('uploads/nhap_hang_trung_quoc.xlsx');
-        
+
         if (file_exists($reportPath)) {
             return response()->download($reportPath, 'Báo cáo nhập hàng trung quốc.xlsx');
         } else {
@@ -332,7 +1215,7 @@ class AdminController extends Controller
     public function download_nhap_hang_sapo()
     {
         $reportPath = public_path('uploads/nhap_hang_sapo.xlsx');
-        
+
         if (file_exists($reportPath)) {
             return response()->download($reportPath, 'Nhập hàng Sapo.xlsx');
         } else {
@@ -401,17 +1284,17 @@ class AdminController extends Controller
 
             // Xử lý cột I - Cần xử lý nhiều định dạng số (ví dụ: "1,000" hoặc "1.0")
             $needToOrderRaw = $lowStockData[$row]['I'] ?? null;
-            
+
             // Tách SKU để xác định size
             $skuParts = explode('-', $sku);
             $baseSku = $skuParts[0];  // SKU gốc của sản phẩm
             $size = $skuParts[1] ?? ''; // Size của phiên bản
-            
+
             // Nếu cột I trống, tính theo công thức
             if (empty($needToOrderRaw) || !is_numeric(str_replace([',', '.'], '', $needToOrderRaw))) {
                 $needG = (int)($lowStockData[$row]['G'] ?? 0);
                 $needH = (int)($lowStockData[$row]['H'] ?? 0);
-                
+
                 // Đối với size 36, chỉ lấy đúng G-H (cần bao nhiêu thì nhập bấy nhiêu)
                 if ($size === '36') {
                     $needToOrder = $needG - $needH;
@@ -419,7 +1302,7 @@ class AdminController extends Controller
                     // Các size khác áp dụng công thức cũ G-H+1
                     $needToOrder = $needG - $needH + 1;
                 }
-                
+
                 // Log ra để debug
                 \Illuminate\Support\Facades\Log::info("Dòng $row: Size $size, Cột I trống, tính từ công thức: $needG - $needH" . ($size !== '36' ? " + 1" : "") . " = $needToOrder");
             } else {
@@ -428,7 +1311,7 @@ class AdminController extends Controller
                     $needToOrderRaw = str_replace(',', '.', $needToOrderRaw);
                 }
                 $needToOrder = (int)$needToOrderRaw;
-                
+
                 // Log ra để debug
                 \Illuminate\Support\Facades\Log::info("Dòng $row: Size $size, Lấy từ cột I: $needToOrderRaw => $needToOrder");
             }
@@ -443,7 +1326,7 @@ class AdminController extends Controller
                         'original_data' => [],
                     ];
                 }
-                
+
                 // Thêm thông tin chi tiết
                 $excludedProducts[$baseSku]['sizes'][$size] = 0;
                 $excludedProducts[$baseSku]['reasons'][$size] = "Không cần nhập thêm";
@@ -454,7 +1337,7 @@ class AdminController extends Controller
                     'row' => $row,
                     'raw_value' => $needToOrderRaw
                 ];
-                
+
                 continue; // Bỏ qua nếu không cần đặt thêm
             }
 
@@ -471,7 +1354,7 @@ class AdminController extends Controller
             $groupedProducts[$baseSku]['sizes'][$size] = $needToOrder;
             $groupedProducts[$baseSku]['total_need'] += $needToOrder;
             $groupedProducts[$baseSku]['version_count']++; // Đếm số phiên bản của sản phẩm
-            
+
             // Lưu thông tin chi tiết (để tham chiếu sau này nếu cần)
             $groupedProducts[$baseSku]['original_data'][$size] = [
                 'need' => (int)($lowStockData[$row]['G'] ?? 0),
@@ -497,7 +1380,7 @@ class AdminController extends Controller
                     ];
                 } else {
                     $excludedProducts[$baseSku]['sizes'] = array_merge(
-                        $excludedProducts[$baseSku]['sizes'] ?? [], 
+                        $excludedProducts[$baseSku]['sizes'] ?? [],
                         $productInfo['sizes']
                     );
                     if (isset($productInfo['original_data'])) {
@@ -509,12 +1392,12 @@ class AdminController extends Controller
                     $excludedProducts[$baseSku]['total_need'] = ($excludedProducts[$baseSku]['total_need'] ?? 0) + $productInfo['total_need'];
                     $excludedProducts[$baseSku]['version_count'] = ($excludedProducts[$baseSku]['version_count'] ?? 0) + $productInfo['version_count'];
                 }
-                
+
                 // Thêm lý do loại trừ chung cho sản phẩm này
                 foreach ($productInfo['sizes'] as $size => $amount) {
                     $excludedProducts[$baseSku]['reasons'][$size] = "Tổng số lượng cần nhập chỉ có {$productInfo['total_need']} (cần tối thiểu 6)";
                 }
-                
+
                 unset($groupedProducts[$baseSku]);
             }
         }
@@ -544,14 +1427,14 @@ class AdminController extends Controller
                 $productInfo['images'] = [];
             }
             $this->collectProductImages($baseSku, $productInfo, $productsData);
-            
+
             // Thu thập tên sản phẩm từ file danh sách
             if (!isset($productInfo['name'])) {
                 $productInfo['name'] = $baseSku;
                 $this->collectProductName($baseSku, $productInfo, $productsData);
             }
         }
-        
+
         return $excludedProducts;
     }
 
@@ -567,7 +1450,7 @@ class AdminController extends Controller
     {
         // Khởi tạo tên sản phẩm mặc định là SKU
         $productInfo['name'] = $baseSku;
-        
+
         foreach ($productsData as $row) {
             // Tìm các dòng có cùng SKU gốc
             if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
@@ -597,7 +1480,7 @@ class AdminController extends Controller
                 if (!in_array($row['R'], $productInfo['images'])) {
                     $productInfo['images'][] = $row['R'];
                 }
-                
+
                 // Thu thập hình ảnh từ các cột P, Q (phụ) nếu có
                 foreach (['P', 'Q'] as $col) {
                     if (!in_array($row[$col], $productInfo['images'])) {
@@ -627,12 +1510,12 @@ class AdminController extends Controller
         }
         // Lưu vào productInfo để sử dụng sau
         $productInfo['original_sizes'] = $originalSizes;
-        
+
         $additionalNeeded = 12 - $productInfo['total_need']; // Số lượng còn thiếu
-        
+
         // Kiểm tra xem sản phẩm có phải là giày nữ hay không
         $isWomensShoe = $this->isWomensShoe($baseSku, $productsData);
-        
+
         // Chọn thứ tự ưu tiên size dựa vào loại giày
         if ($isWomensShoe) {
             $priorities = ['37', '38']; // Ưu tiên size 37, 38 cho giày nữ
@@ -641,7 +1524,7 @@ class AdminController extends Controller
             $priorities = ['42', '41', '43']; // Ưu tiên size 42, 41, 43 cho giày nam
             $productInfo['is_womens_shoe'] = false; // Đánh dấu là giày nam
         }
-        
+
         $targetStocks = []; // Lưu thông tin tồn kho và số lượng hiện tại của mỗi size
 
         // Thu thập thông tin tồn kho cho các size ưu tiên
@@ -682,158 +1565,57 @@ class AdminController extends Controller
      */
     private function distributeWomensShoeQuantities(&$productInfo, $targetStocks, $priorities, $additionalNeeded)
     {
-        // Dựa trên tồn kho sau khi nhập để tính toán phân phối
-        $currentTotal = $productInfo['total_need']; // Tổng số lượng hiện tại
-        $targetTotal = 12; // Tổng số lượng mục tiêu
-        $remainingToAdd = $targetTotal - $currentTotal; // Số lượng cần thêm
-        
-        if ($remainingToAdd <= 0) return; // Không cần thêm
+        $currentTotal = $productInfo['total_need'];
+        $targetTotal = 12;
+        $remainingToAdd = $targetTotal - $currentTotal;
+        if ($remainingToAdd <= 0) return;
 
-        // Thu thập thông tin tồn kho và số lượng hiện tại cần nhập
-        $sizeInfo = [];
+        // Lấy thông tin hàng đang về cho từng size
+        $comingData = [];
         foreach ($priorities as $size) {
-            $currentStock = $targetStocks[$size]['stock'] ?? 0; // Tồn kho hiện tại
-            $currentOrder = $productInfo['sizes'][$size] ?? 0; // Số lượng đang đặt
-            
-            $sizeInfo[$size] = [
-                'currentStock' => $currentStock, // Tồn kho hiện tại
-                'currentOrder' => $currentOrder, // Số lượng đang đặt
-                'futureStock' => $currentStock + $currentOrder // Tồn kho tương lai sau khi nhập
-            ];
+            $comingData[$size] = 0;
         }
-        
-        // Bước 1: Kiểm tra xem sizes yêu cầu ban đầu có trùng với sizes ưu tiên không
-        $originalSizesInPriorities = array_intersect($productInfo['original_sizes'] ?? [], $priorities);
-        
-        // Xử lý trường hợp đặc biệt cho ONITSUKATIGERPINKK
-        // Khi size 37 và 38 đều có trong danh sách ban đầu
-        if (count($originalSizesInPriorities) >= 2 && 
-            in_array('37', $originalSizesInPriorities) && 
-            in_array('38', $originalSizesInPriorities)) {
-            
-            // Lấy thông tin hiện tại
-            $stock37 = $sizeInfo['37']['currentStock'];
-            $stock38 = $sizeInfo['38']['currentStock'];
-            $order37 = $sizeInfo['37']['currentOrder'];
-            $order38 = $sizeInfo['38']['currentOrder'];
-            
-            // Tính toán tổng cần đạt
-            $total = $order37 + $order38 + $remainingToAdd;
-            
-            // Phân phối lại để cân bằng tồn kho sau nhập
-            $target = $stock37 + $stock38 + $total; // Tổng tồn kho sau khi nhập
-            $targetPerSize = floor($target / 2); // Mục tiêu mỗi size
-            
-            // Tính toán số lượng mới cho mỗi size để cân bằng tồn kho sau nhập
-            $newOrder37 = max(0, $targetPerSize - $stock37);
-            $newOrder38 = max(0, $targetPerSize - $stock38);
-            
-            // Nếu không đủ tổng số lượng, điều chỉnh để đạt đủ tổng 12 đôi
-            $adjustedTotal = $newOrder37 + $newOrder38;
-            if ($adjustedTotal < $total) {
-                // Thêm đôi dư vào size 37 (ưu tiên)
-                $newOrder37 += ($total - $adjustedTotal);
-            } else if ($adjustedTotal > $total) {
-                // Giảm size 38 trước (ít ưu tiên hơn)
-                $excess = $adjustedTotal - $total;
-                if ($newOrder38 >= $excess) {
-                    $newOrder38 -= $excess;
-                } else {
-                    $newOrder38 = 0;
-                    $newOrder37 -= ($excess - $newOrder38);
+        if (isset($productInfo['original_data'])) {
+            foreach ($productInfo['original_data'] as $size => $info) {
+                if (isset($comingData[$size])) {
+                    $comingData[$size] = (int)($info['coming'] ?? 0);
                 }
             }
-            
-            // Cập nhật lại thông tin đặt hàng
-            $productInfo['sizes']['37'] = $newOrder37;
-            $productInfo['sizes']['38'] = $newOrder38;
-            $productInfo['total_need'] = $currentTotal + ($newOrder37 - $order37) + ($newOrder38 - $order38);
-            
-            // Lưu thông tin chi tiết về tồn kho sau khi nhập
-            $productInfo['stock_after_order'] = [
-                '37' => $stock37 + $newOrder37,
-                '38' => $stock38 + $newOrder38
-            ];
-            
-            return; // Kết thúc xử lý case đặc biệt
         }
-        
-        // Bước 2: Tính toán mức tồn kho mục tiêu cho các size ưu tiên
-        // Mục tiêu là 6 đôi mỗi size sau khi nhập
-        $targetStockLevel = 6;
-        
-        // Bước 3: Điều chỉnh số lượng nhập để đạt mức tồn kho cân bằng
+
         $totalAdded = 0;
         foreach ($priorities as $size) {
-            $info = $sizeInfo[$size];
-            // Kiểm tra nếu size này có trong original_sizes và vượt quá 6
-            if (in_array($size, $originalSizesInPriorities) && $info['futureStock'] > 6) {
-                // Đã vượt quá 6, không thêm nữa
-                continue;
-            }
-            
-            // Số lượng cần thêm để đạt targetStockLevel (6)
-            $neededToBalance = max(0, $targetStockLevel - $info['futureStock']);
-            
-            // Không vượt quá tổng số lượng cần thêm
-            $addAmount = min($neededToBalance, $remainingToAdd - $totalAdded);
-            
+            $currentStock = $targetStocks[$size]['stock'] ?? 0;
+            $currentOrder = $productInfo['sizes'][$size] ?? 0;
+            $coming = $comingData[$size] ?? 0;
+
+            // Tồn kho lý thuyết sau nhập
+            $futureStock = $currentStock + $coming + $currentOrder;
+
+            // Số lượng có thể thêm để không vượt quá 6
+            $canAdd = max(0, 6 - $futureStock);
+
+            // Không vượt quá số còn lại cần thêm
+            $addAmount = min($canAdd, $remainingToAdd - $totalAdded);
+
             if ($addAmount > 0) {
-                $productInfo['sizes'][$size] = ($productInfo['sizes'][$size] ?? 0) + $addAmount;
+                $productInfo['sizes'][$size] = $currentOrder + $addAmount;
                 $totalAdded += $addAmount;
-                $sizeInfo[$size]['futureStock'] += $addAmount;
             }
+            // Nếu đã đủ thì dừng
+            if ($totalAdded >= $remainingToAdd) break;
         }
-        
-        // Bước 4: Nếu vẫn chưa đủ 12 đôi, ưu tiên thêm cho size 37 trước
-        // Trong trường hợp này, có thể vượt quá 6 để đạt tổng số lượng là 12
-        if ($totalAdded < $remainingToAdd) {
-            $remainingAdd = $remainingToAdd - $totalAdded;
-            
-            foreach ($priorities as $size) {
-                // Giới hạn số lượng thêm vào mỗi size là 6, trừ khi là size có trong original_sizes
-                $maxAddForSize = in_array($size, $originalSizesInPriorities) ? $remainingAdd : 
-                    max(0, 6 - ($sizeInfo[$size]['futureStock'] - $sizeInfo[$size]['currentStock']));
-                
-                $addAmount = min($remainingAdd, $maxAddForSize);
-                
-                if ($addAmount > 0) {
-                    $productInfo['sizes'][$size] = ($productInfo['sizes'][$size] ?? 0) + $addAmount;
-                    $totalAdded += $addAmount;
-                    $remainingAdd -= $addAmount;
-                    $sizeInfo[$size]['futureStock'] += $addAmount;
-                }
-                
-                if ($remainingAdd <= 0) break;
-            }
-        }
-        
+
         // Cập nhật tổng số lượng cần đặt
         $productInfo['total_need'] = $currentTotal + $totalAdded;
-        
-        // Đảm bảo rằng tổng số lượng luôn đạt tối thiểu 5 đôi
-        if ($productInfo['total_need'] < 5) {
-            $neededToReach5 = 5 - $productInfo['total_need'];
-            $size = $priorities[0]; // Size 37
-            
-            // Tính số lượng có thể thêm cho size đầu tiên (37)
-            $maxAddForSize = in_array($size, $originalSizesInPriorities) ? $neededToReach5 : 
-                max(0, 6 - ($sizeInfo[$size]['futureStock'] - $sizeInfo[$size]['currentStock']));
-            
-            $addAmount = min($neededToReach5, $maxAddForSize);
-            
-            if ($addAmount > 0) {
-                $productInfo['sizes'][$size] = ($productInfo['sizes'][$size] ?? 0) + $addAmount;
-                $productInfo['total_need'] += $addAmount;
-            }
-        }
-        
-        // Lưu thông tin chi tiết về tồn kho sau khi nhập để debug và phân tích
+
+        // Lưu thông tin tồn kho sau nhập để debug
         $productInfo['stock_after_order'] = [];
         foreach ($priorities as $size) {
             $currentStock = $targetStocks[$size]['stock'] ?? 0;
+            $coming = $comingData[$size] ?? 0;
             $orderAmount = $productInfo['sizes'][$size] ?? 0;
-            $productInfo['stock_after_order'][$size] = $currentStock + $orderAmount;
+            $productInfo['stock_after_order'][$size] = $currentStock + $coming + $orderAmount;
         }
     }
 
@@ -849,89 +1631,57 @@ class AdminController extends Controller
      */
     private function distributeAdditionalQuantities(&$productInfo, $targetStocks, $priorities, $additionalNeeded, $targetPerSize)
     {
-        // Dựa trên tồn kho sau khi nhập để tính toán phân phối
-        $currentTotal = $productInfo['total_need']; // Tổng số lượng hiện tại
-        $targetTotal = 12; // Tổng số lượng mục tiêu
-        $remainingToAdd = $targetTotal - $currentTotal; // Số lượng cần thêm
-        
-        if ($remainingToAdd <= 0) return; // Không cần thêm
+        $currentTotal = $productInfo['total_need'];
+        $targetTotal = 12;
+        $remainingToAdd = $targetTotal - $currentTotal;
+        if ($remainingToAdd <= 0) return;
 
-        // Thu thập thông tin tồn kho và số lượng hiện tại cần nhập
-        $sizeInfo = [];
+        // Lấy thêm thông tin hàng đang về cho từng size
+        $comingData = [];
         foreach ($priorities as $size) {
-            $currentStock = $targetStocks[$size]['stock'] ?? 0; // Tồn kho hiện tại
-            $currentOrder = $productInfo['sizes'][$size] ?? 0; // Số lượng đang đặt
-            
-            $sizeInfo[$size] = [
-                'currentStock' => $currentStock, // Tồn kho hiện tại
-                'currentOrder' => $currentOrder, // Số lượng đang đặt
-                'futureStock' => $currentStock + $currentOrder // Tồn kho tương lai sau khi nhập
-            ];
+            $comingData[$size] = 0;
         }
-        
-        // Bước 1: Kiểm tra xem sizes yêu cầu ban đầu có trùng với sizes ưu tiên không
-        $originalSizesInPriorities = array_intersect($productInfo['original_sizes'] ?? [], $priorities);
-        $hasOriginalPrioritySizes = !empty($originalSizesInPriorities);
-        
-        // Bước 2: Tính toán mức tồn kho cân bằng lý tưởng cho các size ưu tiên
-        // Mục tiêu tồn kho sau nhập là 6 đôi
-        $targetStockLevel = 6;
-        
-        // Bước 3: Điều chỉnh số lượng nhập để đạt mức tồn kho cân bằng
+        if (isset($productInfo['original_data'])) {
+            foreach ($productInfo['original_data'] as $size => $info) {
+                if (isset($comingData[$size])) {
+                    $comingData[$size] = (int)($info['coming'] ?? 0);
+                }
+            }
+        }
+
         $totalAdded = 0;
         foreach ($priorities as $size) {
-            $info = $sizeInfo[$size];
-            // Kiểm tra nếu size này có trong original_sizes và vượt quá 6
-            if (in_array($size, $originalSizesInPriorities) && $info['futureStock'] > 6) {
-                // Đã vượt quá 6, không thêm nữa
-                continue;
-            }
-            
-            // Số lượng cần thêm để đạt targetStockLevel (6)
-            $neededToBalance = max(0, $targetStockLevel - $info['futureStock']);
-            
-            // Không vượt quá tổng số lượng cần thêm
-            $addAmount = min($neededToBalance, $remainingToAdd - $totalAdded);
-            
+            $currentStock = $targetStocks[$size]['stock'] ?? 0;
+            $currentOrder = $productInfo['sizes'][$size] ?? 0;
+            $coming = $comingData[$size] ?? 0;
+
+            // Tồn kho lý thuyết sau nhập
+            $futureStock = $currentStock + $coming + $currentOrder;
+
+            // Số lượng có thể thêm để không vượt quá 6
+            $canAdd = max(0, 6 - $futureStock);
+
+            // Không vượt quá số còn lại cần thêm
+            $addAmount = min($canAdd, $remainingToAdd - $totalAdded);
+
             if ($addAmount > 0) {
-                $productInfo['sizes'][$size] = ($productInfo['sizes'][$size] ?? 0) + $addAmount;
+                $productInfo['sizes'][$size] = $currentOrder + $addAmount;
                 $totalAdded += $addAmount;
-                $sizeInfo[$size]['futureStock'] += $addAmount;
             }
+            // Nếu đã đủ thì dừng
+            if ($totalAdded >= $remainingToAdd) break;
         }
-        
-        // Bước 4: Nếu vẫn chưa đủ 12 đôi, ưu tiên thêm cho size 42 trước (đầu danh sách)
-        // Trong trường hợp này, có thể vượt quá 6 để đạt tổng số lượng là 12
-        if ($totalAdded < $remainingToAdd) {
-            $remainingAdd = $remainingToAdd - $totalAdded;
-            
-            foreach ($priorities as $size) {
-                // Giới hạn số lượng thêm vào mỗi size là 6, trừ khi là size có trong original_sizes
-                $maxAddForSize = in_array($size, $originalSizesInPriorities) ? $remainingAdd : 
-                    max(0, 6 - ($sizeInfo[$size]['futureStock'] - $sizeInfo[$size]['currentStock']));
-                
-                $addAmount = min($remainingAdd, $maxAddForSize);
-                
-                if ($addAmount > 0) {
-                    $productInfo['sizes'][$size] = ($productInfo['sizes'][$size] ?? 0) + $addAmount;
-                    $totalAdded += $addAmount;
-                    $remainingAdd -= $addAmount;
-                    $sizeInfo[$size]['futureStock'] += $addAmount;
-                }
-                
-                if ($remainingAdd <= 0) break;
-            }
-        }
-        
+
         // Cập nhật tổng số lượng cần đặt
         $productInfo['total_need'] = $currentTotal + $totalAdded;
-        
-        // Lưu thông tin chi tiết về tồn kho sau khi nhập để debug và phân tích
+
+        // Lưu thông tin tồn kho sau nhập để debug
         $productInfo['stock_after_order'] = [];
         foreach ($priorities as $size) {
             $currentStock = $targetStocks[$size]['stock'] ?? 0;
+            $coming = $comingData[$size] ?? 0;
             $orderAmount = $productInfo['sizes'][$size] ?? 0;
-            $productInfo['stock_after_order'][$size] = $currentStock + $orderAmount;
+            $productInfo['stock_after_order'][$size] = $currentStock + $coming + $orderAmount;
         }
     }
 
@@ -947,10 +1697,10 @@ class AdminController extends Controller
         foreach ($groupedProducts as $baseSku => &$productInfo) {
             // Thu thập hình ảnh cho sản phẩm từ file danh sách
             $this->collectProductImages($baseSku, $productInfo, $productsData);
-            
+
             // Thu thập tên sản phẩm từ file danh sách
             $this->collectProductName($baseSku, $productInfo, $productsData);
-            
+
             // Tối ưu số lượng nếu chưa đủ 12 đôi
             if ($productInfo['total_need'] < 12) {
                 $this->optimizeProductQuantities($baseSku, $productInfo, $productsData);
@@ -985,17 +1735,13 @@ class AdminController extends Controller
         // Định dạng file kết quả
         $this->formatResultFile($sheet);
 
-        // Lưu file kết quả - Thay / bằng - trong tên file để tránh lỗi đường dẫn
-        $displayDate = date('d-m-Y');
-        $safeFileName = 'File_nhap_giay_trung_quoc_' . $displayDate . '.xlsx';
-        $outputPath = public_path('form_nhap_hang/' . $safeFileName);
-        
-        // Đảm bảo thư mục form_nhap_hang tồn tại
-        $this->ensureDirectoryExists('form_nhap_hang');
-        
+        // Đảm bảo thư mục uploads tồn tại
+        $this->ensureDirectoryExists('uploads');
+        $outputPath = public_path('uploads/nhap_hang_trung_quoc.xlsx');
+
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($outputPath);
-        
+
         return $outputPath;
     }
 
@@ -1080,24 +1826,24 @@ class AdminController extends Controller
     private function formatResultFile($sheet)
     {
         $lastRow = $sheet->getHighestRow();
-        
+
         // Format tiêu đề
         $sheet->getStyle('A1:O1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4A90E2']],
         ]);
-        
+
         // Format đường viền
         $sheet->getStyle('A1:O' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        
+
         // Format số
         $sheet->getStyle('L2:N' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
-        
+
         // Tự động điều chỉnh kích thước cột
         foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-        
+
         // Điều chỉnh cột hình ảnh
         $sheet->getColumnDimension('A')->setWidth(50);
         $sheet->getStyle('A2:A' . $lastRow)->getAlignment()->setWrapText(true);
@@ -1113,7 +1859,7 @@ class AdminController extends Controller
     private function generateDetailedReport($reportData, $excludedProducts = [])
     {
         $reportSpreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        
+
         // ===== SHEET 1: Báo cáo chính =====
         $reportSheet = $reportSpreadsheet->getActiveSheet();
         $reportSheet->setTitle('Báo cáo nhập hàng');
@@ -1123,14 +1869,14 @@ class AdminController extends Controller
         $reportSheet->setCellValue('B1', 'Hình ảnh');        // Cột mới hiển thị hình ảnh
         $reportSheet->setCellValue('C1', 'Tên sản phẩm');    // Tên sản phẩm
         $reportSheet->setCellValue('D1', 'SKU');             // SKU gốc của sản phẩm
-        
+
         // Tạo header cho các size từ 36-45 (E1-N1)
         for ($i = 0; $i <= 9; $i++) {
             $reportSheet->setCellValue(chr(69 + $i) . '1', 'Size ' . (36 + $i));
         }
-        
+
         $reportSheet->setCellValue('O1', 'Tổng');         // Tổng số đôi cần nhập
-        
+
         // Điền dữ liệu báo cáo
         $reportRow = 2;
         foreach ($reportData as $data) {
@@ -1139,34 +1885,34 @@ class AdminController extends Controller
             if (isset($data['images']) && !empty($data['images'])) {
                 $imageUrl = $data['images'][0] ?? '';
                 $reportSheet->setCellValue('A' . $reportRow, $imageUrl); // Lưu URL ảnh
-                
+
                 // Cột B: Hình ảnh hiển thị với công thức IMAGE
                 // Sử dụng công thức Excel thông thường
                 $reportSheet->setCellValue('B' . $reportRow, '=IMAGE(A' . $reportRow . ',2)');
             }
-            
+
             // Cột C: Tên sản phẩm
             $reportSheet->setCellValue('C' . $reportRow, $data['name'] ?? $data['sku']);
-            
+
             // Cột D: SKU
             $reportSheet->setCellValue('D' . $reportRow, $data['sku']);
-            
+
             // Cột E-N: Số lượng cho từng size (36-45)
             $total = 0;
             $originalSizes = $data['original_sizes'] ?? []; // Lấy danh sách size ban đầu (trước khi tối ưu)
-            
+
             for ($i = 0; $i <= 9; $i++) {
                 $size = 36 + $i;
                 $amount = $data['sizes'][$size] ?? 0;
                 $reportSheet->setCellValue(chr(69 + $i) . $reportRow, $amount);
                 $total += $amount;
-                
+
                 // Tô màu cho các size ban đầu (trước khi tối ưu)
                 if (in_array($size, $originalSizes) && $amount > 0) {
                     $cellCoord = chr(69 + $i) . $reportRow;
                     $reportSheet->getStyle($cellCoord)->applyFromArray([
                         'fill' => [
-                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 
+                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                             'startColor' => ['rgb' => 'A9DFBF'] // Màu xanh đậm cho size ban đầu
                         ],
                     ]);
@@ -1176,45 +1922,45 @@ class AdminController extends Controller
                     $cellCoord = chr(69 + $i) . $reportRow;
                     $reportSheet->getStyle($cellCoord)->applyFromArray([
                         'fill' => [
-                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 
+                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                             'startColor' => ['rgb' => 'FFF3CD'] // Màu vàng nhạt cho size bổ sung
                         ],
                     ]);
                 }
             }
-            
+
             // Cột O: Tổng số lượng
             $reportSheet->setCellValue('O' . $reportRow, $total);
-            
+
             $reportRow++;
         }
 
         // Format Sheet 1
         $this->formatReportSheet($reportSheet, 'A', 'O');
-        
+
         // Điều chỉnh cột hình ảnh hiển thị
         $reportSheet->getColumnDimension('B')->setWidth(20);
-        
+
         // ===== SHEET 2: Log sản phẩm bị loại =====
         $logSheet = $reportSpreadsheet->createSheet();
         $logSheet->setTitle('Log');
-        
+
         // Thiết lập header cho sheet log
         $logSheet->setCellValue('A1', 'Hình ảnh URL');    // URL hình ảnh
         $logSheet->setCellValue('B1', 'Hình ảnh');        // Cột mới hiển thị hình ảnh
         $logSheet->setCellValue('C1', 'Tên sản phẩm');    // Tên sản phẩm
         $logSheet->setCellValue('D1', 'SKU');             // SKU gốc của sản phẩm
-        
+
         // Tạo header cho các size từ 36-45 (E1-N1)
         for ($i = 0; $i <= 9; $i++) {
             $logSheet->setCellValue(chr(69 + $i) . '1', 'Size ' . (36 + $i));
         }
-        
+
         $logSheet->setCellValue('O1', 'Tổng');    // Tổng số đôi cần nhập
         $logSheet->setCellValue('P1', 'Cần');     // Số lượng cần nhập
         $logSheet->setCellValue('Q1', 'Đang về'); // Số lượng đang về
         $logSheet->setCellValue('R1', 'Lý do không nhập');  // Lý do không nhập
-        
+
         // Điền dữ liệu vào sheet log
         $logRow = 2;
         foreach ($excludedProducts as $baseSku => $data) {
@@ -1223,17 +1969,17 @@ class AdminController extends Controller
             if (isset($data['images']) && !empty($data['images'])) {
                 $imageUrl = $data['images'][0] ?? '';
                 $logSheet->setCellValue('A' . $logRow, $imageUrl); // Lưu URL ảnh
-                
+
                 // Cột B: Hình ảnh hiển thị với công thức IMAGE
                 $logSheet->setCellValue('B' . $logRow, '=IMAGE(A' . $logRow . ',2)');
             }
-            
+
             // Cột C: Tên sản phẩm
             $logSheet->setCellValue('C' . $logRow, $data['name'] ?? $baseSku);
-            
+
             // Cột D: SKU
             $logSheet->setCellValue('D' . $logRow, $baseSku);
-            
+
             // Cột E-N: Số lượng cho từng size (36-45)
             $total = 0;
             $allReasons = [];
@@ -1242,16 +1988,16 @@ class AdminController extends Controller
                 $amount = $data['sizes'][$size] ?? 0;
                 $logSheet->setCellValue(chr(69 + $i) . $logRow, $amount);
                 $total += $amount;
-                
+
                 // Thu thập lý do riêng cho từng size nếu có
                 if (isset($data['reasons'][$size]) && !empty($data['reasons'][$size])) {
                     $allReasons[$size] = $data['reasons'][$size];
                 }
             }
-            
+
             // Cột O: Tổng số lượng
             $logSheet->setCellValue('O' . $logRow, $total);
-            
+
             // Cột P-Q: Thông tin cần/đang về (tổng hợp từ original_data)
             $totalNeed = 0;
             $totalComing = 0;
@@ -1263,11 +2009,11 @@ class AdminController extends Controller
             }
             $logSheet->setCellValue('P' . $logRow, $totalNeed);
             $logSheet->setCellValue('Q' . $logRow, $totalComing);
-            
+
             // Cột R: Lý do không nhập
             // Nếu có nhiều lý do khác nhau, hiển thị theo dạng size:lý do
             if (count($allReasons) > 1) {
-                $formattedReasons = array_map(function($size, $reason) {
+                $formattedReasons = array_map(function ($size, $reason) {
                     return "Size $size: $reason";
                 }, array_keys($allReasons), $allReasons);
                 $logSheet->setCellValue('R' . $logRow, implode("\n", $formattedReasons));
@@ -1276,51 +2022,51 @@ class AdminController extends Controller
                 $mainReason = reset($allReasons) ?: "Không xác định";
                 $logSheet->setCellValue('R' . $logRow, $mainReason);
             }
-            
+
             $logRow++;
         }
 
         // Format Sheet 2
         $this->formatReportSheet($logSheet, 'A', 'R');
-        
+
         // Điều chỉnh cột hình ảnh hiển thị cho sheet log
         $logSheet->getColumnDimension('B')->setWidth(20);
-        
+
         // ===== SHEET 3: File gửi kho trung quốc =====
         $warehouseSheet = $reportSpreadsheet->createSheet();
         $warehouseSheet->setTitle('File gửi kho trung quốc');
-        
+
         // Thiết lập header cho sheet file gửi kho trung quốc
         $warehouseSheet->setCellValue('A1', 'Hình ảnh');  // Cột hiển thị hình ảnh
-        
+
         // Tạo header cho các size từ 36-45 (B1-K1)
         for ($i = 0; $i <= 9; $i++) {
             $warehouseSheet->setCellValue(chr(66 + $i) . '1', 'Size ' . (36 + $i));
         }
-        
+
         $warehouseSheet->setCellValue('L1', 'Tổng');        // Tổng số đôi
         $warehouseSheet->setCellValue('M1', 'SKU');         // SKU gốc của sản phẩm
         $warehouseSheet->setCellValue('N1', 'Giá nhập');    // Giá nhập từ file data_shoes.xlsx (cột AG)
         $warehouseSheet->setCellValue('O1', 'Thành tiền');  // Tổng tiền (Giá nhập * Tổng)
         $warehouseSheet->setCellValue('P1', 'Tỷ giá');      // Tỷ giá VND/CNY
         $warehouseSheet->setCellValue('Q1', 'Tổng tiền VND'); // Thành tiền * Tỷ giá
-        
+
         // Lấy dữ liệu từ file data_shoes.xlsx để lấy giá nhập
         $productsFilePath = public_path('uploads/data_shoes.xlsx');
         $productsData = $this->readExcelFile($productsFilePath);
-        
+
         // Lấy tỷ giá từ request
         $exchangeRate = request()->input('exchange_rate', 3500); // Mặc định là 3500 nếu không có
-        
+
         // Mảng lưu trữ giá nhập theo SKU
         $priceData = [];
-        
+
         // Thu thập giá nhập từ file data_shoes.xlsx
         foreach ($productsData as $row) {
             if (isset($row['N']) && !empty($row['N'])) {
                 $skuParts = explode('-', $row['N']);
                 $baseSku = $skuParts[0];
-                
+
                 // Lấy giá nhập từ cột AG
                 if (isset($row['AG']) && is_numeric(str_replace([',', '.'], '', $row['AG']))) {
                     $importPrice = str_replace([',', '.'], '', $row['AG']);
@@ -1328,21 +2074,21 @@ class AdminController extends Controller
                 }
             }
         }
-        
+
         // Điền dữ liệu vào sheet file gửi kho trung quốc (xen kẽ tiêu đề và dữ liệu)
         $warehouseRow = 2;
-        
+
         foreach ($reportData as $data) {
             $baseSku = $data['sku'];
             $imageUrl = isset($data['images'][0]) ? $data['images'][0] : '';
             $importPrice = isset($priceData[$baseSku]) ? $priceData[$baseSku] : 0;
-            
+
             // Thêm cột hình ảnh với công thức IMAGE
             if (!empty($imageUrl)) {
                 // $warehouseSheet->setCellValue('A' . $warehouseRow, '=IMAGE("' . $imageUrl . '",2)');
                 $warehouseSheet->setCellValue('A' . $warehouseRow, $imageUrl); // Chỉ điền link ảnh
             }
-            
+
             // Điền dữ liệu về size (B-K)
             $total = 0;
             for ($i = 0; $i <= 9; $i++) {
@@ -1351,7 +2097,7 @@ class AdminController extends Controller
                 $warehouseSheet->setCellValue(chr(66 + $i) . $warehouseRow, $amount);
                 $total += $amount;
             }
-            
+
             // Điền các thông tin khác
             $warehouseSheet->setCellValue('L' . $warehouseRow, $total);                           // Tổng
             $warehouseSheet->setCellValue('M' . $warehouseRow, $baseSku);                         // SKU
@@ -1359,30 +2105,30 @@ class AdminController extends Controller
             $warehouseSheet->setCellValue('O' . $warehouseRow, '=L' . $warehouseRow . '*N' . $warehouseRow); // Thành tiền = Tổng * Giá nhập
             $warehouseSheet->setCellValue('P' . $warehouseRow, $exchangeRate);                    // Tỷ giá
             $warehouseSheet->setCellValue('Q' . $warehouseRow, '=O' . $warehouseRow . '*P' . $warehouseRow); // Tổng tiền VND = Thành tiền * Tỷ giá
-            
+
             // Tăng hàng (mỗi sản phẩm chiếm 2 dòng: 1 cho tiêu đề, 1 cho dữ liệu)
             $warehouseRow += 2;
-            
+
             // Nếu không phải hàng cuối, thêm một hàng tiêu đề
             if ($warehouseRow <= (count($reportData) * 2)) {
                 $this->addWarehouseHeaderRow($warehouseSheet, $warehouseRow - 1);
             }
         }
-        
+
         // Format Sheet file gửi kho trung quốc
         $this->formatWarehouseSheet($warehouseSheet, 'A', 'Q', $warehouseRow - 1);
-        
+
         // Lưu file báo cáo với tên cố định trong thư mục uploads
         $reportWriter = IOFactory::createWriter($reportSpreadsheet, 'Xlsx');
-        
+
         // Thiết lập tùy chọn cho writer để đảm bảo công thức được viết đúng
         if (method_exists($reportWriter, 'setPreCalculateFormulas')) {
             $reportWriter->setPreCalculateFormulas(false);
         }
-        
+
         $reportWriter->save(public_path('uploads/nhap_hang_trung_quoc.xlsx'));
     }
-    
+
     /**
      * Thêm hàng tiêu đề cho sheet file gửi kho trung quốc
      *
@@ -1393,18 +2139,18 @@ class AdminController extends Controller
     private function addWarehouseHeaderRow($sheet, $row)
     {
         $sheet->setCellValue('A' . $row, 'Hình ảnh');
-        
+
         for ($i = 0; $i <= 9; $i++) {
             $sheet->setCellValue(chr(66 + $i) . $row, 'Size ' . (36 + $i));
         }
-        
+
         $sheet->setCellValue('L' . $row, 'Tổng');
         $sheet->setCellValue('M' . $row, 'SKU');
         $sheet->setCellValue('N' . $row, 'Giá nhập');
         $sheet->setCellValue('O' . $row, 'Thành tiền');
         $sheet->setCellValue('P' . $row, 'Tỷ giá');
         $sheet->setCellValue('Q' . $row, 'Tổng tiền VND');
-        
+
         // Format tiêu đề
         $sheet->getStyle('A' . $row . ':Q' . $row)->applyFromArray([
             'font' => ['bold' => true],
@@ -1412,7 +2158,7 @@ class AdminController extends Controller
             'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
         ]);
     }
-    
+
     /**
      * Format sheet file gửi kho trung quốc
      *
@@ -1430,21 +2176,21 @@ class AdminController extends Controller
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
             'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
         ]);
-        
+
         // Format các ô dữ liệu
         $sheet->getStyle($startCol . '1:' . $endCol . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        
+
         // Định dạng số cho cột giá và tiền
         $sheet->getStyle('N2:Q' . $lastRow)->getNumberFormat()->setFormatCode('#,##0');
-        
+
         // Tự động điều chỉnh kích thước cột
         foreach (range($startCol, $endCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-        
+
         // Điều chỉnh cột hình ảnh
         $sheet->getColumnDimension('A')->setWidth(20);
-        
+
         // Căn giữa số liệu
         $numericCols = range('B', 'L');
         foreach ($numericCols as $col) {
@@ -1456,7 +2202,7 @@ class AdminController extends Controller
             }
         }
     }
-    
+
     /**
      * Format chung cho các sheet báo cáo
      *
@@ -1468,32 +2214,32 @@ class AdminController extends Controller
     private function formatReportSheet($sheet, $startCol, $endCol)
     {
         $lastRow = $sheet->getHighestRow();
-        
+
         // Format tiêu đề
         $sheet->getStyle($startCol . '1:' . $endCol . '1')->applyFromArray([
             'font' => ['bold' => true],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
         ]);
-        
+
         // Format các ô dữ liệu
         $sheet->getStyle($startCol . '1:' . $endCol . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        
+
         // Tự động điều chỉnh kích thước cột
         foreach (range($startCol, $endCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-        
+
         // Điều chỉnh cột hình ảnh
-        $sheet->getColumnDimension('A')->setWidth(50);
-        $sheet->getStyle('A2:A' . $lastRow)->getAlignment()->setWrapText(true);
-        
+        $sheet->getColumnDimension($startCol)->setWidth(50);
+        $sheet->getStyle($startCol . '2:' . $startCol . $lastRow)->getAlignment()->setWrapText(true);
+
         // Điều chỉnh cột tên sản phẩm
-        $sheet->getColumnDimension('B')->setWidth(30);
-        $sheet->getStyle('B2:B' . $lastRow)->getAlignment()->setWrapText(true);
-        
+        $sheet->getColumnDimension(chr(ord($startCol) + 1))->setWidth(30);
+        $sheet->getStyle(chr(ord($startCol) + 1) . '2:' . chr(ord($startCol) + 1) . $lastRow)->getAlignment()->setWrapText(true);
+
         // Căn giữa số liệu - Sửa lỗi ở đây
         $numericCols = range(chr(ord($startCol) + 3), chr(ord($startCol) + 15)); // Từ D đến P/Q
-        
+
         // Xử lý từng cột một thay vì dùng chuỗi range (điều này gây ra lỗi)
         foreach ($numericCols as $col) {
             // Chỉ xử lý các cột hợp lệ (tránh vượt quá giới hạn cột của bảng chữ cái)
@@ -1503,7 +2249,7 @@ class AdminController extends Controller
                     ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             }
         }
-        
+
         // Wrap text cho cột lý do (nếu có)
         if ($endCol >= 'Q') {
             $sheet->getColumnDimension('Q')->setWidth(40);
@@ -1525,7 +2271,7 @@ class AdminController extends Controller
         $filePath = public_path('uploads/cannhap.xls');
         $spreadsheet = IOFactory::load($filePath);
         $sheet = $spreadsheet->getActiveSheet();
-        
+
         // Đặt tiêu đề cho các cột mới nếu chưa có
         if (empty($sheet->getCell('J1')->getValue())) {
             $sheet->setCellValue('J1', 'Kết quả xử lý');
@@ -1537,7 +2283,7 @@ class AdminController extends Controller
                 'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]
             ]);
         }
-        
+
         // Cập nhật dữ liệu cho các sản phẩm hợp lệ
         foreach ($groupedProducts as $baseSku => $productInfo) {
             if (isset($productInfo['original_data'])) {
@@ -1545,7 +2291,7 @@ class AdminController extends Controller
                     $row = $info['row'];
                     $sheet->setCellValue('J' . $row, 'Đưa vào DS nhập');
                     $needToOrder = $productInfo['sizes'][$size] ?? 0;
-                    
+
                     // Nếu số lượng đã tối ưu khác số lượng ban đầu, ghi chú rõ
                     $originalAmount = $info['need'] - $info['coming'] + 1;
                     if ($needToOrder != $originalAmount) {
@@ -1553,7 +2299,7 @@ class AdminController extends Controller
                     } else {
                         $sheet->setCellValue('K' . $row, "Giữ nguyên số lượng");
                     }
-                    
+
                     // Định dạng ô kết quả
                     $sheet->getStyle('J' . $row)->applyFromArray([
                         'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D4EDDA']],
@@ -1561,18 +2307,18 @@ class AdminController extends Controller
                 }
             }
         }
-        
+
         // Cập nhật dữ liệu cho các sản phẩm bị loại
         foreach ($excludedProducts as $baseSku => $productInfo) {
             if (isset($productInfo['original_data'])) {
                 foreach ($productInfo['original_data'] as $size => $info) {
                     $row = $info['row'];
                     $sheet->setCellValue('J' . $row, 'Loại bỏ');
-                    
+
                     // Ghi rõ lý do loại bỏ
                     $reason = $productInfo['reasons'][$size] ?? 'Không đủ điều kiện';
                     $sheet->setCellValue('K' . $row, $reason);
-                    
+
                     // Định dạng ô kết quả
                     $sheet->getStyle('J' . $row)->applyFromArray([
                         'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F8D7DA']],
@@ -1580,12 +2326,12 @@ class AdminController extends Controller
                 }
             }
         }
-        
+
         // Tự động điều chỉnh kích thước cột
         foreach (range('J', 'K') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-        
+
         // Lưu file đã cập nhật
         $writer = IOFactory::createWriter($spreadsheet, 'Xls');
         $writer->save($filePath);
@@ -1604,13 +2350,13 @@ class AdminController extends Controller
         $checkSizes = ['41', '42', '43'];
         $foundSizes = [];
         $minStockColumn = 'AC'; // Cột "LC_CN1_Tồn tối thiểu"
-        
+
         // Kiểm tra từng size trong bảng dữ liệu
         foreach ($productsData as $row) {
             if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
                 $skuParts = explode('-', $row['N']);
                 $size = $skuParts[1] ?? '';
-                
+
                 // Nếu là một trong các size cần kiểm tra
                 if (in_array($size, $checkSizes)) {
                     $minStock = isset($row[$minStockColumn]) ? intval($row[$minStockColumn]) : -1;
@@ -1618,7 +2364,7 @@ class AdminController extends Controller
                 }
             }
         }
-        
+
         // Kiểm tra xem đã có dữ liệu của tất cả size cần kiểm tra chưa
         foreach ($checkSizes as $size) {
             // Nếu thiếu size hoặc min stock khác 0, không phải giày nữ
@@ -1626,7 +2372,7 @@ class AdminController extends Controller
                 return false;
             }
         }
-        
+
         // Nếu tất cả size 41,42,43 đều có tồn kho tối thiểu là 0
         return true;
     }
@@ -1642,36 +2388,36 @@ class AdminController extends Controller
         // Đường dẫn đến file mẫu và file đích
         $templateFilePath = public_path('uploads/nhap_hang_sapo_template.xlsx');
         $outputFilePath = public_path('uploads/nhap_hang_sapo.xlsx');
-        
+
         // Nếu không có file mẫu, kiểm tra xem có file hiện tại không để sử dụng như template
         if (!file_exists($templateFilePath) && file_exists($outputFilePath)) {
             // Sao chép file hiện tại làm template cho lần sau
             copy($outputFilePath, $templateFilePath);
-        } 
+        }
         // Nếu không có cả hai file, tạo một file trống làm template
         else if (!file_exists($templateFilePath)) {
             // Tạo một spreadsheet trống
             $emptySpreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
             $sheet = $emptySpreadsheet->getActiveSheet();
-            
+
             // Thiết lập header cơ bản cho file Sapo
             $sheet->setCellValue('A7', 'Mã SKU');
             $sheet->setCellValue('B7', 'Mã Barcode');
             $sheet->setCellValue('C7', 'Tên sản phẩm');
             $sheet->setCellValue('D7', 'Số lượng');
             $sheet->setCellValue('I7', 'Đơn giá');
-            
+
             // Lưu file template
             $writer = IOFactory::createWriter($emptySpreadsheet, 'Xlsx');
             $writer->save($templateFilePath);
         }
-        
+
         // Sao chép file mẫu sang file đích (tạo file mới cho mỗi lần sử dụng)
         if (file_exists($outputFilePath)) {
             unlink($outputFilePath); // Xóa file cũ nếu tồn tại
         }
         copy($templateFilePath, $outputFilePath);
-        
+
         // Đọc file Sapo đã tạo
         $spreadsheet = IOFactory::load($outputFilePath);
         $sheet = $spreadsheet->getActiveSheet();
@@ -1679,57 +2425,57 @@ class AdminController extends Controller
         // Lấy dữ liệu từ file data_shoes.xlsx để lấy giá bán buôn (cột AB)
         $productsFilePath = public_path('uploads/data_shoes.xlsx');
         $productsData = $this->readExcelFile($productsFilePath);
-        
+
         // Mảng lưu trữ giá bán buôn theo SKU
         $wholesalePrices = [];
-        
+
         // Thu thập giá bán buôn từ file data_shoes.xlsx
         foreach ($productsData as $row) {
             if (isset($row['N']) && !empty($row['N'])) {
                 $skuParts = explode('-', $row['N']);
                 $baseSku = $skuParts[0];
                 $size = $skuParts[1] ?? '';
-                
+
                 // Lấy giá bán buôn từ cột AB (PL_Giá bán buôn)
                 if (isset($row['AB']) && is_numeric(str_replace([',', '.'], '', $row['AB']))) {
                     $wholesalePrice = str_replace([',', '.'], '', $row['AB']);
-                    $wholesalePrices[$baseSku.'-'.$size] = (float)$wholesalePrice;
+                    $wholesalePrices[$baseSku . '-' . $size] = (float)$wholesalePrice;
                 }
             }
         }
 
         // Điền dữ liệu vào file Sapo bắt đầu từ dòng 8
         $rowIndex = 8;
-        
+
         foreach ($reportData as $data) {
             $baseSku = $data['sku'];
             $productName = $data['name'];
-            
+
             // Điền dữ liệu cho từng size
             foreach ($data['sizes'] as $size => $quantity) {
                 if ($quantity > 0) {
                     $sku = $baseSku . '-' . $size;
-                    
+
                     // Cột A: Mã SKU
                     $sheet->setCellValue('A' . $rowIndex, $sku);
-                    
+
                     // Cột B: Mã Barcode (giống SKU)
                     $sheet->setCellValue('B' . $rowIndex, $sku);
-                    
+
                     // Cột C: Tên sản phẩm
                     $sheet->setCellValue('C' . $rowIndex, $productName . ' - Size ' . $size);
-                    
+
                     // Cột D: Số lượng
                     $sheet->setCellValue('D' . $rowIndex, $quantity);
-                    
+
                     // Cột I: Đơn giá (từ cột AB của data_shoes.xlsx)
                     $sheet->setCellValue('I' . $rowIndex, $wholesalePrices[$sku] ?? 0);
-                    
+
                     $rowIndex++;
                 }
             }
         }
-        
+
         // Lưu file nhập hàng Sapo
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($outputFilePath);
