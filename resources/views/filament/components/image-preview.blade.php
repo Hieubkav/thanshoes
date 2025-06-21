@@ -6,9 +6,10 @@ $productImages = $this->getRecord()->productImages;
     <div class="grid grid-cols-4 gap-4 mt-4">
         @foreach($productImages as $image)
             <div class="relative group">
-                <img 
-                    src="{{ $image->image_url }}" 
-                    alt="Product image" 
+                <img
+                    src="{{ $image->image_url }}"
+                    alt="Product image"
+                    loading="lazy"
                     class="rounded-lg shadow-md object-cover w-full h-32 border border-gray-200"
                 />
                 <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg">

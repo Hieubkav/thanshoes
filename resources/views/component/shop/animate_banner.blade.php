@@ -8,6 +8,7 @@
                 @if ($websiteDesign->{"image_banner_link{$i}"})
                     <a href="#_">
                         <img src="{{ asset('storage/' . $websiteDesign->{"image_banner_link{$i}"}) }}"
+                            loading="lazy"
                             class="rounded-xl {{ $i % 2 == 0 ? '-rotate-12' : 'rotate-6' }} hover:rotate-0 duration-500 hover:-translate-y-12 h-full w-full object-cover hover:scale-150 transform origin-bottom"
                             alt="Banner {{ $i }}">
                     </a>

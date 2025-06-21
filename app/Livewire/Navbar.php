@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
+use App\Services\PriceService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -26,6 +27,10 @@ class Navbar extends Component
     public $cartItems;
     public $cartCount = 0;
     public $totalAmount = 0;
+    public $originalTotalAmount = 0;
+    public $discountAmount = 0;
+    public $discountPercentage = 0;
+    public $discountApplied = false;
 
     // Customer related properties
     public $customer_id = null;
@@ -44,6 +49,30 @@ class Navbar extends Component
         $this->loadCustomerData();
     }
 
+    #[On('user_logged_in')]
+    public function handleUserLoggedIn()
+    {
+        $this->loadCustomerData();
+        $this->updateCart();
+    }
+
+    #[On('user_logged_out')]
+    public function handleUserLoggedOut()
+    {
+        $this->resetUserData();
+        $this->updateCart();
+    }
+
+    private function resetUserData()
+    {
+        $this->customer_id = null;
+        $this->name_customer = "";
+        $this->phone_customer = "";
+        $this->email_customer = "";
+        $this->address_customer = "";
+        $this->order = new Collection();
+    }
+
     private function initializeOrder()
     {
         $this->order = new Collection();
@@ -51,13 +80,26 @@ class Navbar extends Component
 
     private function loadCustomerData()
     {
+        // Ưu tiên customer đã đăng nhập
+        if (auth()->check()) {
+            $customer = auth()->user(); // Đây giờ là Customer model
+            $this->customer_id = $customer->id;
+            $this->name_customer = $customer->name;
+            $this->email_customer = $customer->email;
+            $this->phone_customer = $customer->phone;
+            $this->address_customer = $customer->address;
+            $this->loadCustomerOrders();
+            return;
+        }
+
+        // Fallback cho session customer_id (khách chưa đăng nhập)
         if (!session()->has('customer_id')) {
             return;
         }
 
         $this->customer_id = session()->get('customer_id');
         $customer = Customer::find($this->customer_id);
-        
+
         if ($customer) {
             $this->updateCustomerInfo($customer);
             $this->loadCustomerOrders();
@@ -82,13 +124,21 @@ class Navbar extends Component
     #[On('cart_updated')]
     public function updateCart()
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
-        
+        // Sử dụng user_id nếu đã đăng nhập, ngược lại dùng session_id
+        $userId = auth()->check() ? auth()->id() : null;
+        $sessionId = auth()->check() ? null : session()->getId();
+
+        $cart = Cart::getCart($userId, $sessionId);
+
         // Make sure the cart exists
         if (!$cart) {
             $this->cartItems = collect();
             $this->cartCount = 0;
             $this->totalAmount = 0;
+            $this->originalTotalAmount = 0;
+            $this->discountAmount = 0;
+            $this->discountPercentage = 0;
+            $this->discountApplied = false;
             return;
         }
         
@@ -98,7 +148,23 @@ class Navbar extends Component
             ->get();
         
         $this->cartCount = $this->cartItems->sum('quantity');
-        $this->totalAmount = $cart->total_amount;
+        
+        // Tính tổng tiền gốc
+        $this->originalTotalAmount = $this->cartItems->sum(function($item) {
+            return $item->price * $item->quantity;
+        });
+        
+        // Áp dụng giảm giá nếu được bật
+        $discountInfo = PriceService::getDiscountInfo($this->originalTotalAmount);
+        $this->discountApplied = $discountInfo['is_applied'];
+        
+        if ($this->discountApplied) {
+            $this->totalAmount = $discountInfo['discounted_price'];
+            $this->discountAmount = $discountInfo['discount_amount'];
+            $this->discountPercentage = $discountInfo['discount_percentage'];
+        } else {
+            $this->totalAmount = $this->originalTotalAmount;
+        }
     }
 
     public function updateQuantity($itemId, $change)
@@ -155,20 +221,30 @@ class Navbar extends Component
     #[On('clear_cart_after_dat_hang')]
     public function handle_clear_cart_after_dat_hang()
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
-        $cart->items()->delete();
-        $cart->delete();
-        
+        $userId = auth()->check() ? auth()->id() : null;
+        $sessionId = auth()->check() ? null : session()->getId();
+
+        $cart = Cart::getCart($userId, $sessionId);
+        if ($cart) {
+            $cart->items()->delete();
+            $cart->delete();
+        }
+
         $this->updateCart();
         $this->loadCustomerData();
     }
 
     public function clear_cart()
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
-        $cart->items()->delete();
-        $cart->delete();
-        
+        $userId = auth()->check() ? auth()->id() : null;
+        $sessionId = auth()->check() ? null : session()->getId();
+
+        $cart = Cart::getCart($userId, $sessionId);
+        if ($cart) {
+            $cart->items()->delete();
+            $cart->delete();
+        }
+
         $this->updateCart();
         $this->dispatch('clear_cart');
     }

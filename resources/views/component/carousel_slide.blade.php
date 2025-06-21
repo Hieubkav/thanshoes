@@ -6,8 +6,9 @@
     <div class="relative h-56 overflow-hidden rounded-lg md:h-96">
         <!-- Banner -->
         <div class="hidden duration-700 ease-in-out" data-carousel-item="active">
-            <img src="{{ asset('storage/' . $websiteDesign->banner_final_pic) }}" 
-                 class="absolute block w-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" 
+            <img src="{{ asset('storage/' . $websiteDesign->banner_final_pic) }}"
+                 loading="lazy"
+                 class="absolute block w-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
                  alt="Banner cuối trang">
         </div>
     </div>

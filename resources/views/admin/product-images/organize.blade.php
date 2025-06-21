@@ -145,7 +145,7 @@
                     @foreach($images as $image)
                     <div data-id="{{ $image->id }}" class="image-item bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                         <div class="relative">
-                            <img src="{{ $image->image_url }}" alt="Hình ảnh sản phẩm" class="aspect-square w-full object-cover">
+                            <img src="{{ $image->image_url }}" alt="Hình ảnh sản phẩm" loading="lazy" class="aspect-square w-full object-cover">
                             <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 opacity-0 hover:bg-opacity-30 hover:opacity-100 transition-all duration-200">
                                 <div class="p-2 bg-white rounded-full shadow">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">

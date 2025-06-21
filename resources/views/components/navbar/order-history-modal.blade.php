@@ -7,7 +7,11 @@
             <!-- Modal header -->
             <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    Thông tin đơn đã đặt
+                    @auth
+                        Đơn hàng của tôi
+                    @else
+                        Lịch sử đơn hàng
+                    @endauth
                 </h3>
                 <button type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
@@ -22,34 +26,36 @@
             </div>
             <!-- Modal body -->
             <div class="p-4 md:p-5 space-y-4 text-gray-700 dark:text-gray-300">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    STT
-                                </th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    Tổng số món
-                                </th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    Tổng tiền
-                                </th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    Ngày đặt
-                                </th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    Chi tiết
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                            @if ($order->count() > 0)
+                @auth
+                    <!-- Hiển thị đơn hàng cho user đã đăng nhập -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        STT
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        Tổng số món
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        Tổng tiền
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        Ngày đặt
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        Chi tiết
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                                @if (isset($order) && $order->count() > 0)
                                 @foreach ($order as $i => $order_in_list)
                                     <tr>
                                         <td
@@ -59,10 +65,15 @@
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                             {{ $order_in_list->items->sum('quantity') }} món
-                                        </td>
-                                        <td
+                                        </td>                                        <td
                                             class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {{ number_format($order_in_list->total_price) }}đ
+                                            @if ($order_in_list->discount_amount > 0)
+                                                <span class="line-through text-gray-400">{{ number_format($order_in_list->original_total) }}đ</span><br>
+                                                <span class="text-red-600">-{{ number_format($order_in_list->discount_amount) }}đ</span><br>
+                                                <span class="font-semibold text-green-600">{{ number_format($order_in_list->total) }}đ</span>
+                                            @else
+                                                {{ number_format($order_in_list->total_price) }}đ
+                                            @endif
                                         </td>
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
@@ -109,14 +120,39 @@
                                                                 <p class="text-gray-600 dark:text-gray-400">
                                                                     Số lượng: {{ $order_item->quantity }} -
                                                                     Giá: {{ number_format($order_item->price) }}đ
-                                                                </p>
-                                                                <p class="font-medium text-blue-600 dark:text-blue-400">
+                                                                </p>                                                <p class="font-medium text-blue-600 dark:text-blue-400">
                                                                     Tổng: {{ number_format($order_item->price * $order_item->quantity) }}đ
                                                                 </p>
                                                             </div>
                                                         </li>
                                                     @endforeach
                                                 </ul>
+                                                
+                                                @if ($order_in_list->discount_amount > 0)
+                                                <div class="mt-4 mb-3 p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                                                    <h4 class="font-semibold text-base mb-2">Thông tin giảm giá</h4>
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p class="text-gray-600 dark:text-gray-400">Tổng tiền gốc:</p>
+                                                            <p class="font-medium line-through">{{ number_format($order_in_list->original_total) }}đ</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-gray-600 dark:text-gray-400">Giảm giá:</p>
+                                                            <p class="font-medium text-red-600">
+                                                                -{{ number_format($order_in_list->discount_amount) }}đ
+                                                                @if($order_in_list->discount_type == 'percent')
+                                                                    ({{ number_format($order_in_list->discount_percentage, 2) }}%)
+                                                                @endif
+                                                            </p>
+                                                        </div>
+                                                        <div class="col-span-2">
+                                                            <p class="text-gray-600 dark:text-gray-400">Thành tiền:</p>
+                                                            <p class="font-semibold text-green-600">{{ number_format($order_in_list->total) }}đ</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endif
+                                                
                                                 <p><strong>Trạng thái:</strong>
                                                     @php
                                                         if ($order_in_list->status === 'pending') {
@@ -143,10 +179,46 @@
                                         </td>
                                     </tr>
                                 @endforeach
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
+                                @else
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-8 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <i class="fas fa-shopping-bag text-4xl text-gray-400 mb-4"></i>
+                                                <p class="text-gray-500 dark:text-gray-400">Bạn chưa có đơn hàng nào</p>
+                                                <a href="{{ route('shop.store_front') }}" class="mt-2 text-blue-600 hover:text-blue-800">
+                                                    Bắt đầu mua sắm
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <!-- Thông báo cho khách chưa đăng nhập -->
+                    <div class="text-center py-8">
+                        <i class="fas fa-user-lock text-4xl text-gray-400 mb-4"></i>
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            Vui lòng đăng nhập
+                        </h4>
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">
+                            Bạn cần đăng nhập để xem lịch sử đơn hàng
+                        </p>
+                        <div class="space-x-4">
+                            <a href="{{ route('login') }}"
+                               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                Đăng nhập
+                            </a>
+                            <a href="{{ route('register') }}"
+                               class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                <i class="fas fa-user-plus mr-2"></i>
+                                Đăng ký
+                            </a>
+                        </div>
+                    </div>
+                @endauth
             </div>
             <!-- Modal footer -->
             <div

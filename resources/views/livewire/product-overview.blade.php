@@ -13,7 +13,9 @@
                 <div class="w-full md:w-1/2 px-4 mb-8">
                     <div class="relative">
                         <img id="mainImage" src="{{ $main_image }}" alt="Product Image"
-                            class="w-full h-auto rounded-lg shadow-md mb-4 object-cover">
+                            loading="lazy"
+                            class="w-full h-auto rounded-lg shadow-md mb-4 object-cover cursor-pointer"
+                            onclick="openImageGalleryFromMain()">
                         @if ($product->variants->min('price') >= 500000)
                             <div class="absolute top-0 left-0 bg-blue-500 text-white px-2 py-1 rounded-br-lg">
                                 Freeship
@@ -30,15 +32,19 @@
                         @endif
                     </div>
                     <div class="flex gap-4 py-4 overflow-x-auto">
-                        @foreach ($list_images_product as $item)
+                        @foreach ($list_images_product as $index => $item)
                             @if ($item->type == 'variant')
                                 <img src="{{ $item->image }}"
-                                    class="w-20 h-20 object-cover rounded-md hover:opacity-90 transition duration-300"
-                                    onclick="changeImage(this.src)">
+                                    loading="lazy"
+                                    class="w-20 h-20 object-cover rounded-md hover:opacity-90 transition duration-300 cursor-pointer border-2 border-transparent hover:border-blue-300"
+                                    onclick="changeImage('{{ $item->image }}')"
+                                    data-gallery-index="{{ $index }}">
                             @else
                                 <img src="{{ asset('storage/' . $item->image) }}"
-                                    class="w-20 h-20 object-cover rounded-md hover:opacity-90 transition duration-300"
-                                    onclick="changeImage(this.src)">
+                                    loading="lazy"
+                                    class="w-20 h-20 object-cover rounded-md hover:opacity-90 transition duration-300 cursor-pointer border-2 border-transparent hover:border-blue-300"
+                                    onclick="changeImage('{{ asset('storage/' . $item->image) }}')"
+                                    data-gallery-index="{{ $index }}">
                             @endif
                         @endforeach
                     </div>
@@ -118,6 +124,7 @@
                                         <div
                                             class="w-12 h-12 flex items-center justify-center rounded-full overflow-hidden bg-gray-50">
                                             <img src="{{ $link_src_color_pic }}" alt="{{ $color }}"
+                                                loading="lazy"
                                                 class="w-full h-full object-cover">
                                         </div>
                                         <span
@@ -186,6 +193,7 @@
                                     class="group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                                     <img src="{{ asset('storage/' . \App\Models\Setting::first()->size_shoes_image) }}"
                                         alt="Bảng size giày"
+                                        loading="lazy"
                                         class="w-auto h-[200px] object-cover rounded-lg group-hover:opacity-90 transition-opacity">
                                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 flex items-center justify-center">
                                         <span class="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
@@ -217,6 +225,7 @@
                                                         </h3>
                                                         <img src="{{ asset('storage/' . \App\Models\Setting::first()->size_shoes_image) }}"
                                                             alt="Bảng size giày"
+                                                            loading="lazy"
                                                             class="w-full h-auto rounded-lg">
                                                     </div>
                                                 </div>
@@ -248,11 +257,301 @@
         </div>
     </div>
 
+    <!-- Image Gallery Modal -->
+    <div id="imageGalleryModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden items-center justify-center">
+        <div class="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center p-4">
+            <!-- Close button -->
+            <button onclick="closeImageGallery()" class="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black bg-opacity-50 rounded-full p-2 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <!-- Previous button -->
+            <button onclick="previousImage()" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10 bg-black bg-opacity-50 rounded-full p-3 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+
+            <!-- Next button -->
+            <button onclick="nextImage()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10 bg-black bg-opacity-50 rounded-full p-3 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+
+            <!-- Main image -->
+            <img id="galleryMainImage" src="" alt="Product Image" class="max-w-full max-h-full object-contain rounded-lg">
+
+            <!-- Image counter -->
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                <span id="currentImageIndex">1</span> / <span id="totalImages">1</span>
+            </div>
+
+            <!-- Thumbnail navigation -->
+            <div class="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4" id="galleryThumbnails">
+                <!-- Thumbnails will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Gallery data
+        let galleryImages = [];
+        let currentGalleryIndex = 0;
+
+        // Initialize gallery images from PHP data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Collect all product images including main image
+            galleryImages = [];
+
+            // Add main image first if it exists
+            const mainImageSrc = "{{ $main_image }}";
+            if (mainImageSrc) {
+                galleryImages.push(mainImageSrc);
+            }
+
+            // Add other product images
+            const productImages = [
+                @foreach ($list_images_product as $item)
+                    @if ($item->type == 'variant')
+                        "{{ $item->image }}",
+                    @else
+                        "{{ asset('storage/' . $item->image) }}",
+                    @endif
+                @endforeach
+            ];
+
+            // Add unique images only
+            productImages.forEach(img => {
+                if (img && !galleryImages.includes(img)) {
+                    galleryImages.push(img);
+                }
+            });
+
+            // Setup event listeners
+            setupGalleryEventListeners();
+        });
+
         function changeImage(src) {
             document.getElementById('mainImage').src = src;
         }
+
+        function openImageGalleryFromMain() {
+            // Find the index of current main image in gallery
+            const mainImageSrc = document.getElementById('mainImage').src;
+            const index = galleryImages.findIndex(img => img === mainImageSrc);
+            openImageGallery(index >= 0 ? index : 0);
+        }
+
+        function openImageGallery(index = 0) {
+            currentGalleryIndex = index;
+            const modal = document.getElementById('imageGalleryModal');
+            const mainImage = document.getElementById('galleryMainImage');
+
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Update image and counter
+            updateGalleryImage();
+
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageGallery() {
+            const modal = document.getElementById('imageGalleryModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            // Restore body scroll
+            document.body.style.overflow = 'auto';
+        }
+
+        function nextImage() {
+            currentGalleryIndex = (currentGalleryIndex + 1) % galleryImages.length;
+            updateGalleryImage();
+        }
+
+        function previousImage() {
+            currentGalleryIndex = (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
+            updateGalleryImage();
+        }
+
+        function updateGalleryImage() {
+            const mainImage = document.getElementById('galleryMainImage');
+            const currentIndexSpan = document.getElementById('currentImageIndex');
+            const totalImagesSpan = document.getElementById('totalImages');
+
+            // Update main image
+            mainImage.src = galleryImages[currentGalleryIndex];
+
+            // Update counter
+            currentIndexSpan.textContent = currentGalleryIndex + 1;
+            totalImagesSpan.textContent = galleryImages.length;
+
+            // Update thumbnails
+            updateGalleryThumbnails();
+        }
+
+        function updateGalleryThumbnails() {
+            const thumbnailContainer = document.getElementById('galleryThumbnails');
+            thumbnailContainer.innerHTML = '';
+
+            galleryImages.forEach((imageSrc, index) => {
+                const thumbnail = document.createElement('img');
+                thumbnail.src = imageSrc;
+                thumbnail.className = `w-12 h-12 object-cover rounded cursor-pointer border-2 transition-all ${
+                    index === currentGalleryIndex ? 'border-white' : 'border-transparent hover:border-gray-300'
+                }`;
+                thumbnail.onclick = () => {
+                    currentGalleryIndex = index;
+                    updateGalleryImage();
+                };
+                thumbnailContainer.appendChild(thumbnail);
+            });
+        }
+
+        function setupGalleryEventListeners() {
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                const modal = document.getElementById('imageGalleryModal');
+                if (!modal.classList.contains('hidden')) {
+                    switch(e.key) {
+                        case 'Escape':
+                            closeImageGallery();
+                            break;
+                        case 'ArrowLeft':
+                            previousImage();
+                            break;
+                        case 'ArrowRight':
+                            nextImage();
+                            break;
+                    }
+                }
+            });
+
+            // Close modal when clicking outside the image
+            const modal = document.getElementById('imageGalleryModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeImageGallery();
+                    }
+                });
+            }
+
+            // Touch swipe support for mobile
+            const galleryMainImage = document.getElementById('galleryMainImage');
+            if (galleryMainImage) {
+                galleryMainImage.addEventListener('touchstart', function(e) {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+
+                galleryMainImage.addEventListener('touchend', function(e) {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                });
+            }
+        }
+
+        // Touch swipe variables
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const swipeDistance = touchEndX - touchStartX;
+
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance > 0) {
+                    // Swipe right - previous image
+                    previousImage();
+                } else {
+                    // Swipe left - next image
+                    nextImage();
+                }
+            }
+        }
     </script>
+
+    <style>
+        /* Gallery Modal Styles */
+        #imageGalleryModal {
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        #imageGalleryModal.hidden {
+            animation: fadeOut 0.3s ease-out;
+        }
+
+        #galleryMainImage {
+            max-height: 80vh;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #galleryThumbnails {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        #galleryThumbnails::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        #galleryThumbnails::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #galleryThumbnails::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Button hover effects */
+        #imageGalleryModal button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            #galleryThumbnails {
+                bottom: 8px;
+                padding: 0 8px;
+            }
+
+            #imageGalleryModal .absolute.bottom-4 {
+                bottom: 16px;
+            }
+
+            #imageGalleryModal .absolute.left-4,
+            #imageGalleryModal .absolute.right-4 {
+                padding: 8px;
+            }
+
+            #galleryMainImage {
+                max-height: 70vh;
+            }
+        }
+
+        /* Touch gestures for mobile */
+        #galleryMainImage {
+            touch-action: pan-x;
+        }
+    </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -300,7 +599,7 @@
                             <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
                                 <div class="relative pt-[100%]">
                                     <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
-                                        alt="{{ $related->name }}" class="absolute inset-0 w-full h-full object-cover">
+                                        alt="{{ $related->name }}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">
                                 </div>
                                 <div class="p-3">
                                     <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
@@ -337,6 +636,7 @@
                                             <div class="relative pt-[100%]">
                                                 <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
                                                     alt="{{ $related->name }}"
+                                                    loading="lazy"
                                                     class="absolute inset-0 w-full h-full object-cover">
                                             </div>
                                             <div class="p-3">
@@ -408,6 +708,7 @@
                                 <div class="relative pt-[100%]">
                                     <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
                                         alt="{{ $brand_product->name }}"
+                                        loading="lazy"
                                         class="absolute inset-0 w-full h-full object-cover">
                                 </div>
                                 <div class="p-3">
@@ -446,6 +747,7 @@
                                             <div class="relative pt-[100%]">
                                                 <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
                                                     alt="{{ $brand_product->name }}"
+                                                    loading="lazy"
                                                     class="absolute inset-0 w-full h-full object-cover">
                                             </div>
                                             <div class="p-3">

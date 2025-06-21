@@ -28,8 +28,9 @@
     <div class="grid grid-cols-3 gap-4 md:grid-cols-4 lg:grid-cols-6" x-ref="imageList">
         <template x-for="image in images" :key="image.id">
             <div :data-id="image.id" class="group relative aspect-square rounded-lg bg-gray-100 shadow-sm">
-                <img :src="image.image.startsWith('http') ? image.image : '/storage/' + image.image" 
-                     class="h-full w-full rounded-lg object-cover" 
+                <img :src="image.image.startsWith('http') ? image.image : '/storage/' + image.image"
+                     loading="lazy"
+                     class="h-full w-full rounded-lg object-cover"
                      :alt="'Product image ' + image.id">
                 
                 <div class="absolute inset-0 rounded-lg bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">

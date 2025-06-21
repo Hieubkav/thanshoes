@@ -7,7 +7,11 @@
             <!-- Modal header -->
             <div class="flex items-center justify-between p-5 border-b rounded-t dark:border-gray-600">
                 <h3 class="text-2xl font-semibold text-gray-900 dark:text-white">
-                    Thông tin khách hàng
+                    @auth
+                        Thông tin tài khoản
+                    @else
+                        Thông tin khách hàng
+                    @endauth
                 </h3>
                 <button type="button"
                         class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
@@ -21,34 +25,73 @@
             </div>
             <!-- Modal body -->
             <div class="p-6 space-y-6 text-gray-700 dark:text-gray-300">
-                <div class="flex items-center space-x-4">
-                    <i class="fas fa-user-circle text-3xl text-blue-600"></i>
-                    <div>
-                        <p class="font-semibold">Tên khách hàng</p>
-                        <p wire:model="name_customer">{{ $name_customer ?? 'Chưa có thông tin' }}</p>
+                @auth
+                    <!-- Thông tin từ Customer đã đăng nhập -->
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-user-circle text-3xl text-blue-600"></i>
+                        <div>
+                            <p class="font-semibold">Tên khách hàng</p>
+                            <p>{{ Auth::user()->name }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <i class="fas fa-phone-alt text-3xl text-green-600"></i>
-                    <div>
-                        <p class="font-semibold">Số điện thoại</p>
-                        <p wire:model="phone_customer">{{ $phone_customer ?? 'Chưa có thông tin' }}</p>
+                    @if(Auth::user()->email)
+                        <div class="flex items-center space-x-4">
+                            <i class="fas fa-envelope text-3xl text-red-600"></i>
+                            <div>
+                                <p class="font-semibold">Email</p>
+                                <p>{{ Auth::user()->email }}</p>
+                            </div>
+                        </div>
+                    @endif
+                    @if(Auth::user()->phone)
+                        <div class="flex items-center space-x-4">
+                            <i class="fas fa-phone-alt text-3xl text-green-600"></i>
+                            <div>
+                                <p class="font-semibold">Số điện thoại</p>
+                                <p>{{ Auth::user()->phone }}</p>
+                            </div>
+                        </div>
+                    @endif
+                    @if(Auth::user()->address)
+                        <div class="flex items-center space-x-4">
+                            <i class="fas fa-map-marker-alt text-3xl text-yellow-600"></i>
+                            <div>
+                                <p class="font-semibold">Địa chỉ</p>
+                                <p>{{ Auth::user()->address }}</p>
+                            </div>
+                        </div>
+                    @endif
+                @else
+                    <!-- Thông tin khách hàng chưa đăng nhập -->
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-user-circle text-3xl text-blue-600"></i>
+                        <div>
+                            <p class="font-semibold">Tên khách hàng</p>
+                            <p>{{ $name_customer ?? 'Chưa có thông tin' }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <i class="fas fa-envelope text-3xl text-red-600"></i>
-                    <div>
-                        <p class="font-semibold">Email</p>
-                        <p wire:model="email_customer">{{ $email_customer ?? 'Chưa có thông tin' }}</p>
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-phone-alt text-3xl text-green-600"></i>
+                        <div>
+                            <p class="font-semibold">Số điện thoại</p>
+                            <p>{{ $phone_customer ?? 'Chưa có thông tin' }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <i class="fas fa-map-marker-alt text-3xl text-yellow-600"></i>
-                    <div>
-                        <p class="font-semibold">Địa chỉ</p>
-                        <p wire:model="address_customer">{{ $address_customer ?? 'Chưa có thông tin' }}</p>
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-envelope text-3xl text-red-600"></i>
+                        <div>
+                            <p class="font-semibold">Email</p>
+                            <p>{{ $email_customer ?? 'Chưa có thông tin' }}</p>
+                        </div>
                     </div>
-                </div>
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-map-marker-alt text-3xl text-yellow-600"></i>
+                        <div>
+                            <p class="font-semibold">Địa chỉ</p>
+                            <p>{{ $address_customer ?? 'Chưa có thông tin' }}</p>
+                        </div>
+                    </div>
+                @endauth
             </div>
             <!-- Modal footer -->
             <div class="flex items-center justify-between p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">

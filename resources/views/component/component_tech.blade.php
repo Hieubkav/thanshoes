@@ -18,8 +18,9 @@
     <!-- Image Content -->
     @if($websiteDesign->cer_image)
     <div class="lg:w-1/2 flex justify-center px-4">
-        <img src="{{ asset('storage/' . $websiteDesign->cer_image) }}" 
-             alt="{{ $websiteDesign->cer_title }}" 
+        <img src="{{ asset('storage/' . $websiteDesign->cer_image) }}"
+             alt="{{ $websiteDesign->cer_title }}"
+             loading="lazy"
              class="w-full max-w-md object-contain">
     </div>
     @endif

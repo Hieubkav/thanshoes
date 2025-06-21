@@ -153,13 +153,37 @@ class OrderResource extends Resource
                             ])->columnSpanFull(),
                         ]),
 
-                    Forms\Components\Placeholder::make('total_price')
-                        ->label('Tổng tiền')
-                        ->content(function ($record) {
-                            if (!$record?->total_price) return '0đ';
+                    Forms\Components\Grid::make(3)
+                        ->schema([
+                            Forms\Components\Placeholder::make('original_total_price')
+                                ->label('Tổng tiền gốc')
+                                ->content(function ($record) {
+                                    if (!$record || !$record->original_total) return number_format($record->total_price, 0, ',', '.') . 'đ';
+                                    return number_format($record->original_total, 0, ',', '.') . 'đ';
+                                })
+                                ->visible(fn ($record) => $record && $record->discount_amount > 0),
 
-                            return number_format($record->total_price, 0, ',', '.') . 'đ';
-                        }),
+                            Forms\Components\Placeholder::make('discount_info')
+                                ->label('Giảm giá')
+                                ->content(function ($record) {
+                                    if (!$record || !$record->discount_amount) return 'Không có';
+                                    
+                                    if ($record->discount_type === 'percent') {
+                                        return number_format($record->discount_amount, 0, ',', '.') . 'đ (' . 
+                                            number_format($record->discount_percentage, 2) . '%)';
+                                    } else {
+                                        return number_format($record->discount_amount, 0, ',', '.') . 'đ';
+                                    }
+                                })
+                                ->visible(fn ($record) => $record && $record->discount_amount > 0),
+
+                            Forms\Components\Placeholder::make('total_price')
+                                ->label('Tổng tiền thanh toán')
+                                ->content(function ($record) {
+                                    if (!$record?->total_price) return '0đ';
+                                    return number_format($record->total_price, 0, ',', '.') . 'đ';
+                                }),
+                        ]),
                 ])
                 ->collapsible(),
         ]);
@@ -208,6 +232,11 @@ class OrderResource extends Resource
                     ->money('vnd')
                     ->sortable()
                     ->label('Tổng tiền'),
+                Tables\Columns\IconColumn::make('has_discount')
+                    ->boolean()
+                    ->getStateUsing(fn ($record) => $record->discount_amount > 0)
+                    ->label('Giảm giá')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -223,6 +252,10 @@ class OrderResource extends Resource
                         'cancelled' => 'Đã hủy'
                     ])
                     ->label('Trạng thái'),
+                Tables\Filters\Filter::make('has_discount')
+                    ->label('Có giảm giá')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->where('discount_amount', '>', 0)),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')

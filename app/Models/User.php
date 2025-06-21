@@ -17,10 +17,7 @@ class User extends Authenticatable implements FilamentUser
     
      public function canAccessPanel(Panel $panel): bool
     {
-        // if ($panel->getId() === 'dashboard') {
-        //     return $this->hasRole('admin') && $this->hasVerifiedEmail();
-        // }
-
+        // Tất cả User đều có thể truy cập admin panel
         return true;
     }
 
@@ -32,6 +29,7 @@ class User extends Authenticatable implements FilamentUser
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
     ];
 
@@ -53,6 +51,14 @@ class User extends Authenticatable implements FilamentUser
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Check if user is admin (tất cả User đều là admin)
+     */
+    public function isAdmin(): bool
+    {
+        return true;
+    }
 
     public function posts()
     {

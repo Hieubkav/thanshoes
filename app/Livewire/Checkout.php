@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\Variant;
 use App\Models\User;
 use App\Mail\OrderShipped;
+use App\Services\PriceService;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 use Filament\Notifications\Notification;
@@ -18,6 +19,11 @@ class Checkout extends Component
 {
     public $cartItems;
     public $total = 0;
+    public $originalTotal = 0;
+    public $discountAmount = 0;
+    public $discountPercentage = 0;
+    public $discountApplied = false;
+    public $discountType = '';
     public $name_customer = '';
     public $phone_customer = '';
     public $email_customer = '';
@@ -38,7 +44,25 @@ class Checkout extends Component
         }
 
         $this->cartItems = $cart->items()->with(['product', 'variant.variantImage'])->get();
-        $this->total = $cart->total_amount;
+        
+        // Tính toán giảm giá
+        $this->originalTotal = $cart->original_total_amount ?? $cart->items->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+        
+        // Áp dụng giảm giá nếu được bật trong cài đặt
+        $setting = Setting::first();
+        if ($setting && $setting->apply_price === 'apply' && $setting->dec_product_price > 0) {
+            $discountInfo = PriceService::getDiscountInfo($this->originalTotal);
+            $this->total = $discountInfo['discounted_price'];
+            $this->discountAmount = $discountInfo['discount_amount'];
+            $this->discountPercentage = $discountInfo['discount_percentage'];
+            $this->discountApplied = true;
+            $this->discountType = $discountInfo['discount_type'];
+        } else {
+            $this->total = $this->originalTotal;
+            $this->discountApplied = false;
+        }
         
         if (session()->has('customer_id')) {
             $customer = Customer::find(session('customer_id'));
@@ -124,10 +148,14 @@ class Checkout extends Component
                 ]
             );
 
-            // Tạo đơn hàng mới
+            // Tạo đơn hàng mới với thông tin giảm giá
             $order = Order::create([
                 'customer_id' => $customer->id,
                 'total' => $this->total,
+                'original_total' => $this->discountApplied ? $this->originalTotal : null,
+                'discount_amount' => $this->discountApplied ? $this->discountAmount : null,
+                'discount_type' => $this->discountApplied ? $this->discountType : null,
+                'discount_percentage' => $this->discountApplied ? $this->discountPercentage : null,
                 'payment_method' => $this->payment_method,
                 'status' => 'pending'
             ]);

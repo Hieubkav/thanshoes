@@ -10,8 +10,9 @@
     <div class="grid grid-cols-3 gap-4 md:grid-cols-4 lg:grid-cols-6" x-ref="imageList">
         @foreach($images as $image)
         <div data-id="{{ $image->id }}" class="group relative aspect-square rounded-lg bg-gray-100 shadow-sm">
-            <img src="{{ Str::startsWith($image->image, 'http') ? $image->image : Storage::url($image->image) }}" 
-                 class="h-full w-full rounded-lg object-cover" 
+            <img src="{{ Str::startsWith($image->image, 'http') ? $image->image : Storage::url($image->image) }}"
+                 loading="lazy"
+                 class="h-full w-full rounded-lg object-cover"
                  alt="Product image {{ $image->id }}">
             
             <div class="absolute inset-0 rounded-lg bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -122,7 +123,8 @@
                        class="absolute left-2 top-2 z-10">
                        
                 <img src="{{ Str::startsWith($image->image, 'http') ? $image->image : Storage::url($image->image) }}"
-                     class="h-full w-full rounded-lg object-cover" 
+                     loading="lazy"
+                     class="h-full w-full rounded-lg object-cover"
                      alt="Variant image {{ $image->id }}">
             </div>
             @endforeach

@@ -6,19 +6,19 @@
     <!-- Messenger Button -->
     <a href="{{ $settings->messenger }}" target="_blank"
         class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full shadow-lg hover:bg-blue-200 group">
-        <img src="{{ asset('images/messenger_icon.png') }}" class="h-12 w-12 bg-opacity-50 bg-purple-500 p-2 rounded-full  halo-effect" alt="Messenger Icon">
+        <img src="{{ asset('images/messenger_icon.png') }}" loading="lazy" class="h-12 w-12 bg-opacity-50 bg-purple-500 p-2 rounded-full  halo-effect" alt="Messenger Icon">
     </a>
 
     <!-- Zalo Button -->
     <a href="{{ $settings->zalo }}" target="_blank"
         class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full shadow-lg hover:bg-blue-200 group">
-        <img src="{{ asset('images/zalo_icon.png') }}" class="h-12 w-12 bg-opacity-50 bg-blue-500 p-2 rounded-full halo-effect" alt="Zalo Icon">
+        <img src="{{ asset('images/zalo_icon.png') }}" loading="lazy" class="h-12 w-12 bg-opacity-50 bg-blue-500 p-2 rounded-full halo-effect" alt="Zalo Icon">
     </a>
 
     <!-- Phone Button -->
     <a href="javascript:void(0);" onclick="copyPhoneNumber()"
         class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full shadow-lg hover:bg-blue-200 group">
-        <img src="{{ asset('images/phone_icon.png') }}" class="h-12 w-12 bg-opacity-50 bg-red-500 p-2 rounded-full halo-effect" alt="Phone Icon">
+        <img src="{{ asset('images/phone_icon.png') }}" loading="lazy" class="h-12 w-12 bg-opacity-50 bg-red-500 p-2 rounded-full halo-effect" alt="Phone Icon">
     </a>
     <div id="phone-number" class="hidden fixed bottom-32 right-4 bg-white p-2 rounded shadow-lg">{{ $settings->phone }}</div>
 

@@ -24,8 +24,9 @@
                             <div class="relative overflow-hidden rounded-lg shadow-lg">
                                 <div class="h-64 w-full">
                                     @if($tag->image)
-                                        <img src="{{ asset('storage/' . $tag->image) }}" 
-                                            alt="{{ $tag->name }}" 
+                                        <img src="{{ asset('storage/' . $tag->image) }}"
+                                            alt="{{ $tag->name }}"
+                                            loading="lazy"
                                             class="w-full h-full object-cover transition duration-500 transform group-hover:scale-110">
                                     @else
                                         <div class="w-full h-full bg-gray-200 flex items-center justify-center">

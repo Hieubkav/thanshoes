@@ -19,7 +19,38 @@
                     <tr>
                         <td style="padding: 20px;">
                             <h2 style="font-size: 24px; color: #4A5568; margin: 0 0 20px; text-align: center;">🌟 Thông tin đơn hàng 🌟</h2>
-                            <p style="font-size: 18px; color: #2D3748; margin: 0 0 10px;"><strong>💰 Tổng giá trị:</strong> <span style="color: #48BB78; font-weight: bold;">{{ number_format($order->items->sum(function($item) { return $item->price * $item->quantity; }), 0, ',', '.') }}đ</span></p>
+                            
+                            @if($order->discount_amount > 0)
+                                <p style="font-size: 18px; color: #2D3748; margin: 0 0 10px;">
+                                    <strong>💰 Tổng giá trị ban đầu:</strong> 
+                                    <span style="color: #718096; text-decoration: line-through;">
+                                        {{ number_format($order->original_total, 0, ',', '.') }}đ
+                                    </span>
+                                </p>
+                                <p style="font-size: 18px; color: #2D3748; margin: 0 0 10px;">
+                                    <strong>🏷️ Giảm giá:</strong> 
+                                    <span style="color: #F56565; font-weight: bold;">
+                                        {{ number_format($order->discount_amount, 0, ',', '.') }}đ 
+                                        @if($order->discount_type == 'percent')
+                                            ({{ number_format($order->discount_percentage, 2) }}%)
+                                        @endif
+                                    </span>
+                                </p>
+                                <p style="font-size: 18px; color: #2D3748; margin: 0 0 20px;">
+                                    <strong>💰 Số tiền thanh toán:</strong> 
+                                    <span style="color: #48BB78; font-weight: bold;">
+                                        {{ number_format($order->total, 0, ',', '.') }}đ
+                                    </span>
+                                </p>
+                            @else
+                                <p style="font-size: 18px; color: #2D3748; margin: 0 0 10px;">
+                                    <strong>💰 Tổng giá trị:</strong> 
+                                    <span style="color: #48BB78; font-weight: bold;">
+                                        {{ number_format($order->total, 0, ',', '.') }}đ
+                                    </span>
+                                </p>
+                            @endif
+                            
                             <p style="font-size: 18px; color: #2D3748; margin: 0 0 10px;"><strong>👤 Khách hàng:</strong> {{ $order->customer->name }} - {{ $order->customer->phone }}</p>
                             <p style="font-size: 18px; color: #2D3748; margin: 0;"><strong>💳 Thanh toán:</strong> {{ $order->payment_method == "cod" ? "COD 🚚" : "Chuyển khoản ngân hàng 🏦" }}</p>
                         </td>

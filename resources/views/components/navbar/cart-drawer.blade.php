@@ -87,13 +87,8 @@
         <!-- Cart Footer -->
         @if($cartCount > 0)
             <div class="mt-auto border-t pt-4">
-                <!-- Total -->
-                <div class="flex justify-between mb-3">
-                    <span class="text-gray-500 dark:text-gray-400">Tổng cộng:</span>
-                    <span class="font-semibold text-gray-900 dark:text-white">
-                        {{ number_format($totalAmount, 0, ',', '.') }}đ
-                    </span>
-                </div>
+                <!-- Discount and Total -->
+                @include('components.navbar.cart-discount')
                 
                 <!-- Checkout Button -->
                 <div class="mt-4">

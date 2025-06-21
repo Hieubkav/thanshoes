@@ -12,7 +12,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Warm up product cache every hour to ensure fast page loads
+        $schedule->command('cache:products warm')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+
+        // Refresh cache every 6 hours to ensure data freshness
+        $schedule->command('cache:products refresh')
+                 ->everySixHours()
+                 ->withoutOverlapping()
+                 ->runInBackground();
     }
 
     /**

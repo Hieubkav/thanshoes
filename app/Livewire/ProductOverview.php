@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Setting;
 use App\Models\Variant;
 use App\Models\Product;
+use App\Services\PriceService;
 use Filament\Notifications\Notification;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -16,6 +17,12 @@ class ProductOverview extends Component
     // Product related properties
     public $product;
     public $main_image;
+    
+    // Discount related properties
+    public $showDiscount = false;
+    public $discountedPrice = 0;
+    public $discountAmount = 0;
+    public $discountPercentage = 0;
 
     // User selection properties
     public $selectedColor = [];
@@ -30,6 +37,23 @@ class ProductOverview extends Component
     {
         $this->product = $product;
         $this->initializeFilters();
+        $this->calculateDiscount();
+    }
+    
+    private function calculateDiscount()
+    {
+        // Lấy biến thể có giá thấp nhất cho sản phẩm này
+        $lowestPriceVariant = $this->product->variants->min('price');
+        if (!$lowestPriceVariant) return;
+        
+        $discountInfo = PriceService::getDiscountInfo($lowestPriceVariant);
+        $this->showDiscount = $discountInfo['is_applied'];
+        
+        if ($this->showDiscount) {
+            $this->discountedPrice = $discountInfo['discounted_price'];
+            $this->discountAmount = $discountInfo['discount_amount'];
+            $this->discountPercentage = $discountInfo['discount_percentage']; 
+        }
     }
 
     private function initializeFilters()
@@ -213,6 +237,9 @@ class ProductOverview extends Component
             'list_colors' => $list_colors,
             'list_sizes' => $list_sizes,
             'list_images_product' => $list_images_product,
+            'showDiscount' => $this->showDiscount,
+            'discountedPrice' => $this->discountedPrice,
+            'discountPercentage' => $this->discountPercentage,
         ]);
     }
 

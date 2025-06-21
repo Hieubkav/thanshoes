@@ -9,8 +9,9 @@
         <div class="max-w-3xl mx-auto flex flex-col lg:flex-row items-center gap-8">
             @if($websiteDesign->about_pic)
             <div class="lg:w-1/2">
-                <img src="{{ asset('storage/' . $websiteDesign->about_pic) }}" 
-                     alt="Về chúng tôi" 
+                <img src="{{ asset('storage/' . $websiteDesign->about_pic) }}"
+                     alt="Về chúng tôi"
+                     loading="lazy"
                      class="w-full h-auto rounded-lg shadow-lg transition-transform duration-300 hover:scale-105">
             </div>
             @endif

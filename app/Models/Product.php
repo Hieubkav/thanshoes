@@ -42,6 +42,8 @@ class Product extends Model
         'description',
         'sku',
         'slug',
+        'og_image',
+        'seo_description',
     ];
 
     public function variants(): HasMany

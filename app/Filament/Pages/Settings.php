@@ -74,15 +74,19 @@ class Settings extends Page implements Forms\Contracts\HasForms
                                     ->deleteUploadedFileUsing(fn ($file) => Storage::disk('public')->delete($file))
                                     ->image()
                                     ->imageEditor(),
-                                
-                                Forms\Components\FileUpload::make('og_img')
+                                  Forms\Components\FileUpload::make('og_img')
                                     ->label('Hình chia sẻ mạng xã hội (OG Image)')
                                     ->helperText('Hình ảnh hiển thị khi chia sẻ trang web lên mạng xã hội')
                                     ->disk('public')
                                     ->directory('uploads/settings')
                                     ->deleteUploadedFileUsing(fn ($file) => Storage::disk('public')->delete($file))
                                     ->image()
-                                    ->imageEditor()
+                                    ->imageEditor(),
+                                    
+                                Forms\Components\Textarea::make('seo_description')
+                                    ->label('Mô tả SEO (hiển thị trong kết quả tìm kiếm)')
+                                    ->rows(3)
+                                    ->helperText('Nên có độ dài từ 50-160 ký tự để tối ưu hiển thị trên các công cụ tìm kiếm')
                             ])->columns(2),
 
                         Forms\Components\Tabs\Tab::make('Mạng xã hội')

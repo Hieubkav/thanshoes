@@ -21,8 +21,9 @@
                     <a href="{{ route('posts.show', $post->id) }}" class="block">
                         @if($post->thumbnail)
                             <div class="h-48 overflow-hidden">
-                                <img src="{{ asset('storage/' . $post->thumbnail) }}" 
-                                     alt="{{ $post->title }}" 
+                                <img src="{{ asset('storage/' . $post->thumbnail) }}"
+                                     alt="{{ $post->title }}"
+                                     loading="lazy"
                                      class="w-full h-full object-cover">
                             </div>
                         @else

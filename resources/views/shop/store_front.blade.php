@@ -1,17 +1,14 @@
 @php
-    use App\Models\Product;
-    use App\Models\WebsiteDesign;
-    
-    $products = Product::all();
-    $websiteDesign = WebsiteDesign::first();
+    use App\Services\ProductCacheService;
 
-    // Lấy ra danh sách những thuộc tính khác nhau có thể có của product->brand trừ rỗng
-    $brands = $products->pluck('brand')->filter()->unique();
+    // Sử dụng ProductCacheService để tối ưu cache
+    $products = ProductCacheService::getHomepageProducts();
+    $websiteDesign = ProductCacheService::getWebsiteDesign();
+    $hasPosts = ProductCacheService::hasPosts();
+    $brands = ProductCacheService::getBrands();
+    $typesData = ProductCacheService::getTypesData();
 
-    // lấy ra danh sách những bảng ghi khác nhau có thể có của product->type, lấy ra thì sort theo thứ tự từ nhiều đến ít của type đó
-    $types = $products->pluck('type')->filter()->countBy()->sortDesc()->keys();
-
-    // Lấy ra số tượng  của $types
+    $types = $typesData->keys();
     $count_types = $types->count();
 
 @endphp
@@ -41,7 +38,9 @@
 
     @include('component.shop.cta', ['websiteDesign' => $websiteDesign])
 
-    @include('component.recent_posts')
+    @if($hasPosts)
+        @include('component.recent_posts')
+    @endif
 
     @if ($count_types >= 3)
         @include('component.new_arrival', [

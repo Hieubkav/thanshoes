@@ -13,6 +13,11 @@ class Order extends Model
         'status',
         'customer_id',
         'payment_method',
+        'total',
+        'original_total',
+        'discount_amount',
+        'discount_type',
+        'discount_percentage',
     ];
 
     public function customer()
@@ -23,10 +28,22 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    public function getTotalPriceAttribute()
+    }    public function getTotalPriceAttribute()
     {
-        return $this->items->sum(fn($item) => $item->price * $item->quantity);
+        return $this->total ?? $this->items->sum(fn($item) => $item->price * $item->quantity);
+    }
+    
+    public function getOriginalTotalPriceAttribute()
+    {
+        return $this->original_total ?? $this->total_price;
+    }
+    
+    public function getDiscountAmountAttribute($value)
+    {
+        if ($value !== null) {
+            return $value;
+        }
+        
+        return $this->original_total - $this->total;
     }
 }

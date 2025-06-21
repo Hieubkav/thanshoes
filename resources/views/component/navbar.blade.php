@@ -16,7 +16,7 @@
 
     <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl p-1">
         <a href="{{ route('shop.store_front') }}" class="flex items-center space-x-3 rtl:space-x-reverse">
-            <img src="{{ asset('images/logo.svg') }}" class="h-16" alt="Logo" />
+            <img src="{{ asset('images/logo.svg') }}" loading="lazy" class="h-16" alt="Logo" />
             <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white hidden lg:block">
                 {{ env('APP_NAME') }}
             </span>

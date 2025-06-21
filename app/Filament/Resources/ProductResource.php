@@ -64,6 +64,19 @@ class ProductResource extends Resource
                         Forms\Components\RichEditor::make('description')
                             ->label('Mô tả')
                             ->columnSpanFull(),
+                        Forms\Components\Textarea::make('seo_description')
+                            ->label('Mô tả SEO')
+                            ->helperText('Mô tả ngắn gọn hiển thị trong kết quả tìm kiếm Google, nếu để trống sẽ tự động sử dụng mô tả sản phẩm')
+                            ->rows(3)
+                            ->maxLength(160)
+                            ->columnSpanFull(),
+                        Forms\Components\FileUpload::make('og_image')
+                            ->label('Ảnh chia sẻ mạng xã hội')
+                            ->helperText('Nếu để trống sẽ sử dụng ảnh đầu tiên của sản phẩm')
+                            ->disk('public')
+                            ->directory('products/og-images')
+                            ->image()
+                            ->imageEditor(),
                     ])
                     ->columns(2),
             ]);

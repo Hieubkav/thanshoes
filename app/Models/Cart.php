@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PriceService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,10 +16,12 @@ class Cart extends Model
         'user_id',
         'session_id',
         'total_amount',
+        'original_total_amount',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'original_total_amount' => 'decimal:2',
     ];
 
     public function items(): HasMany
@@ -43,9 +46,17 @@ class Cart extends Model
     // Tính tổng tiền giỏ hàng
     public function updateTotal()
     {
-        $this->total_amount = $this->items->sum(function ($item) {
+        $originalTotal = $this->items->sum(function ($item) {
             return $item->price * $item->quantity;
         });
+        
+        // Áp dụng giảm giá nếu được bật trong cài đặt
+        $discountInfo = PriceService::getDiscountInfo($originalTotal);
+        
+        $this->original_total_amount = $originalTotal;
+        $this->total_amount = $discountInfo['is_applied'] ? 
+            $discountInfo['discounted_price'] : $originalTotal;
+            
         $this->save();
     }
 }

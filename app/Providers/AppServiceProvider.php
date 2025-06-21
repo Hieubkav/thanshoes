@@ -3,7 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Variant;
+use App\Models\Product;
+use App\Models\Setting;
+use App\Models\WebsiteDesign;
 use App\Observers\VariantObserver;
+use App\Observers\ProductCacheObserver;
+use App\Observers\SettingCacheObserver;
+use App\Observers\WebsiteDesignCacheObserver;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire; // Thêm namespace cho Livewire
 
@@ -24,8 +30,13 @@ class AppServiceProvider extends ServiceProvider
     {
         // Đăng ký các Livewire components
         Livewire::component('product-image-organizer', \App\Livewire\ProductImageOrganizer::class);
-        
+
         // Đăng ký observer để tự động đồng bộ ảnh
         Variant::observe(VariantObserver::class);
+
+        // Đăng ký cache observers để tự động clear cache khi có thay đổi
+        Product::observe(ProductCacheObserver::class);
+        Setting::observe(SettingCacheObserver::class);
+        WebsiteDesign::observe(WebsiteDesignCacheObserver::class);
     }
 }

@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    use HasFactory;
-
-    protected $fillable = [
+    use HasFactory;    protected $fillable = [
         'phone',
         'email',
         'address',
@@ -34,5 +32,6 @@ class Setting extends Model
         'apply_price',
         'dec_product_price_type',
         'og_img',
+        'seo_description',
     ];
 }

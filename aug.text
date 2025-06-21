@@ -1,0 +1,27 @@
+# UI Preferences
+- User prefers modern minimalist UI design with light colors (white-orange-brown), iOS/Material Design 3 fonts, proper spacing, rounded corners, professional status chips, and shadow effects over borders - referencing Stripe Dashboard and Apple-style UI.
+
+# Layout Preferences
+- User prefers navbar layout with logo and icons in one section, and navigation menu separated into a different section below, rather than having everything in one container.
+- Navbar authentication UI should show different content based on login state: logged-in users see order history, cart, logout; guests see login/register options.
+
+# Functionality Preferences
+- User prefers consistent filter interface patterns across similar pages, specifically wanting the filter UI from /khoa-hoc to be applied to /nhom-hoc-tap.
+- Authentication system should support account creation during checkout, separate login/register pages, and all auth pages should inherit from layouts.shoplayout.
+- Authentication systems should allow login/registration with either phone number or email (minimum one required), showing preference for collecting customer phone numbers.
+- Authentication system (login/register) should be designed for Customer model, not User model.
+- User prefers simplified system where all User model entries are admins (no role field needed) and Customer model is for regular customers only.
+- User prefers using tinker for debugging instead of adding debug code directly to views.
+- User prefers that I perform tests myself rather than asking them to provide test results or debugging information.
+
+# Technology Preferences
+- User prefers vanilla JavaScript over Alpine.js to avoid errors.
+- User prefers vanilla JavaScript over Alpine.js for carousel components, specifically wanting to avoid Alpine.js x-data directives and use traditional PHP variables with vanilla JavaScript event handlers instead.
+- Mobile drawer menus should have proper z-index layering like the shopping cart implementation.
+- Use ViewServiceProvider instead of direct model calls in views to avoid N+1 queries and implement automatic cache clearing system when data is updated.
+
+# Performance Considerations
+- User is concerned about cache optimization for product display components that randomly select product types, suggesting performance optimization should be considered for such features.
+
+# Agent Mode
+- User wants audio notifications when agent mode completes tasks, created play-notification.ps1 script that plays system sounds via PowerShell command "[System.Media.SystemSounds]::Asterisk.Play()" to notify task completion.
