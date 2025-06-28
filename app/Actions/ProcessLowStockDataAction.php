@@ -27,7 +27,8 @@ class ProcessLowStockDataAction
             if (empty($needToOrderRaw) || !is_numeric(str_replace([',', '.'], '', $needToOrderRaw))) {
                 $needG = (int)($lowStockData[$row]['G'] ?? 0);
                 $needH = (int)($lowStockData[$row]['H'] ?? 0);
-                $needToOrder = ($size === '36') ? $needG - $needH : $needG - $needH + 1;
+                // $needToOrder = ($size === '36') ? $needG - $needH : $needG - $needH + 1;
+                $needToOrder = ($size === '36') ? $needG - $needH : $needG - $needH ;
             } else {
                 $needToOrderRaw = str_replace(',', '.', $needToOrderRaw);
                 $needToOrder = (int)$needToOrderRaw;
