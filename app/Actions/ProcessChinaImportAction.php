@@ -212,19 +212,26 @@ class ProcessChinaImportAction
         // Lấy giá bán buôn từ data_shoes.xlsx
         $wholesalePrices = $this->getWholesalePrices($filteredProductsData);
 
-        // Điền dữ liệu vào file Sapo
+        // Điền dữ liệu vào file Sapo - từng SKU riêng biệt
         $row = 8; // Bắt đầu từ dòng 8
         foreach ($reportData as $data) {
             $baseSku = $data['sku'];
             $wholesalePrice = $wholesalePrices[$baseSku] ?? 0;
-            $totalQuantity = $data['total'];
+            $productName = $data['name'];
 
-            $sheet->setCellValue('A' . $row, $baseSku);
-            $sheet->setCellValue('B' . $row, $baseSku);
-            $sheet->setCellValue('C' . $row, $data['name']);
-            $sheet->setCellValue('D' . $row, $totalQuantity);
-            $sheet->setCellValue('I' . $row, $wholesalePrice);
-            $row++;
+            // Tạo từng dòng cho mỗi size có số lượng > 0
+            foreach ($data['sizes'] as $size => $quantity) {
+                if ($quantity > 0) {
+                    $fullSku = $baseSku . '-' . $size;
+
+                    $sheet->setCellValue('A' . $row, $fullSku);
+                    $sheet->setCellValue('B' . $row, $fullSku);
+                    $sheet->setCellValue('C' . $row, $productName . ' - Size ' . $size);
+                    $sheet->setCellValue('D' . $row, $quantity);
+                    $sheet->setCellValue('I' . $row, $wholesalePrice);
+                    $row++;
+                }
+            }
         }
 
         // Lưu file
