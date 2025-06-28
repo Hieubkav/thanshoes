@@ -56,7 +56,7 @@
                     @endphp
 
                     <img src="{{ $image_variant }}" loading="lazy" alt="{{ $item->name }}"
-                         class="w-full h-48 sm:h-56 object-cover transition-transform duration-500 group-hover:scale-105">
+                         class="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105">
 
                     <!-- Badges -->
                     <div class="absolute top-3 left-3 flex flex-col space-y-2">

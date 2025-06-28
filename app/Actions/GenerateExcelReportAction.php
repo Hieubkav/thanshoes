@@ -38,10 +38,10 @@ class GenerateExcelReportAction
         // Thiết lập header
         $this->setupMainFileHeaders($sheet);
 
-        // Điền dữ liệu
+        // Điền dữ liệu - chỉ những sản phẩm đã đạt 12 đôi
         $row = 2;
         foreach ($groupedProducts as $baseSku => $productInfo) {
-            if ($productInfo['total_need'] >= 6) {
+            if ($productInfo['total_need'] >= 12) {
                 $this->fillMainFileRow($sheet, $row, $baseSku, $productInfo, $reportData);
                 $row++;
             }
@@ -242,15 +242,20 @@ class GenerateExcelReportAction
             $logSheet->setCellValue('P' . $logRow, $totalNeed);
             $logSheet->setCellValue('Q' . $logRow, $totalComing);
 
-            if (count($allReasons) > 1) {
+            // Hiển thị lý do loại trừ
+            $reasonText = '';
+            if (isset($data['optimization_note'])) {
+                // Nếu có ghi chú tối ưu, hiển thị ghi chú đó
+                $reasonText = $data['optimization_note'];
+            } elseif (count($allReasons) > 1) {
                 $formattedReasons = array_map(function ($size, $reason) {
                     return "Size $size: $reason";
                 }, array_keys($allReasons), $allReasons);
-                $logSheet->setCellValue('R' . $logRow, implode("\n", $formattedReasons));
+                $reasonText = implode("\n", $formattedReasons);
             } else {
-                $mainReason = reset($allReasons) ?: "Không xác định";
-                $logSheet->setCellValue('R' . $logRow, $mainReason);
+                $reasonText = reset($allReasons) ?: "Không xác định";
             }
+            $logSheet->setCellValue('R' . $logRow, $reasonText);
             $logRow++;
         }
 
@@ -321,12 +326,12 @@ class GenerateExcelReportAction
         // Setup headers
         $warehouseSheet->setCellValue('A1', 'Hình ảnh');
         for ($i = 0; $i <= 9; $i++) {
-            $warehouseSheet->setCellValue(chr(66 + $i) . '1', 'Size ' . (36 + $i));
+            $warehouseSheet->setCellValue(chr(66 + $i) . '1', (36 + $i));
         }
-        $warehouseSheet->setCellValue('L1', 'Tổng');
+        $warehouseSheet->setCellValue('L1', 'Pairs');
         $warehouseSheet->setCellValue('M1', 'SKU');
-        $warehouseSheet->setCellValue('N1', 'Giá nhập');
-        $warehouseSheet->setCellValue('O1', 'Thành tiền');
+        $warehouseSheet->setCellValue('N1', 'Price');
+        $warehouseSheet->setCellValue('O1', 'Total');
         $warehouseSheet->setCellValue('P1', 'Tỷ giá');
         $warehouseSheet->setCellValue('Q1', 'Tổng tiền VND');
 
@@ -409,4 +414,5 @@ class GenerateExcelReportAction
         }
     }
 }
+
 

@@ -44,6 +44,10 @@ class ProcessChinaImportAction
 
             // Thu thập thông tin và tối ưu số lượng
             $groupedProducts = OptimizeProductQuantityAction::run($groupedProducts, $filteredProductsData, $lowStockData);
+
+            // Chuyển những sản phẩm 6-11 đôi không tối ưu được vào excludedProducts
+            $this->moveUnoptimizedProductsToExcluded($groupedProducts, $excludedProducts);
+
             $excludedProducts = $this->collectProductDetailsForExcluded($excludedProducts, $filteredProductsData);
 
             // Tạo các file Excel báo cáo
@@ -119,11 +123,54 @@ class ProcessChinaImportAction
         });
     }
 
+    private function moveUnoptimizedProductsToExcluded(array &$groupedProducts, array &$excludedProducts): void
+    {
+        $productsToMove = [];
+
+        foreach ($groupedProducts as $baseSku => $productInfo) {
+            // Chỉ chuyển những sản phẩm có 6-11 đôi và không đạt 12 đôi sau tối ưu
+            if ($productInfo['total_need'] >= 6 && $productInfo['total_need'] < 12) {
+                $productsToMove[] = $baseSku;
+
+                // Thêm vào excludedProducts
+                $excludedProducts[$baseSku] = [
+                    'sizes' => $productInfo['sizes'],
+                    'reasons' => [],
+                    'original_data' => $productInfo['original_data'] ?? [],
+                    'total_need' => $productInfo['total_need'],
+                    'version_count' => $productInfo['version_count'] ?? 1,
+                    'name' => $productInfo['name'] ?? $baseSku,
+                    'images' => $productInfo['images'] ?? []
+                ];
+
+                // Thêm lý do loại trừ
+                foreach ($productInfo['sizes'] as $size => $amount) {
+                    $excludedProducts[$baseSku]['reasons'][$size] = "Không thể tối ưu lên 12 đôi (hiện tại: {$productInfo['total_need']} đôi)";
+                }
+
+                // Thêm ghi chú tối ưu nếu có
+                if (isset($productInfo['optimization_note'])) {
+                    $excludedProducts[$baseSku]['optimization_note'] = $productInfo['optimization_note'];
+                }
+            }
+        }
+
+        // Xóa khỏi groupedProducts
+        foreach ($productsToMove as $baseSku) {
+            unset($groupedProducts[$baseSku]);
+        }
+    }
+
     private function collectProductDetailsForExcluded(array $excludedProducts, array $filteredProductsData): array
     {
         foreach ($excludedProducts as $baseSku => &$productInfo) {
-            $productInfo['images'] = [];
-            $productInfo['name'] = $baseSku;
+            // Chỉ thu thập thông tin nếu chưa có
+            if (!isset($productInfo['images'])) {
+                $productInfo['images'] = [];
+            }
+            if (!isset($productInfo['name'])) {
+                $productInfo['name'] = $baseSku;
+            }
 
             foreach ($filteredProductsData as $row) {
                 if (isset($row['N']) && strpos($row['N'], $baseSku) === 0) {
@@ -135,7 +182,7 @@ class ProcessChinaImportAction
                             $productInfo['images'][] = $row[$col];
                         }
                     }
-                    if (!empty($row['A'])) {
+                    if (!empty($row['A']) && $productInfo['name'] === $baseSku) {
                         $productInfo['name'] = $row['A'];
                     }
                 }
