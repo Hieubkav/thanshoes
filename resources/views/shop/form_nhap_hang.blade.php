@@ -5,11 +5,22 @@
     <div class="max-w-7xl mx-auto">
         <!-- Glass Container -->
         <div class="backdrop-blur-lg bg-white/30 rounded-2xl shadow-xl p-8 border border-white/20">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-extrabold text-white">
-                    Nhập Hàng Trung Quốc
-                </h2>
-             
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex-1 text-center">
+                    <h2 class="text-3xl font-extrabold text-white">
+                        Nhập Hàng Trung Quốc
+                    </h2>
+                </div>
+                <div>
+                    <a href="{{ route('admin.nhap_hang_flowchart') }}"
+                       target="_blank"
+                       class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors text-sm font-medium">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        🔄 Xem Quy Trình
+                    </a>
+                </div>
             </div>
 
             <!-- Form -->
@@ -139,27 +150,32 @@
                 <!-- Success Message -->
                 @if (session('success'))
                     <div class="mt-4 p-4 rounded-lg bg-green-500/20 border border-green-500/30">
-                        <p class="text-green-200 text-sm text-center">{{ session('success') }}</p>
-                        
+                        <p class="text-green-200 text-sm text-center whitespace-pre-line">{{ session('success') }}</p>
+
                         @if (session('report_filename'))
-                            <div class="mt-4 space-y-3 col-span-1 md:col-span-3">
+                            <div class="mt-6 space-y-4">
                                 <div class="text-center">
-                                    <a href="{{ route('admin.download_nhap_hang_report') }}" 
-                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                        </svg>
-                                        Tải xuống báo cáo nhập hàng
-                                    </a>
+                                    <p class="text-green-300 text-sm font-medium mb-3">📥 Tải xuống file báo cáo:</p>
                                 </div>
-                                <div class="text-center">
-                                    <a href="{{ route('admin.download_nhap_hang_sapo') }}" 
-                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        Tải File nhập hàng Sapo
-                                    </a>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="text-center">
+                                        <a href="{{ route('admin.download_nhap_hang_report') }}"
+                                        class="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 w-full justify-center">
+                                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                            📊 Báo cáo chi tiết
+                                        </a>
+                                    </div>
+                                    <div class="text-center">
+                                        <a href="{{ route('admin.download_nhap_hang_sapo') }}"
+                                        class="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 w-full justify-center">
+                                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            📦 File Sapo
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         @endif

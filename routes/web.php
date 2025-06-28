@@ -46,19 +46,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/import_excel', [AdminController::class, 'import_excel'])
         ->name('shop.import_excel');
 
-    // Thêm route mới cho form nhập hàng
+    // Route cho form nhập hàng Trung Quốc
     Route::get('/tq', [AdminController::class, 'form_nhap_hang'])
         ->name('admin.form_nhap_hang');
-    Route::post('/nhap_hang', [AdminController::class, 'nhap_hang'])
+    Route::post('/tq', [AdminController::class, 'nhap_hang'])
         ->name('admin.nhap_hang');
+    // Routes download file báo cáo
+    Route::get('/admin/download-nhap-hang-report', [AdminController::class, 'download_nhap_hang_report'])->name('admin.download_nhap_hang_report');
+    Route::get('/admin/download-nhap-hang-sapo', [AdminController::class, 'download_nhap_hang_sapo'])->name('admin.download_nhap_hang_sapo');
 
-    // Import hàng
-    Route::get('/form-nhap-hang', [AdminController::class, 'form_nhap_hang'])->name('admin.form_nhap_hang');
-    Route::post('/nhap-hang', [AdminController::class, 'nhap_hang'])->name('admin.nhap_hang');
-    Route::get('/g-repordownload-nhap-hant', [AdminController::class, 'download_nhap_hang_report'])->name('admin.download_nhap_hang_report');
-
-    // Admin route to download Sapo file
-    Route::get('/admin/download_nhap_hang_sapo', [AdminController::class, 'download_nhap_hang_sapo'])->name('admin.download_nhap_hang_sapo');
+    // Route xem flowchart quy trình nhập hàng
+    Route::get('/admin/nhap-hang-flowchart', [AdminController::class, 'nhap_hang_flowchart'])->name('admin.nhap_hang_flowchart');
 
     // Product Image Organizer Routes
     Route::get('/admin/products/{product}/images/organize', [App\Http\Controllers\ProductImageOrganizerController::class, 'index'])->name('product.images.organize');
