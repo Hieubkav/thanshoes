@@ -1,12 +1,10 @@
-@php
-    $carousels = App\Models\Carousel::all();
-@endphp
+{{-- Carousel data được share từ ViewServiceProvider --}}
 
 <!-- Modern Hero Carousel -->
 <section class="relative w-full overflow-hidden">
     <div id="hero-carousel" class="relative w-full" data-carousel="slide">
         <!-- Carousel wrapper -->
-        <div class="relative h-[12rem] md:h-[28rem] lg:h-[45rem] overflow-hidden rounded-b-2xl">
+        <div class="relative h-[12rem] md:h-[28rem] lg:h-[45rem] overflow-hidden">
             @foreach($carousels as $key => $carousel)
             <div class="hidden duration-1000 ease-in-out h-full" data-carousel-item>
                 <div class="relative w-full h-full">
@@ -29,6 +27,7 @@
             @endforeach
         </div>
 
+        @if(count($carousels) > 1)
         <!-- Modern Slider indicators -->
         <div class="absolute z-30 flex -translate-x-1/2 bottom-6 left-1/2 space-x-2">
             @foreach($carousels as $key => $carousel)
@@ -59,5 +58,6 @@
                 <span class="sr-only">Next</span>
             </span>
         </button>
+        @endif
     </div>
 </section>

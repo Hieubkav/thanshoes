@@ -42,5 +42,11 @@ class ViewServiceProvider extends ServiceProvider
                 'danh_sach_types' => $danh_sach_types
             ]);
         });
+
+        // Share carousel data cho component carousel với ProductCacheService
+        View::composer('component.carousel', function ($view) {
+            $carousels = ProductCacheService::getCarousels();
+            $view->with('carousels', $carousels);
+        });
     }
 }

@@ -14,7 +14,7 @@
             <div class="group bg-white rounded-xl p-6 text-center shadow-soft hover:shadow-soft-lg transition-all duration-300 border border-neutral-200/50 hover:border-primary-200">
                 <!-- Icon Container -->
                 <div class="relative mb-6">
-                    <div class="w-20 h-20 mx-auto bg-primary-50 rounded-full flex items-center justify-center group-hover:bg-primary-100 transition-colors duration-300">
+                    <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center  transition-colors duration-300">
                         @if($websiteDesign->{"service_pic_" . $i})
                             <img src="{{config('app.asset_url')}}/storage/{{ $websiteDesign->{"service_pic_" . $i} }}"
                                  alt="Service icon {{ $i }}"

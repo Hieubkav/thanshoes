@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Carousel;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\WebsiteDesign;
@@ -104,6 +105,16 @@ class ProductCacheService
     }
 
     /**
+     * Get cached carousels
+     */
+    public static function getCarousels(): Collection
+    {
+        return Cache::remember('homepage_carousels_v2', self::CACHE_TTL, function () {
+            return Carousel::orderBy('created_at', 'desc')->get();
+        });
+    }
+
+    /**
      * Get products by type with banned names filter (cached)
      */
     public static function getProductsByType(string $typeName): Collection
@@ -151,7 +162,8 @@ class ProductCacheService
             'homepage_brands_v2',
             'homepage_types_data_v2',
             'app_settings_v2',
-            'banned_product_names_v2'
+            'banned_product_names_v2',
+            'homepage_carousels_v2'
         ];
 
         foreach ($keys as $key) {

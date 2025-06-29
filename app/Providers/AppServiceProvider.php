@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Carousel;
 use App\Models\Variant;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\WebsiteDesign;
+use App\Observers\CarouselCacheObserver;
 use App\Observers\VariantObserver;
 use App\Observers\ProductCacheObserver;
 use App\Observers\SettingCacheObserver;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         Variant::observe(VariantObserver::class);
 
         // Đăng ký cache observers để tự động clear cache khi có thay đổi
+        Carousel::observe(CarouselCacheObserver::class);
         Product::observe(ProductCacheObserver::class);
         Setting::observe(SettingCacheObserver::class);
         WebsiteDesign::observe(WebsiteDesignCacheObserver::class);

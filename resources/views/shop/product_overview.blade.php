@@ -1,7 +1,40 @@
 @extends('layouts.shoplayout')
 
+@php
+    // Tạo SEO description tùy chỉnh cho sản phẩm
+    function generateProductSeoDescription($product) {
+        if ($product->seo_description) {
+            return $product->seo_description;
+        }
+
+        $description = $product->name;
+        if ($product->brand) {
+            $description .= ' - ' . $product->brand;
+        }
+        if ($product->type) {
+            $description .= ' (' . $product->type . ')';
+        }
+
+        // Thêm thông tin giá
+        $minPrice = $product->variants->min('price');
+        $maxPrice = $product->variants->max('price');
+        if ($minPrice && $maxPrice) {
+            if ($minPrice == $maxPrice) {
+                $description .= ' - Giá: ' . number_format($minPrice, 0, ',', '.') . 'đ';
+            } else {
+                $description .= ' - Giá từ: ' . number_format($minPrice, 0, ',', '.') . 'đ';
+            }
+        }
+
+        $description .= ' | ' . config('app.name') . ' - Chuyên giày thể thao chính hãng';
+        return $description;
+    }
+
+    $productSeoDescription = generateProductSeoDescription($product);
+@endphp
+
 @section('meta_description')
-    {{ $product->seo_description ?? $product->description ?? config('app.name') . ' - ' . $product->name }}
+    {{ $productSeoDescription }}
 @endsection
 
 @section('og_title')
@@ -9,7 +42,7 @@
 @endsection
 
 @section('og_description')
-    {{ $product->seo_description ?? $product->description ?? config('app.name') . ' - ' . $product->name }}
+    {{ $productSeoDescription }}
 @endsection
 
 @section('og_image')
