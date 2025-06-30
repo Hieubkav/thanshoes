@@ -20,6 +20,12 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Filament\Resources\UserResource;
 use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\CustomerResource;
+use App\Filament\Resources\WebsiteVisitResource;
+use App\Filament\Resources\ProductViewResource;
+use App\Filament\Widgets\LiveTrackingWidget;
+use App\Filament\Widgets\RealtimeNotificationsWidget;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Support\Facades\Blade;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -41,11 +47,15 @@ class AdminPanelProvider extends PanelProvider
                 UserResource::class,
                 CustomerResource::class,
                 OrderResource::class,
+                WebsiteVisitResource::class,
+                ProductViewResource::class,
             ])
             ->pages([
                 Pages\Dashboard::class,
             ])
             ->widgets([
+                LiveTrackingWidget::class,
+                RealtimeNotificationsWidget::class,
                 Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
             ])
@@ -62,6 +72,20 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): string => Blade::render('<x-filament::button
+                    tag="a"
+                    href="{{ route(\'shop.store_front\') }}"
+                    target="_blank"
+                    icon="heroicon-o-home"
+                    color="gray"
+                    size="sm"
+                    tooltip="Mở trang chủ"
+                >
+                    Trang chủ
+                </x-filament::button>')
+            );
     }
 }

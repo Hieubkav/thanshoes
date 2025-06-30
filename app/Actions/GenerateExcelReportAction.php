@@ -323,29 +323,39 @@ class GenerateExcelReportAction
         $warehouseSheet = $reportSpreadsheet->createSheet();
         $warehouseSheet->setTitle('File gửi kho trung quốc');
 
-        // Setup headers
-        $warehouseSheet->setCellValue('A1', 'Hình ảnh');
-        for ($i = 0; $i <= 9; $i++) {
-            $warehouseSheet->setCellValue(chr(66 + $i) . '1', (36 + $i));
-        }
-        $warehouseSheet->setCellValue('L1', 'Pairs');
-        $warehouseSheet->setCellValue('M1', 'SKU');
-        $warehouseSheet->setCellValue('N1', 'Price');
-        $warehouseSheet->setCellValue('O1', 'Total');
-        $warehouseSheet->setCellValue('P1', 'Tỷ giá');
-        $warehouseSheet->setCellValue('Q1', 'Tổng tiền VND');
-
         // Lấy giá nhập từ dữ liệu sản phẩm
         $priceData = $this->getImportPrices($filteredProductsData);
         $exchangeRate = 3500; // Mặc định
 
-        // Điền dữ liệu
-        $warehouseRow = 2;
+        // Điền dữ liệu với format: mỗi dòng tiêu đề rồi 1 record
+        $warehouseRow = 1;
         foreach ($reportData as $data) {
             $baseSku = $data['sku'];
             $imageUrl = isset($data['images'][0]) ? $data['images'][0] : '';
             $importPrice = $priceData[$baseSku] ?? 0;
 
+            // Tạo dòng tiêu đề cho record này
+            $warehouseSheet->setCellValue('A' . $warehouseRow, 'Hình ảnh');
+            for ($i = 0; $i <= 9; $i++) {
+                $warehouseSheet->setCellValue(chr(66 + $i) . $warehouseRow, (36 + $i));
+            }
+            $warehouseSheet->setCellValue('L' . $warehouseRow, 'Pairs');
+            $warehouseSheet->setCellValue('M' . $warehouseRow, 'SKU');
+            $warehouseSheet->setCellValue('N' . $warehouseRow, 'Price');
+            $warehouseSheet->setCellValue('O' . $warehouseRow, 'Total');
+            $warehouseSheet->setCellValue('P' . $warehouseRow, 'Tỷ giá');
+            $warehouseSheet->setCellValue('Q' . $warehouseRow, 'Tổng tiền VND');
+
+            // Format dòng tiêu đề
+            $warehouseSheet->getStyle('A' . $warehouseRow . ':Q' . $warehouseRow)->applyFromArray([
+                'font' => ['bold' => true],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E9E9E9']],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+            ]);
+
+            $warehouseRow++; // Chuyển sang dòng dữ liệu
+
+            // Điền dữ liệu record
             $warehouseSheet->setCellValue('A' . $warehouseRow, $imageUrl);
             $total = 0;
             for ($i = 0; $i <= 9; $i++) {
@@ -364,11 +374,15 @@ class GenerateExcelReportAction
             $warehouseSheet->setCellValue('P' . $warehouseRow, $exchangeRate);
             $warehouseSheet->setCellValue('Q' . $warehouseRow, '=O' . $warehouseRow . '*P' . $warehouseRow);
 
-            $warehouseRow += 2;
+            // Format dòng dữ liệu
+            $warehouseSheet->getStyle('A' . $warehouseRow . ':Q' . $warehouseRow)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $warehouseSheet->getStyle('N' . $warehouseRow . ':Q' . $warehouseRow)->getNumberFormat()->setFormatCode('#,##0');
+
+            $warehouseRow++; // Chuyển sang record tiếp theo
         }
 
-        // Format warehouse sheet
-        $this->formatWarehouseSheet($warehouseSheet, $warehouseRow - 1);
+        // Format chung cho toàn bộ sheet
+        $this->formatWarehouseSheetGeneral($warehouseSheet, $warehouseRow - 1);
 
         // Lưu file
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($reportSpreadsheet, 'Xlsx');
@@ -409,6 +423,24 @@ class GenerateExcelReportAction
 
         foreach (range('B', 'L') as $col) {
             $sheet->getStyle($col . '2:' . $col . $lastRow)
+                ->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+    }
+
+    private function formatWarehouseSheetGeneral($sheet, int $lastRow): void
+    {
+        // Auto-size tất cả các cột
+        foreach (range('A', 'Q') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Đặt width cố định cho cột hình ảnh
+        $sheet->getColumnDimension('A')->setWidth(20);
+
+        // Căn giữa cho các cột số liệu
+        foreach (range('B', 'L') as $col) {
+            $sheet->getStyle($col . '1:' . $col . $lastRow)
                 ->getAlignment()
                 ->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }

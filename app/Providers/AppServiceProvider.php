@@ -32,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Đăng ký các Livewire components
         Livewire::component('product-image-organizer', \App\Livewire\ProductImageOrganizer::class);
+        Livewire::component('live-visitor-counter', \App\Livewire\LiveVisitorCounter::class);
+        Livewire::component('realtime-notifications', \App\Livewire\RealtimeNotifications::class);
 
         // Đăng ký observer để tự động đồng bộ ảnh
         Variant::observe(VariantObserver::class);

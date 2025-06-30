@@ -3,7 +3,6 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ShopController;
-use App\Models\Post;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\SitemapController;
@@ -16,7 +15,8 @@ Route::get('/catfilter', [ShopController::class, 'cat_filter'])
     ->name('shop.cat_filter');
 Route::get('/product/{slug}', [ShopController::class, 'product_overview'])
     ->name('shop.product_overview')
-    ->where('slug', '[a-z0-9-]+');
+    ->where('slug', '[a-z0-9-]+')
+    ->middleware('track.product');
 Route::get('/checkout', [ShopController::class, 'checkout'])
     ->name('shop.checkout');
 

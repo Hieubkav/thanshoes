@@ -56,6 +56,11 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->ordered();
     }
 
+    public function productViews(): HasMany
+    {
+        return $this->hasMany(ProductView::class);
+    }
+
     // Quan hệ nhiều-nhiều với Tag
     public function tags(): BelongsToMany
     {
