@@ -340,9 +340,9 @@ class GenerateExcelReportAction
                 $warehouseSheet->setCellValue(chr(66 + $i) . $warehouseRow, (36 + $i));
             }
             $warehouseSheet->setCellValue('L' . $warehouseRow, 'Pairs');
-            $warehouseSheet->setCellValue('M' . $warehouseRow, 'SKU');
-            $warehouseSheet->setCellValue('N' . $warehouseRow, 'Price');
-            $warehouseSheet->setCellValue('O' . $warehouseRow, 'Total');
+            $warehouseSheet->setCellValue('M' . $warehouseRow, 'Price');
+            $warehouseSheet->setCellValue('N' . $warehouseRow, 'Total');
+            $warehouseSheet->setCellValue('O' . $warehouseRow, 'SKU');
             $warehouseSheet->setCellValue('P' . $warehouseRow, 'Tỷ giá');
             $warehouseSheet->setCellValue('Q' . $warehouseRow, 'Tổng tiền VND');
 
@@ -368,11 +368,11 @@ class GenerateExcelReportAction
             }
 
             $warehouseSheet->setCellValue('L' . $warehouseRow, $total);
-            $warehouseSheet->setCellValue('M' . $warehouseRow, $baseSku);
-            $warehouseSheet->setCellValue('N' . $warehouseRow, $importPrice);
-            $warehouseSheet->setCellValue('O' . $warehouseRow, '=L' . $warehouseRow . '*N' . $warehouseRow);
+            $warehouseSheet->setCellValue('M' . $warehouseRow, $importPrice);
+            $warehouseSheet->setCellValue('N' . $warehouseRow, '=L' . $warehouseRow . '*M' . $warehouseRow);
+            $warehouseSheet->setCellValue('O' . $warehouseRow, $baseSku);
             $warehouseSheet->setCellValue('P' . $warehouseRow, $exchangeRate);
-            $warehouseSheet->setCellValue('Q' . $warehouseRow, '=O' . $warehouseRow . '*P' . $warehouseRow);
+            $warehouseSheet->setCellValue('Q' . $warehouseRow, '=N' . $warehouseRow . '*P' . $warehouseRow);
 
             // Format dòng dữ liệu
             $warehouseSheet->getStyle('A' . $warehouseRow . ':Q' . $warehouseRow)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);

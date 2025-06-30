@@ -188,6 +188,20 @@
                         <p class="text-red-200 text-sm text-center">{{ session('error') }}</p>
                     </div>
                 @endif
+
+                <!-- Link to Update Report Page -->
+                @if (session('success') && session('report_filename'))
+                    <div class="mt-6 text-center">
+                        <a href="{{ route('admin.form_update_report') }}"
+                           class="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200">
+                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4 4m0 0l4-4m-4 4V4" />
+                            </svg>
+                            🔄 Cập Nhật File Sapo
+                        </a>
+                        <p class="text-white/70 text-xs mt-2">Chỉnh sửa file báo cáo và tạo lại file Sapo</p>
+                    </div>
+                @endif
             </form>
         </div>
     </div>
@@ -197,7 +211,8 @@
     <script>
         // Giữ thông báo lâu hơn vì có hướng dẫn quan trọng
         setTimeout(() => {
-            document.querySelector('.bg-green-500/20, .bg-red-500/20').style.display = 'none';
+            const messages = document.querySelectorAll('.bg-green-500/20, .bg-red-500/20');
+            messages.forEach(msg => msg.style.display = 'none');
         }, 30000); // 30 seconds
     </script>
 @endif

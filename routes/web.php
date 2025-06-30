@@ -51,6 +51,14 @@ Route::middleware('auth')->group(function () {
         ->name('admin.form_nhap_hang');
     Route::post('/tq', [AdminController::class, 'nhap_hang'])
         ->name('admin.nhap_hang');
+
+    // Route riêng cho upload ngược file báo cáo
+    Route::get('/tq-update', [AdminController::class, 'form_update_report'])
+        ->name('admin.form_update_report');
+    Route::post('/tq-update', [AdminController::class, 'process_reversed_report'])
+        ->name('admin.process_reversed_report');
+    Route::post('/tq-update/debug', [AdminController::class, 'debug_report_file'])
+        ->name('admin.debug_report_file');
     // Routes download file báo cáo
     Route::get('/admin/download-nhap-hang-report', [AdminController::class, 'download_nhap_hang_report'])->name('admin.download_nhap_hang_report');
     Route::get('/admin/download-nhap-hang-sapo', [AdminController::class, 'download_nhap_hang_sapo'])->name('admin.download_nhap_hang_sapo');
