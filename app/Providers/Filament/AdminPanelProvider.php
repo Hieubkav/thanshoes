@@ -22,8 +22,16 @@ use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\CustomerResource;
 use App\Filament\Resources\WebsiteVisitResource;
 use App\Filament\Resources\ProductViewResource;
+use App\Filament\Resources\CartResource;
+use App\Filament\Resources\CartItemResource;
 use App\Filament\Widgets\LiveTrackingWidget;
 use App\Filament\Widgets\RealtimeNotificationsWidget;
+use App\Filament\Widgets\TopCartItemsWidget;
+use App\Filament\Widgets\TopCartProductsTableWidget;
+use App\Filament\Widgets\CartInsightsWidget;
+use App\Filament\Widgets\WebsiteTrafficWidget;
+use App\Filament\Widgets\ProductViewInsightsWidget;
+use App\Filament\Widgets\TrafficInsightsWidget;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 
@@ -47,6 +55,8 @@ class AdminPanelProvider extends PanelProvider
                 UserResource::class,
                 CustomerResource::class,
                 OrderResource::class,
+                CartResource::class,
+                CartItemResource::class,
                 WebsiteVisitResource::class,
                 ProductViewResource::class,
             ])
@@ -54,6 +64,12 @@ class AdminPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->widgets([
+                WebsiteTrafficWidget::class,
+                ProductViewInsightsWidget::class,
+                TopCartItemsWidget::class,
+                TopCartProductsTableWidget::class,
+                CartInsightsWidget::class,
+                TrafficInsightsWidget::class,
                 LiveTrackingWidget::class,
                 RealtimeNotificationsWidget::class,
                 Widgets\AccountWidget::class,
