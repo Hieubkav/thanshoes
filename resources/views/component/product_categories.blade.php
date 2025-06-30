@@ -60,9 +60,9 @@
             </div>
 
             <!-- Toggle Button -->
-            <div id="dropdown-button" class="text-center mt-8">
+            <div id="dropdown-button" class="text-center mt-12 mb-4">
                 <button id="toggleButton"
-                        class="btn btn-primary">
+                        class="btn btn-primary px-6 py-3">
                     <i class="fas fa-plus mr-2"></i>
                     Xem thêm danh mục
                 </button>

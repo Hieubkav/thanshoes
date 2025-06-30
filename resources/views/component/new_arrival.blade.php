@@ -59,23 +59,28 @@
                          class="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105">
 
                     <!-- Badges -->
-                    <div class="absolute top-3 left-3 flex flex-col space-y-2">
-                        @if ($discountPercent > 0)
-                            <span class="chip chip-error text-xs font-semibold">
+                    @if ($discountPercent > 0)
+                        <!-- Discount Badge - Top Left -->
+                        <div class="absolute top-3 left-3">
+                            <span class="inline-block px-1.5 py-1 rounded text-xs font-bold bg-red-500 text-white leading-none" style="font-size: 11px; min-width: auto; width: fit-content;">
                                 @if($discountType == 'percent')
                                     -{{ $discountPercent }}%
                                 @else
                                     -{{ number_format($discountPercent, 0, ',', '.') }}₫
                                 @endif
                             </span>
-                        @endif
-                        @if ($item->variants->min('price') > 500000)
+                        </div>
+                    @endif
+
+                    @if ($item->variants->min('price') > 500000)
+                        <!-- Freeship Badge - Top Right -->
+                        <div class="absolute top-3 right-3">
                             <span class="chip chip-success text-xs font-semibold">
                                 <i class="fas fa-shipping-fast mr-1"></i>
                                 FREESHIP
                             </span>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
                 <!-- Product Info -->
                 <div class="p-4 sm:p-5">
