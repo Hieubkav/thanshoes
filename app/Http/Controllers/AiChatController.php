@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
+use App\Models\Product;
+use App\Models\Setting;
 
 class AiChatController extends Controller
 {
@@ -17,12 +20,12 @@ class AiChatController extends Controller
      */
     public function testConnection(): JsonResponse
     {
-        $apiKey = config('services.gemini.api_key');
+        $apiKeys = $this->getApiKeys();
 
-        if (!$apiKey) {
+        if (empty($apiKeys)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'API key not configured'
+                'message' => 'API keys not configured'
             ]);
         }
 
@@ -36,7 +39,9 @@ class AiChatController extends Controller
                 ]
             ];
 
-            $response = Http::timeout(10)
+            // Test với API key đầu tiên
+            $apiKey = $apiKeys[0];
+            $response = Http::timeout(5)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post(self::GEMINI_API_URL . '?key=' . $apiKey, $testPayload);
 
@@ -44,7 +49,8 @@ class AiChatController extends Controller
                 'status' => $response->successful() ? 'success' : 'error',
                 'http_status' => $response->status(),
                 'response' => $response->json(),
-                'api_key_prefix' => substr($apiKey, 0, 10) . '...'
+                'api_keys_count' => count($apiKeys),
+                'tested_key_prefix' => substr($apiKey, 0, 10) . '...'
             ]);
 
         } catch (\Exception $e) {
@@ -83,63 +89,67 @@ class AiChatController extends Controller
             // Tạo system prompt cho ThanShoes
             $systemPrompt = $this->getSystemPrompt();
             
-            // Chuẩn bị payload cho Gemini API
-            $payload = $this->buildGeminiPayload($systemPrompt, $conversationHistory, $userMessage);
+            // Chuẩn bị payload cho Gemini API với thông tin sản phẩm bổ sung
+            $additionalContext = $this->getAdditionalProductContext($userMessage);
+            $payload = $this->buildGeminiPayload($systemPrompt, $conversationHistory, $userMessage, $additionalContext);
             
-            // Gọi Gemini API
-            $apiKey = config('services.gemini.api_key');
+            // Gọi Gemini API với retry mechanism và load balancing
+            $apiKeys = $this->getApiKeys();
 
-            if (!$apiKey) {
-                Log::error('Gemini API key not configured');
+            if (empty($apiKeys)) {
+                Log::error('Gemini API keys not configured');
                 return response()->json([
                     'error' => 'Dịch vụ AI chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
                 ], 500);
             }
 
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])
-                ->post(self::GEMINI_API_URL . '?key=' . $apiKey, $payload);
-            
+            Log::info('Starting AI chat request', [
+                'api_keys_count' => count($apiKeys),
+                'user_message_length' => strlen($userMessage)
+            ]);
+
+            $response = $this->callGeminiApiWithLoadBalancing($apiKeys, $payload);
+
+            if (!$response) {
+                Log::error('All API keys failed');
+                return response()->json([
+                    'error' => 'Không thể kết nối đến dịch vụ AI. Vui lòng thử lại sau.'
+                ], 500);
+            }
+
             if (!$response->successful()) {
-                Log::error('Gemini API Error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'url' => self::GEMINI_API_URL . '?key=' . substr($apiKey, 0, 10) . '...',
-                    'payload' => $payload
-                ]);
-
-                $errorMessage = 'Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau.';
-
-                if ($response->status() === 401) {
-                    $errorMessage = 'API key không hợp lệ. Vui lòng kiểm tra cấu hình.';
-                } elseif ($response->status() === 429) {
-                    $errorMessage = 'Đã vượt quá giới hạn API. Vui lòng thử lại sau.';
-                }
-
-                return response()->json(['error' => $errorMessage], 500);
+                return $this->handleApiError($response, 'multiple_keys', $payload);
             }
             
             $responseData = $response->json();
 
-            // Log response để debug
-            Log::info('Gemini API Response', [
-                'response' => $responseData
-            ]);
+            // Log response để debug (chỉ log khi có lỗi)
+            if (!isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                Log::info('Gemini API Response Structure', [
+                    'has_candidates' => isset($responseData['candidates']),
+                    'candidates_count' => isset($responseData['candidates']) ? count($responseData['candidates']) : 0,
+                    'first_candidate_keys' => isset($responseData['candidates'][0]) ? array_keys($responseData['candidates'][0]) : [],
+                    'response_keys' => array_keys($responseData)
+                ]);
+            }
 
             // Trích xuất phản hồi từ Gemini
             $aiResponse = $this->extractGeminiResponse($responseData);
 
             if (!$aiResponse) {
                 Log::error('Failed to extract AI response', [
-                    'response_data' => $responseData
+                    'response_structure' => array_keys($responseData),
+                    'candidates_available' => isset($responseData['candidates']),
+                    'error_in_response' => isset($responseData['error'])
                 ]);
 
                 return response()->json([
-                    'error' => 'Không thể xử lý phản hồi từ AI. Vui lòng thử lại.'
+                    'error' => 'AI đang bận, vui lòng thử lại sau ít phút.'
                 ], 500);
             }
+
+            // Cải thiện response để đảm bảo có link cụ thể
+            $aiResponse = $this->enhanceResponseWithLinks($aiResponse, $userMessage);
             
             return response()->json([
                 'response' => $aiResponse,
@@ -159,41 +169,112 @@ class AiChatController extends Controller
     }
     
     /**
-     * Tạo system prompt cho ThanShoes
+     * Tạo system prompt cho ThanShoes với thông tin chi tiết về website
      */
     private function getSystemPrompt(): string
     {
-        return "Bạn là trợ lý AI của ThanShoes - cửa hàng giày dép trực tuyến hàng đầu Việt Nam. 
+        // Lấy thông tin từ Setting model và sản phẩm
+        $settingInfo = $this->getSettingInfo();
+        $productInfo = $this->getProductInfo();
 
-Thông tin về ThanShoes:
-- Chuyên bán giày dép chất lượng cao với đa dạng mẫu mã
-- Có các dòng sản phẩm: giày thể thao, giày công sở, dép, sandal
-- Cam kết chất lượng và dịch vụ khách hàng tốt nhất
-- Hỗ trợ đổi trả trong 7 ngày
-- Giao hàng toàn quốc
+        return "Bạn là sales AI của ThanShoes - 33k followers Shopee, 34.3k đánh giá 4.9⭐.
 
-Nhiệm vụ của bạn:
-1. Tư vấn sản phẩm giày dép phù hợp với nhu cầu khách hàng
-2. Giải đáp thắc mắc về sản phẩm, chính sách, dịch vụ
-3. Hướng dẫn khách hàng mua sắm trên website
-4. Luôn thân thiện, chuyên nghiệp và hữu ích
+MISSION: Bán hàng nhanh, ngắn gọn, hiệu quả.
 
-Lưu ý:
-- Trả lời bằng tiếng Việt
-- Giữ câu trả lời ngắn gọn, dễ hiểu
-- Khuyến khích khách hàng xem sản phẩm trên website
-- Nếu không biết thông tin cụ thể, hãy khuyên khách hàng liên hệ trực tiếp";
+SOCIAL PROOF: 33k followers + 34.3k reviews = Uy tín vượt trội!
+
+KEY POINTS:
+- Website giá tốt hơn Shopee (không phí nền tảng)
+- COD toàn quốc, đổi trả 7 ngày
+- Link sản phẩm: http://127.0.0.1:8000/catfilter
+- Checkout: http://127.0.0.1:8000/checkout
+
+{$settingInfo}
+
+THÔNG TIN SẢN PHẨM HIỆN CÓ:
+{$productInfo}
+
+CÁC TRANG QUAN TRỌNG TRÊN WEBSITE:
+1. Trang chủ: http://127.0.0.1:8000/
+2. Tất cả sản phẩm: http://127.0.0.1:8000/catfilter
+3. Tìm sản phẩm theo loại: http://127.0.0.1:8000/catfilter?type=[tên_loại]
+4. Tìm sản phẩm theo thương hiệu: http://127.0.0.1:8000/catfilter?brand=[tên_thương_hiệu]
+5. Tất vớ, dép: http://127.0.0.1:8000/catfilter?tatvo=true
+6. Phụ kiện: http://127.0.0.1:8000/catfilter?phukien=true
+7. Trang thanh toán: http://127.0.0.1:8000/checkout
+8. Chi tiết sản phẩm: http://127.0.0.1:8000/product/[slug-sản-phẩm]
+
+RULES:
+- Trả lời TỐI ĐA 2-3 câu
+- LUÔN có link sản phẩm hoặc checkout
+- Tập trung CONVERSION, không giải thích dài
+- Format: Câu trả lời ngắn + Link + CTA
+
+RESPONSES:
+- Giày thể thao → http://127.0.0.1:8000/catfilter?type=Giày thể thao
+- Nike/Adidas → http://127.0.0.1:8000/catfilter?brand=[brand]
+- Mua hàng → http://127.0.0.1:8000/checkout
+- Tất cả → http://127.0.0.1:8000/catfilter
+
+STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất lượng 4.9⭐! 👉 [link] - Đặt ngay?'";
     }
     
     /**
+     * Lấy thông tin sản phẩm bổ sung dựa trên câu hỏi của user
+     */
+    private function getAdditionalProductContext(string $userMessage): string
+    {
+        $userMessageLower = strtolower($userMessage);
+        $context = "";
+
+        // Tìm sản phẩm cụ thể nếu user hỏi về loại sản phẩm
+        if (strpos($userMessageLower, 'giày') !== false) {
+            $products = Product::where('name', 'like', '%giày%')
+                ->with(['variants'])
+                ->take(10)
+                ->get();
+
+            if ($products->count() > 0) {
+                $context .= "\nSẢN PHẨM GIÀY HIỆN CÓ (Đã được hàng nghìn khách hàng tin tưởng trên Shopee):\n";
+                foreach ($products as $product) {
+                    $context .= "- {$product->name} - Link: http://127.0.0.1:8000/product/{$product->slug}\n";
+                }
+                $context .= "\n💡 Lưu ý: Giá trên website tốt hơn Shopee do không có phí nền tảng!\n";
+            }
+        }
+
+        // Tìm theo thương hiệu
+        $brands = ['nike', 'adidas', 'converse', 'vans', 'puma'];
+        foreach ($brands as $brand) {
+            if (strpos($userMessageLower, $brand) !== false) {
+                $products = Product::where('brand', 'like', '%' . $brand . '%')
+                    ->with(['variants'])
+                    ->take(5)
+                    ->get();
+
+                if ($products->count() > 0) {
+                    $context .= "\nSẢN PHẨM THƯƠNG HIỆU " . strtoupper($brand) . " (Chất lượng đã được khẳng định qua 4.9 sao trên Shopee):\n";
+                    foreach ($products as $product) {
+                        $context .= "- {$product->name} - Link: http://127.0.0.1:8000/product/{$product->slug}\n";
+                    }
+                    $context .= "\n🎯 Mua trên website = Giá tốt hơn + Dịch vụ trực tiếp!\n";
+                }
+                break;
+            }
+        }
+
+        return $context;
+    }
+
+    /**
      * Xây dựng payload cho Gemini API
      */
-    private function buildGeminiPayload(string $systemPrompt, array $conversationHistory, string $userMessage): array
+    private function buildGeminiPayload(string $systemPrompt, array $conversationHistory, string $userMessage, string $additionalContext = ''): array
     {
         $contents = [];
 
-        // Kết hợp system prompt với tin nhắn đầu tiên
-        $firstMessage = $systemPrompt . "\n\nTin nhắn từ khách hàng: " . $userMessage;
+        // Kết hợp system prompt với tin nhắn đầu tiên và thông tin bổ sung
+        $firstMessage = $systemPrompt . $additionalContext . "\n\nTin nhắn từ khách hàng: " . $userMessage;
 
         if (empty($conversationHistory)) {
             // Nếu chưa có lịch sử, chỉ gửi system prompt + tin nhắn hiện tại
@@ -264,28 +345,374 @@ Lưu ý:
      */
     private function extractGeminiResponse(array $responseData): ?string
     {
-        // Kiểm tra các cấu trúc response có thể có
-        if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
-            return trim($responseData['candidates'][0]['content']['parts'][0]['text']);
-        }
-
-        // Kiểm tra cấu trúc khác
-        if (isset($responseData['candidates'][0]['output'])) {
-            return trim($responseData['candidates'][0]['output']);
-        }
-
         // Kiểm tra nếu có error trong response
         if (isset($responseData['error'])) {
             Log::error('Gemini API returned error', ['error' => $responseData['error']]);
             return null;
         }
 
+        // Kiểm tra nếu không có candidates
+        if (!isset($responseData['candidates']) || empty($responseData['candidates'])) {
+            Log::warning('No candidates in Gemini response', ['response' => $responseData]);
+            return null;
+        }
+
+        $candidate = $responseData['candidates'][0];
+
         // Kiểm tra nếu bị block bởi safety filters
-        if (isset($responseData['candidates'][0]['finishReason']) &&
-            $responseData['candidates'][0]['finishReason'] === 'SAFETY') {
-            return 'Xin lỗi, tôi không thể trả lời câu hỏi này do chính sách an toàn. Vui lòng thử câu hỏi khác.';
+        if (isset($candidate['finishReason'])) {
+            $finishReason = $candidate['finishReason'];
+
+            if ($finishReason === 'SAFETY') {
+                return 'Xin lỗi, tôi không thể trả lời câu hỏi này do chính sách an toàn. Vui lòng thử câu hỏi khác về sản phẩm giày dép.';
+            }
+
+            if (in_array($finishReason, ['RECITATION', 'OTHER'])) {
+                Log::warning('Gemini blocked response', ['reason' => $finishReason]);
+                return null;
+            }
+        }
+
+        // Kiểm tra cấu trúc response chính
+        if (isset($candidate['content']['parts'][0]['text'])) {
+            $text = trim($candidate['content']['parts'][0]['text']);
+            return !empty($text) ? $text : null;
+        }
+
+        // Kiểm tra cấu trúc khác (fallback)
+        if (isset($candidate['output'])) {
+            $text = trim($candidate['output']);
+            return !empty($text) ? $text : null;
+        }
+
+        // Kiểm tra nếu có parts nhưng không có text
+        if (isset($candidate['content']['parts']) && is_array($candidate['content']['parts'])) {
+            foreach ($candidate['content']['parts'] as $part) {
+                if (isset($part['text']) && !empty(trim($part['text']))) {
+                    return trim($part['text']);
+                }
+            }
+        }
+
+        Log::warning('Could not extract text from Gemini response', [
+            'candidate_keys' => array_keys($candidate),
+            'has_content' => isset($candidate['content']),
+            'content_keys' => isset($candidate['content']) ? array_keys($candidate['content']) : []
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Lấy thông tin từ Setting model
+     */
+    private function getSettingInfo(): string
+    {
+        return Cache::remember('ai_setting_info', 1800, function () { // Cache 30 phút
+            $setting = Setting::first();
+
+            if (!$setting) {
+                return "THÔNG TIN LIÊN HỆ: Chưa cấu hình";
+            }
+
+            $info = "THÔNG TIN LIÊN HỆ VÀ CỬA HÀNG:\n";
+
+            if ($setting->app_name) {
+                $info .= "- Tên cửa hàng: {$setting->app_name}\n";
+            }
+
+            if ($setting->slogan) {
+                $info .= "- Slogan: {$setting->slogan}\n";
+            }
+
+            if ($setting->phone) {
+                $info .= "- Số điện thoại: {$setting->phone}\n";
+            }
+
+            if ($setting->email) {
+                $info .= "- Email: {$setting->email}\n";
+            }
+
+            if ($setting->address) {
+                $info .= "- Địa chỉ: {$setting->address}\n";
+            }
+
+            if ($setting->zalo) {
+                $info .= "- Zalo: {$setting->zalo}\n";
+            }
+
+            if ($setting->messenger) {
+                $info .= "- Messenger: {$setting->messenger}\n";
+            }
+
+            if ($setting->facebook) {
+                $info .= "- Facebook: {$setting->facebook}\n";
+            }
+
+            // Thông tin thanh toán
+            if ($setting->bank_name && $setting->bank_number && $setting->bank_account_name) {
+                $info .= "\nTHÔNG TIN THANH TOÁN:\n";
+                $info .= "- Ngân hàng: {$setting->bank_name}\n";
+                $info .= "- Số tài khoản: {$setting->bank_number}\n";
+                $info .= "- Chủ tài khoản: {$setting->bank_account_name}\n";
+            }
+
+            return $info;
+        });
+    }
+
+    /**
+     * Lấy thông tin sản phẩm để đưa vào system prompt
+     */
+    private function getProductInfo(): string
+    {
+        return Cache::remember('ai_product_info', 3600, function () {
+            $products = Product::with(['variants'])
+                ->where('name', 'not like', '%test%')
+                ->take(50) // Lấy 50 sản phẩm đại diện
+                ->get();
+
+            $brands = $products->pluck('brand')->filter()->unique()->sort()->values();
+            $types = $products->pluck('type')->filter()->unique()->sort()->values();
+
+            $productInfo = "THƯƠNG HIỆU CÓ SẴN: " . $brands->implode(', ') . "\n\n";
+            $productInfo .= "LOẠI SẢN PHẨM CÓ SẴN: " . $types->implode(', ') . "\n\n";
+
+            $productInfo .= "MỘT SỐ SẢN PHẨM TIÊU BIỂU:\n";
+            foreach ($products->take(20) as $product) {
+                $productInfo .= "- {$product->name} ({$product->type}) - Link: http://127.0.0.1:8000/product/{$product->slug}\n";
+            }
+
+            return $productInfo;
+        });
+    }
+
+    /**
+     * Cải thiện response của AI để đảm bảo có link cụ thể
+     */
+    private function enhanceResponseWithLinks(string $response, string $userMessage): string
+    {
+        // Nếu response đã có link thì không cần xử lý thêm
+        if (strpos($response, 'http://127.0.0.1:8000') !== false) {
+            return $response;
+        }
+
+        $enhancedResponse = $response;
+
+        // Phân tích user message để đưa ra link phù hợp
+        $userMessageLower = strtolower($userMessage);
+
+        // Mapping các từ khóa với link tương ứng
+        $linkMappings = [
+            // Loại sản phẩm
+            'giày thể thao' => 'http://127.0.0.1:8000/catfilter?type=Giày thể thao',
+            'giày công sở' => 'http://127.0.0.1:8000/catfilter?type=Giày công sở',
+            'giày cao gót' => 'http://127.0.0.1:8000/catfilter?type=Giày cao gót',
+            'giày boot' => 'http://127.0.0.1:8000/catfilter?type=Boot',
+            'dép' => 'http://127.0.0.1:8000/catfilter?tatvo=true',
+            'tất' => 'http://127.0.0.1:8000/catfilter?tatvo=true',
+            'vớ' => 'http://127.0.0.1:8000/catfilter?tatvo=true',
+            'phụ kiện' => 'http://127.0.0.1:8000/catfilter?phukien=true',
+
+            // Thương hiệu phổ biến
+            'nike' => 'http://127.0.0.1:8000/catfilter?brand=Nike',
+            'adidas' => 'http://127.0.0.1:8000/catfilter?brand=Adidas',
+            'converse' => 'http://127.0.0.1:8000/catfilter?brand=Converse',
+            'vans' => 'http://127.0.0.1:8000/catfilter?brand=Vans',
+
+            // Từ khóa chung
+            'tất cả sản phẩm' => 'http://127.0.0.1:8000/catfilter',
+            'xem sản phẩm' => 'http://127.0.0.1:8000/catfilter',
+            'mua hàng' => 'http://127.0.0.1:8000/catfilter',
+            'thanh toán' => 'http://127.0.0.1:8000/checkout',
+            'giỏ hàng' => 'http://127.0.0.1:8000/checkout',
+            'đặt hàng' => 'http://127.0.0.1:8000/checkout',
+
+            // Shopee store
+            'shopee' => 'https://shopee.vn/thanshoes99',
+            'cửa hàng shopee' => 'https://shopee.vn/thanshoes99',
+        ];
+
+        // Tìm link phù hợp nhất
+        $suggestedLink = null;
+        foreach ($linkMappings as $keyword => $link) {
+            if (strpos($userMessageLower, $keyword) !== false) {
+                $suggestedLink = $link;
+                break;
+            }
+        }
+
+        // Nếu không tìm thấy link cụ thể, đưa về trang tất cả sản phẩm
+        if (!$suggestedLink) {
+            if (strpos($userMessageLower, 'giày') !== false ||
+                strpos($userMessageLower, 'sản phẩm') !== false ||
+                strpos($userMessageLower, 'mua') !== false) {
+                $suggestedLink = 'http://127.0.0.1:8000/catfilter';
+            }
+        }
+
+        // Compact responses cho conversion
+        if (strpos($userMessageLower, 'giỏ hàng') !== false ||
+            strpos($userMessageLower, 'thanh toán') !== false ||
+            strpos($userMessageLower, 'đặt hàng') !== false) {
+            $enhancedResponse .= "\n👉 " . 'http://127.0.0.1:8000/checkout' . " - Đặt ngay!";
+        }
+        elseif (strpos($userMessageLower, 'shopee') !== false) {
+            $enhancedResponse .= "\n🏆 Shopee: 33k followers, 34.3k reviews 4.9⭐";
+            $enhancedResponse .= "\nhttps://shopee.vn/thanshoes99";
+            $enhancedResponse .= "\n💰 Website giá tốt hơn: http://127.0.0.1:8000/catfilter";
+        }
+        elseif (strpos($userMessageLower, 'liên hệ') !== false ||
+                 strpos($userMessageLower, 'hỗ trợ') !== false) {
+            $setting = Setting::first();
+            if ($setting && $setting->zalo) {
+                $enhancedResponse .= "\n📞 Zalo: {$setting->zalo}";
+            }
+        }
+        elseif ($suggestedLink) {
+            $enhancedResponse .= "\n👉 " . $suggestedLink;
+        }
+
+        // Fallback CTA
+        if (!strpos($enhancedResponse, 'http://127.0.0.1:8000') &&
+            (strpos($userMessageLower, 'giày') !== false || strpos($userMessageLower, 'sản phẩm') !== false)) {
+            $enhancedResponse .= "\n🛍️ " . 'http://127.0.0.1:8000/catfilter';
+        }
+
+        return $enhancedResponse;
+    }
+
+    /**
+     * Lấy danh sách API keys
+     */
+    private function getApiKeys(): array
+    {
+        $keys = [];
+
+        $key1 = config('services.gemini.api_key');
+        $key2 = config('services.gemini.api_key_2');
+        $key3 = config('services.gemini.api_key_3');
+
+        if ($key1) $keys[] = $key1;
+        if ($key2) $keys[] = $key2;
+        if ($key3) $keys[] = $key3;
+
+        return $keys;
+    }
+
+    /**
+     * Gọi Gemini API với load balancing và retry
+     */
+    private function callGeminiApiWithLoadBalancing(array $apiKeys, array $payload, int $maxRetries = 2)
+    {
+        $lastException = null;
+
+        // Shuffle keys để load balance
+        shuffle($apiKeys);
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            foreach ($apiKeys as $apiKey) {
+                try {
+                    Log::info("Gemini API attempt {$attempt} with key " . substr($apiKey, 0, 10) . '...');
+
+                    $response = Http::timeout(5) // Giảm xuống 5s
+                        ->withHeaders([
+                            'Content-Type' => 'application/json',
+                        ])
+                        ->post(self::GEMINI_API_URL . '?key=' . $apiKey, $payload);
+
+                    // Nếu thành công thì return ngay
+                    if ($response->successful()) {
+                        return $response;
+                    }
+
+                    // Nếu lỗi không retry được (401, 403) thì thử key khác
+                    if (!$this->shouldRetry($response)) {
+                        Log::warning("API key failed permanently: " . substr($apiKey, 0, 10) . '...', [
+                            'status' => $response->status()
+                        ]);
+                        continue; // Thử key tiếp theo
+                    }
+
+                    Log::warning("API key failed temporarily: " . substr($apiKey, 0, 10) . '...', [
+                        'status' => $response->status(),
+                        'body' => $response->body()
+                    ]);
+
+                } catch (\Exception $e) {
+                    $lastException = $e;
+                    Log::warning("API key exception: " . substr($apiKey, 0, 10) . '... - ' . $e->getMessage());
+                    continue; // Thử key tiếp theo
+                }
+            }
+
+            // Delay trước khi retry tất cả keys
+            if ($attempt < $maxRetries) {
+                sleep(1);
+            }
+        }
+
+        // Nếu tất cả attempts đều fail
+        if ($lastException) {
+            throw $lastException;
         }
 
         return null;
+    }
+
+
+
+    /**
+     * Kiểm tra xem có nên retry không
+     */
+    private function shouldRetry($response): bool
+    {
+        if (!$response) return true;
+
+        $status = $response->status();
+
+        // Retry cho các lỗi tạm thời
+        return in_array($status, [429, 500, 502, 503, 504]);
+    }
+
+    /**
+     * Xử lý lỗi API
+     */
+    private function handleApiError($response, string $keyInfo, array $payload)
+    {
+        $status = $response->status();
+        $body = $response->body();
+
+        Log::error('Gemini API Error', [
+            'status' => $status,
+            'body' => $body,
+            'key_info' => $keyInfo,
+            'payload_size' => strlen(json_encode($payload))
+        ]);
+
+        $errorMessage = 'Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau.';
+
+        switch ($status) {
+            case 400:
+                $errorMessage = 'Yêu cầu không hợp lệ. Vui lòng thử lại với câu hỏi khác.';
+                break;
+            case 401:
+                $errorMessage = 'Dịch vụ AI chưa được cấu hình đúng. Vui lòng liên hệ quản trị viên.';
+                break;
+            case 403:
+                $errorMessage = 'Không có quyền truy cập dịch vụ AI. Vui lòng liên hệ quản trị viên.';
+                break;
+            case 429:
+                $errorMessage = 'Quá nhiều yêu cầu. Vui lòng đợi một chút rồi thử lại.';
+                break;
+            case 500:
+            case 502:
+            case 503:
+            case 504:
+                $errorMessage = 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau ít phút.';
+                break;
+        }
+
+        return response()->json(['error' => $errorMessage], 500);
     }
 }
