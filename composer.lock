@@ -715,122 +715,32 @@
             "time": "2024-07-08T12:26:09+00:00"
         },
         {
-            "name": "doctrine/cache",
-            "version": "2.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/doctrine/cache.git",
-                "reference": "1ca8f21980e770095a31456042471a57bc4c68fb"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/cache/zipball/1ca8f21980e770095a31456042471a57bc4c68fb",
-                "reference": "1ca8f21980e770095a31456042471a57bc4c68fb",
-                "shasum": ""
-            },
-            "require": {
-                "php": "~7.1 || ^8.0"
-            },
-            "conflict": {
-                "doctrine/common": ">2.2,<2.4"
-            },
-            "require-dev": {
-                "cache/integration-tests": "dev-master",
-                "doctrine/coding-standard": "^9",
-                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.5",
-                "psr/cache": "^1.0 || ^2.0 || ^3.0",
-                "symfony/cache": "^4.4 || ^5.4 || ^6",
-                "symfony/var-exporter": "^4.4 || ^5.4 || ^6"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Doctrine\\Common\\Cache\\": "lib/Doctrine/Common/Cache"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Guilherme Blanco",
-                    "email": "guilhermeblanco@gmail.com"
-                },
-                {
-                    "name": "Roman Borschel",
-                    "email": "roman@code-factory.org"
-                },
-                {
-                    "name": "Benjamin Eberlei",
-                    "email": "kontakt@beberlei.de"
-                },
-                {
-                    "name": "Jonathan Wage",
-                    "email": "jonwage@gmail.com"
-                },
-                {
-                    "name": "Johannes Schmitt",
-                    "email": "schmittjoh@gmail.com"
-                }
-            ],
-            "description": "PHP Doctrine Cache library is a popular cache implementation that supports many different drivers such as redis, memcache, apc, mongodb and others.",
-            "homepage": "https://www.doctrine-project.org/projects/cache.html",
-            "keywords": [
-                "abstraction",
-                "apcu",
-                "cache",
-                "caching",
-                "couchdb",
-                "memcached",
-                "php",
-                "redis",
-                "xcache"
-            ],
-            "support": {
-                "issues": "https://github.com/doctrine/cache/issues",
-                "source": "https://github.com/doctrine/cache/tree/2.2.0"
-            },
-            "funding": [
-                {
-                    "url": "https://www.doctrine-project.org/sponsorship.html",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://www.patreon.com/phpdoctrine",
-                    "type": "patreon"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/doctrine%2Fcache",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2022-05-20T20:07:39+00:00"
-        },
-        {
             "name": "doctrine/dbal",
-            "version": "3.9.5",
+            "version": "3.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/dbal.git",
-                "reference": "4a4e2eed3134036ee36a147ee0dac037dfa17868"
+                "reference": "1cf840d696373ea0d58ad0a8875c0fadcfc67214"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/4a4e2eed3134036ee36a147ee0dac037dfa17868",
-                "reference": "4a4e2eed3134036ee36a147ee0dac037dfa17868",
+                "url": "https://api.github.com/repos/doctrine/dbal/zipball/1cf840d696373ea0d58ad0a8875c0fadcfc67214",
+                "reference": "1cf840d696373ea0d58ad0a8875c0fadcfc67214",
                 "shasum": ""
             },
             "require": {
                 "composer-runtime-api": "^2",
-                "doctrine/cache": "^1.11|^2.0",
                 "doctrine/deprecations": "^0.5.3|^1",
                 "doctrine/event-manager": "^1|^2",
                 "php": "^7.4 || ^8.0",
                 "psr/cache": "^1|^2|^3",
                 "psr/log": "^1|^2|^3"
             },
+            "conflict": {
+                "doctrine/cache": "< 1.11"
+            },
             "require-dev": {
+                "doctrine/cache": "^1.11|^2.0",
                 "doctrine/coding-standard": "13.0.0",
                 "fig/log-test": "^1",
                 "jetbrains/phpstorm-stubs": "2023.1",
@@ -900,7 +810,7 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/dbal/issues",
-                "source": "https://github.com/doctrine/dbal/tree/3.9.5"
+                "source": "https://github.com/doctrine/dbal/tree/3.10.0"
             },
             "funding": [
                 {
@@ -916,7 +826,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-06-15T22:40:05+00:00"
+            "time": "2025-07-10T21:11:04+00:00"
         },
         {
             "name": "doctrine/deprecations",
@@ -1359,16 +1269,16 @@
         },
         {
             "name": "filament/actions",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/actions.git",
-                "reference": "b23ee30460216f62e2400cbb92a2955620ddf2ef"
+                "reference": "3fee2c23368e5ee8d4613786b1bed8d98a8073fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/actions/zipball/b23ee30460216f62e2400cbb92a2955620ddf2ef",
-                "reference": "b23ee30460216f62e2400cbb92a2955620ddf2ef",
+                "url": "https://api.github.com/repos/filamentphp/actions/zipball/3fee2c23368e5ee8d4613786b1bed8d98a8073fc",
+                "reference": "3fee2c23368e5ee8d4613786b1bed8d98a8073fc",
                 "shasum": ""
             },
             "require": {
@@ -1408,20 +1318,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2025-06-22T10:41:06+00:00"
+            "time": "2025-07-08T20:42:21+00:00"
         },
         {
             "name": "filament/filament",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/panels.git",
-                "reference": "d46223660158bec6a8ec89eb5548e420cbf945ea"
+                "reference": "b432b938c35467b9626978fb8b72578ec4d162ae"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/panels/zipball/d46223660158bec6a8ec89eb5548e420cbf945ea",
-                "reference": "d46223660158bec6a8ec89eb5548e420cbf945ea",
+                "url": "https://api.github.com/repos/filamentphp/panels/zipball/b432b938c35467b9626978fb8b72578ec4d162ae",
+                "reference": "b432b938c35467b9626978fb8b72578ec4d162ae",
                 "shasum": ""
             },
             "require": {
@@ -1473,20 +1383,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2025-06-22T10:41:19+00:00"
+            "time": "2025-07-01T09:34:40+00:00"
         },
         {
             "name": "filament/forms",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/forms.git",
-                "reference": "26684d9c875e23bf5873c7b696c39ad4dce9c6c6"
+                "reference": "e348d8a92c96fc87b002830848e48559eb0ef715"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/forms/zipball/26684d9c875e23bf5873c7b696c39ad4dce9c6c6",
-                "reference": "26684d9c875e23bf5873c7b696c39ad4dce9c6c6",
+                "url": "https://api.github.com/repos/filamentphp/forms/zipball/e348d8a92c96fc87b002830848e48559eb0ef715",
+                "reference": "e348d8a92c96fc87b002830848e48559eb0ef715",
                 "shasum": ""
             },
             "require": {
@@ -1529,11 +1439,11 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2025-06-26T12:58:34+00:00"
+            "time": "2025-07-08T20:42:22+00:00"
         },
         {
             "name": "filament/infolists",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/infolists.git",
@@ -1584,16 +1494,16 @@
         },
         {
             "name": "filament/notifications",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/notifications.git",
-                "reference": "356f50e24798a6f06522bfa5123c6ffd054171d3"
+                "reference": "adc118c7fc34a423f3c01d6936ad0316f489949c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/notifications/zipball/356f50e24798a6f06522bfa5123c6ffd054171d3",
-                "reference": "356f50e24798a6f06522bfa5123c6ffd054171d3",
+                "url": "https://api.github.com/repos/filamentphp/notifications/zipball/adc118c7fc34a423f3c01d6936ad0316f489949c",
+                "reference": "adc118c7fc34a423f3c01d6936ad0316f489949c",
                 "shasum": ""
             },
             "require": {
@@ -1632,20 +1542,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2025-05-21T08:44:14+00:00"
+            "time": "2025-07-08T20:42:18+00:00"
         },
         {
             "name": "filament/support",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/support.git",
-                "reference": "a85378ff783a278c5db43abacb0dbf4232cbafe9"
+                "reference": "ec8c7e9e6b49d4f1150a19bfd6fc585c717a857d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/support/zipball/a85378ff783a278c5db43abacb0dbf4232cbafe9",
-                "reference": "a85378ff783a278c5db43abacb0dbf4232cbafe9",
+                "url": "https://api.github.com/repos/filamentphp/support/zipball/ec8c7e9e6b49d4f1150a19bfd6fc585c717a857d",
+                "reference": "ec8c7e9e6b49d4f1150a19bfd6fc585c717a857d",
                 "shasum": ""
             },
             "require": {
@@ -1691,20 +1601,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2025-06-22T10:41:34+00:00"
+            "time": "2025-07-08T20:42:46+00:00"
         },
         {
             "name": "filament/tables",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/tables.git",
-                "reference": "675931bce563ef344cc441d71e619d9c1810dff8"
+                "reference": "3f0d827c960f1ee4a67ab71c416ad67e24747dc4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/tables/zipball/675931bce563ef344cc441d71e619d9c1810dff8",
-                "reference": "675931bce563ef344cc441d71e619d9c1810dff8",
+                "url": "https://api.github.com/repos/filamentphp/tables/zipball/3f0d827c960f1ee4a67ab71c416ad67e24747dc4",
+                "reference": "3f0d827c960f1ee4a67ab71c416ad67e24747dc4",
                 "shasum": ""
             },
             "require": {
@@ -1743,11 +1653,11 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2025-06-26T12:58:30+00:00"
+            "time": "2025-07-08T20:42:18+00:00"
         },
         {
             "name": "filament/widgets",
-            "version": "v3.3.29",
+            "version": "v3.3.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/widgets.git",
@@ -6345,16 +6255,16 @@
         },
         {
             "name": "spatie/robots-txt",
-            "version": "2.5.0",
+            "version": "2.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/robots-txt.git",
-                "reference": "b1e225dc44b950bf6d02ed4e8d48dee2c2150dec"
+                "reference": "ef85dfaa48372c0a7fdfb144592f95de1a2e9b79"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/robots-txt/zipball/b1e225dc44b950bf6d02ed4e8d48dee2c2150dec",
-                "reference": "b1e225dc44b950bf6d02ed4e8d48dee2c2150dec",
+                "url": "https://api.github.com/repos/spatie/robots-txt/zipball/ef85dfaa48372c0a7fdfb144592f95de1a2e9b79",
+                "reference": "ef85dfaa48372c0a7fdfb144592f95de1a2e9b79",
                 "shasum": ""
             },
             "require": {
@@ -6389,7 +6299,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/robots-txt/issues",
-                "source": "https://github.com/spatie/robots-txt/tree/2.5.0"
+                "source": "https://github.com/spatie/robots-txt/tree/2.5.1"
             },
             "funding": [
                 {
@@ -6401,7 +6311,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-05-23T08:35:36+00:00"
+            "time": "2025-07-01T07:07:44+00:00"
         },
         {
             "name": "spatie/temporary-directory",
@@ -9431,16 +9341,16 @@
         },
         {
             "name": "myclabs/deep-copy",
-            "version": "1.13.1",
+            "version": "1.13.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/myclabs/DeepCopy.git",
-                "reference": "1720ddd719e16cf0db4eb1c6eca108031636d46c"
+                "reference": "faed855a7b5f4d4637717c2b3863e277116beb36"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/myclabs/DeepCopy/zipball/1720ddd719e16cf0db4eb1c6eca108031636d46c",
-                "reference": "1720ddd719e16cf0db4eb1c6eca108031636d46c",
+                "url": "https://api.github.com/repos/myclabs/DeepCopy/zipball/faed855a7b5f4d4637717c2b3863e277116beb36",
+                "reference": "faed855a7b5f4d4637717c2b3863e277116beb36",
                 "shasum": ""
             },
             "require": {
@@ -9479,7 +9389,7 @@
             ],
             "support": {
                 "issues": "https://github.com/myclabs/DeepCopy/issues",
-                "source": "https://github.com/myclabs/DeepCopy/tree/1.13.1"
+                "source": "https://github.com/myclabs/DeepCopy/tree/1.13.3"
             },
             "funding": [
                 {
@@ -9487,7 +9397,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-04-29T12:36:36+00:00"
+            "time": "2025-07-05T12:25:42+00:00"
         },
         {
             "name": "nunomaduro/collision",
@@ -10026,16 +9936,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "10.5.47",
+            "version": "10.5.48",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "3637b3e50d32ab3a0d1a33b3b6177169ec3d95a3"
+                "reference": "6e0a2bc39f6fae7617989d690d76c48e6d2eb541"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/3637b3e50d32ab3a0d1a33b3b6177169ec3d95a3",
-                "reference": "3637b3e50d32ab3a0d1a33b3b6177169ec3d95a3",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/6e0a2bc39f6fae7617989d690d76c48e6d2eb541",
+                "reference": "6e0a2bc39f6fae7617989d690d76c48e6d2eb541",
                 "shasum": ""
             },
             "require": {
@@ -10045,7 +9955,7 @@
                 "ext-mbstring": "*",
                 "ext-xml": "*",
                 "ext-xmlwriter": "*",
-                "myclabs/deep-copy": "^1.13.1",
+                "myclabs/deep-copy": "^1.13.3",
                 "phar-io/manifest": "^2.0.4",
                 "phar-io/version": "^3.2.1",
                 "php": ">=8.1",
@@ -10107,7 +10017,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/10.5.47"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/10.5.48"
             },
             "funding": [
                 {
@@ -10131,7 +10041,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-06-20T11:29:11+00:00"
+            "time": "2025-07-11T04:07:17+00:00"
         },
         {
             "name": "sebastian/cli-parser",

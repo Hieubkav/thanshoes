@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\AiChatController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\SitemapController;
@@ -36,6 +37,16 @@ Route::get('/posts', [ShopController::class, 'posts_list'])
 
 Route::get('/posts/{id}', [ShopController::class, 'post_detail'])
     ->name('posts.show');
+
+// AI Chat routes
+Route::post('/ai-chat/send', [AiChatController::class, 'sendMessage'])
+    ->name('ai-chat.send')
+    ->middleware('throttle:10,1'); // Rate limit: 10 requests per minute
+
+Route::get('/ai-chat/test', [AiChatController::class, 'testConnection'])
+    ->name('ai-chat.test');
+
+
 
 // Admin routes - require authentication
 Route::middleware('auth')->group(function () {

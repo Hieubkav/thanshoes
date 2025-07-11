@@ -34,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('product-image-organizer', \App\Livewire\ProductImageOrganizer::class);
         Livewire::component('live-visitor-counter', \App\Livewire\LiveVisitorCounter::class);
         Livewire::component('realtime-notifications', \App\Livewire\RealtimeNotifications::class);
+        Livewire::component('ai-chatbot', \App\Livewire\AiChatbot::class);
+        Livewire::component('ai-chatbot-button', \App\Livewire\AiChatbotButton::class);
 
         // Đăng ký observer để tự động đồng bộ ảnh
         Variant::observe(VariantObserver::class);
