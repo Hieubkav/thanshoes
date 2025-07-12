@@ -33,5 +33,16 @@ class Setting extends Model
         'dec_product_price_type',
         'og_img',
         'seo_description',
+        'ai_speedial_display',
     ];
+
+    /**
+     * Get validation rules for the model
+     */
+    public static function rules(): array
+    {
+        return [
+            'ai_speedial_display' => 'required|in:hidden,visible_manual,visible_auto',
+        ];
+    }
 }

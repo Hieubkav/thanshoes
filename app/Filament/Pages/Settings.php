@@ -55,6 +55,17 @@ class Settings extends Page implements Forms\Contracts\HasForms
                                     ->label('Slogan')
                                     ->required()
                                     ->rows(3),
+                                Forms\Components\Select::make('ai_speedial_display')
+                                    ->label('Hiển thị AI Chatbot Speedial')
+                                    ->helperText('Cấu hình cách hiển thị chatbot AI trên website. "Ẩn hoàn toàn" sẽ không hiển thị button chatbot. "Hiển thị - Mở thủ công" sẽ hiển thị button nhưng người dùng phải click để mở. "Hiển thị - Tự động mở" sẽ tự động mở chatbot khi tải trang.')
+                                    ->options([
+                                        'hidden' => 'Ẩn hoàn toàn',
+                                        'visible_manual' => 'Hiển thị - Mở thủ công',
+                                        'visible_auto' => 'Hiển thị - Tự động mở',
+                                    ])
+                                    ->default('visible_auto')
+                                    ->required()
+                                    ->columnSpanFull(),
                             ])->columns(2),
 
                         Forms\Components\Tabs\Tab::make('Logo & Hình ảnh')

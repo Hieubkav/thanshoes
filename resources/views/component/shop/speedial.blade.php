@@ -1,16 +1,12 @@
-@php
-    $settings = App\Models\Setting::first();
-@endphp
-
 <div class="fixed bottom-20 right-4 flex flex-col space-y-4">
     <!-- Messenger Button -->
-    <a href="{{ $settings->messenger }}" target="_blank"
+    <a href="{{ $setting->messenger }}" target="_blank"
         class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full shadow-lg hover:bg-blue-200 group">
         <img src="{{ asset('images/messenger_icon.png') }}" loading="lazy" class="h-12 w-12 bg-opacity-50 bg-purple-500 p-2 rounded-full  halo-effect" alt="Messenger Icon">
     </a>
 
     <!-- Zalo Button -->
-    <a href="{{ $settings->zalo }}" target="_blank"
+    <a href="{{ $setting->zalo }}" target="_blank"
         class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full shadow-lg hover:bg-blue-200 group">
         <img src="{{ asset('images/zalo_icon.png') }}" loading="lazy" class="h-12 w-12 bg-opacity-50 bg-blue-500 p-2 rounded-full halo-effect" alt="Zalo Icon">
     </a>
@@ -20,11 +16,11 @@
         class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full shadow-lg hover:bg-blue-200 group">
         <img src="{{ asset('images/phone_icon.png') }}" loading="lazy" class="h-12 w-12 bg-opacity-50 bg-red-500 p-2 rounded-full halo-effect" alt="Phone Icon">
     </a>
-    <div id="phone-number" class="hidden fixed bottom-32 right-4 bg-white p-2 rounded shadow-lg">{{ $settings->phone }}</div>
+    <div id="phone-number" class="hidden fixed bottom-32 right-4 bg-white p-2 rounded shadow-lg">{{ $setting->phone }}</div>
 
     <script>
         function copyPhoneNumber() {
-            const phoneNumber = "{{ $settings->phone }}";
+            const phoneNumber = "{{ $setting->phone }}";
             navigator.clipboard.writeText(phoneNumber).then(() => {
                 const phoneNumberDiv = document.getElementById('phone-number');
                 phoneNumberDiv.classList.remove('hidden');
@@ -36,9 +32,11 @@
     </script>
 
     <!-- AI Chatbot Button -->
-    <div class="relative">
-        @livewire('ai-chatbot-button')
-    </div>
+    @if($setting->ai_speedial_display !== 'hidden')
+        <div class="relative">
+            @livewire('ai-chatbot-button')
+        </div>
+    @endif
 
     <!-- Thêm nút  mũi  tên đẩy lên đầu trang nhanh -->
     <a href="#top" class="flex items center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg hover:bg-blue-200 group">
@@ -47,7 +45,9 @@
 </div>
 
 <!-- AI Chatbot Component -->
-@livewire('ai-chatbot')
+@if($setting->ai_speedial_display !== 'hidden')
+    @livewire('ai-chatbot')
+@endif
 
 <style>
     /* Hiệu ứng lắc qua lắc lại */

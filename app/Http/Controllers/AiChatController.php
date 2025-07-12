@@ -150,6 +150,9 @@ class AiChatController extends Controller
 
             // Cải thiện response để đảm bảo có link cụ thể
             $aiResponse = $this->enhanceResponseWithLinks($aiResponse, $userMessage);
+
+            // Clean up markdown links để tránh lỗi format
+            $aiResponse = $this->cleanMarkdownLinks($aiResponse);
             
             return response()->json([
                 'response' => $aiResponse,
@@ -176,6 +179,7 @@ class AiChatController extends Controller
         // Lấy thông tin từ Setting model và sản phẩm
         $settingInfo = $this->getSettingInfo();
         $productInfo = $this->getProductInfo();
+        $baseUrl = url(''); // Lấy base URL động
 
         return "Bạn là sales AI của ThanShoes - 33k followers Shopee, 34.3k đánh giá 4.9⭐.
 
@@ -186,8 +190,8 @@ SOCIAL PROOF: 33k followers + 34.3k reviews = Uy tín vượt trội!
 KEY POINTS:
 - Website giá tốt hơn Shopee (không phí nền tảng)
 - COD toàn quốc, đổi trả 7 ngày
-- Link sản phẩm: http://127.0.0.1:8000/catfilter
-- Checkout: http://127.0.0.1:8000/checkout
+- Link sản phẩm: {$baseUrl}/catfilter
+- Checkout: {$baseUrl}/checkout
 
 {$settingInfo}
 
@@ -208,15 +212,21 @@ RULES:
 - Trả lời TỐI ĐA 2-3 câu
 - LUÔN có link sản phẩm hoặc checkout
 - Tập trung CONVERSION, không giải thích dài
-- Format: Câu trả lời ngắn + Link + CTA
+- Format: Câu trả lời ngắn + Link thuần + CTA
+- QUAN TRỌNG: Chỉ viết link thuần, KHÔNG dùng markdown [text](url)
 
 RESPONSES:
-- Giày thể thao → http://127.0.0.1:8000/catfilter?type=Giày thể thao
-- Nike/Adidas → http://127.0.0.1:8000/catfilter?brand=[brand]
-- Mua hàng → http://127.0.0.1:8000/checkout
-- Tất cả → http://127.0.0.1:8000/catfilter
+- Giày thể thao → {$baseUrl}/catfilter?type=Giày thể thao
+- Nike/Adidas → {$baseUrl}/catfilter?brand=[brand]
+- Mua hàng → {$baseUrl}/checkout
+- Tất cả → {$baseUrl}/catfilter
 
-STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất lượng 4.9⭐! 👉 [link] - Đặt ngay?'";
+STYLE: Ngắn gọn, thân thiện, sales-oriented.
+VÍ DỤ ĐÚNG: 'Giày Nike chất lượng 4.9⭐!
+{$baseUrl}/catfilter?brand=Nike
+Đặt ngay nhé!'
+
+VÍ DỤ SAI: 'Giày Nike [xem tại đây]({$baseUrl}/catfilter?brand=Nike)' - TUYỆT ĐỐI KHÔNG làm thế này!";
     }
     
     /**
@@ -226,6 +236,7 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
     {
         $userMessageLower = strtolower($userMessage);
         $context = "";
+        $baseUrl = url(''); // Lấy base URL động
 
         // Tìm sản phẩm cụ thể nếu user hỏi về loại sản phẩm
         if (strpos($userMessageLower, 'giày') !== false) {
@@ -237,7 +248,7 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
             if ($products->count() > 0) {
                 $context .= "\nSẢN PHẨM GIÀY HIỆN CÓ (Đã được hàng nghìn khách hàng tin tưởng trên Shopee):\n";
                 foreach ($products as $product) {
-                    $context .= "- {$product->name} - Link: http://127.0.0.1:8000/product/{$product->slug}\n";
+                    $context .= "- {$product->name} - Link: {$baseUrl}/product/{$product->slug}\n";
                 }
                 $context .= "\n💡 Lưu ý: Giá trên website tốt hơn Shopee do không có phí nền tảng!\n";
             }
@@ -255,7 +266,7 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
                 if ($products->count() > 0) {
                     $context .= "\nSẢN PHẨM THƯƠNG HIỆU " . strtoupper($brand) . " (Chất lượng đã được khẳng định qua 4.9 sao trên Shopee):\n";
                     foreach ($products as $product) {
-                        $context .= "- {$product->name} - Link: http://127.0.0.1:8000/product/{$product->slug}\n";
+                        $context .= "- {$product->name} - Link: {$baseUrl}/product/{$product->slug}\n";
                     }
                     $context .= "\n🎯 Mua trên website = Giá tốt hơn + Dịch vụ trực tiếp!\n";
                 }
@@ -466,7 +477,9 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
      */
     private function getProductInfo(): string
     {
-        return Cache::remember('ai_product_info', 3600, function () {
+        $baseUrl = url(''); // Lấy base URL động
+
+        return Cache::remember('ai_product_info_' . md5($baseUrl), 3600, function () use ($baseUrl) {
             $products = Product::with(['variants'])
                 ->where('name', 'not like', '%test%')
                 ->take(50) // Lấy 50 sản phẩm đại diện
@@ -480,7 +493,7 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
 
             $productInfo .= "MỘT SỐ SẢN PHẨM TIÊU BIỂU:\n";
             foreach ($products->take(20) as $product) {
-                $productInfo .= "- {$product->name} ({$product->type}) - Link: http://127.0.0.1:8000/product/{$product->slug}\n";
+                $productInfo .= "- {$product->name} ({$product->type}) - Link: {$baseUrl}/product/{$product->slug}\n";
             }
 
             return $productInfo;
@@ -492,8 +505,10 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
      */
     private function enhanceResponseWithLinks(string $response, string $userMessage): string
     {
+        $baseUrl = url(''); // Lấy base URL động
+
         // Nếu response đã có link thì không cần xử lý thêm
-        if (strpos($response, 'http://127.0.0.1:8000') !== false) {
+        if (strpos($response, $baseUrl) !== false) {
             return $response;
         }
 
@@ -502,31 +517,31 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
         // Phân tích user message để đưa ra link phù hợp
         $userMessageLower = strtolower($userMessage);
 
-        // Mapping các từ khóa với link tương ứng
+        // Mapping các từ khóa với link tương ứng (sử dụng base URL động)
         $linkMappings = [
             // Loại sản phẩm
-            'giày thể thao' => 'http://127.0.0.1:8000/catfilter?type=Giày thể thao',
-            'giày công sở' => 'http://127.0.0.1:8000/catfilter?type=Giày công sở',
-            'giày cao gót' => 'http://127.0.0.1:8000/catfilter?type=Giày cao gót',
-            'giày boot' => 'http://127.0.0.1:8000/catfilter?type=Boot',
-            'dép' => 'http://127.0.0.1:8000/catfilter?tatvo=true',
-            'tất' => 'http://127.0.0.1:8000/catfilter?tatvo=true',
-            'vớ' => 'http://127.0.0.1:8000/catfilter?tatvo=true',
-            'phụ kiện' => 'http://127.0.0.1:8000/catfilter?phukien=true',
+            'giày thể thao' => $baseUrl . '/catfilter?type=Giày thể thao',
+            'giày công sở' => $baseUrl . '/catfilter?type=Giày công sở',
+            'giày cao gót' => $baseUrl . '/catfilter?type=Giày cao gót',
+            'giày boot' => $baseUrl . '/catfilter?type=Boot',
+            'dép' => $baseUrl . '/catfilter?tatvo=true',
+            'tất' => $baseUrl . '/catfilter?tatvo=true',
+            'vớ' => $baseUrl . '/catfilter?tatvo=true',
+            'phụ kiện' => $baseUrl . '/catfilter?phukien=true',
 
             // Thương hiệu phổ biến
-            'nike' => 'http://127.0.0.1:8000/catfilter?brand=Nike',
-            'adidas' => 'http://127.0.0.1:8000/catfilter?brand=Adidas',
-            'converse' => 'http://127.0.0.1:8000/catfilter?brand=Converse',
-            'vans' => 'http://127.0.0.1:8000/catfilter?brand=Vans',
+            'nike' => $baseUrl . '/catfilter?brand=Nike',
+            'adidas' => $baseUrl . '/catfilter?brand=Adidas',
+            'converse' => $baseUrl . '/catfilter?brand=Converse',
+            'vans' => $baseUrl . '/catfilter?brand=Vans',
 
             // Từ khóa chung
-            'tất cả sản phẩm' => 'http://127.0.0.1:8000/catfilter',
-            'xem sản phẩm' => 'http://127.0.0.1:8000/catfilter',
-            'mua hàng' => 'http://127.0.0.1:8000/catfilter',
-            'thanh toán' => 'http://127.0.0.1:8000/checkout',
-            'giỏ hàng' => 'http://127.0.0.1:8000/checkout',
-            'đặt hàng' => 'http://127.0.0.1:8000/checkout',
+            'tất cả sản phẩm' => $baseUrl . '/catfilter',
+            'xem sản phẩm' => $baseUrl . '/catfilter',
+            'mua hàng' => $baseUrl . '/catfilter',
+            'thanh toán' => $baseUrl . '/checkout',
+            'giỏ hàng' => $baseUrl . '/checkout',
+            'đặt hàng' => $baseUrl . '/checkout',
 
             // Shopee store
             'shopee' => 'https://shopee.vn/thanshoes99',
@@ -555,12 +570,12 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
         if (strpos($userMessageLower, 'giỏ hàng') !== false ||
             strpos($userMessageLower, 'thanh toán') !== false ||
             strpos($userMessageLower, 'đặt hàng') !== false) {
-            $enhancedResponse .= "\n👉 " . 'http://127.0.0.1:8000/checkout' . " - Đặt ngay!";
+            $enhancedResponse .= "\n👉 " . $baseUrl . '/checkout' . " - Đặt ngay!";
         }
         elseif (strpos($userMessageLower, 'shopee') !== false) {
             $enhancedResponse .= "\n🏆 Shopee: 33k followers, 34.3k reviews 4.9⭐";
             $enhancedResponse .= "\nhttps://shopee.vn/thanshoes99";
-            $enhancedResponse .= "\n💰 Website giá tốt hơn: http://127.0.0.1:8000/catfilter";
+            $enhancedResponse .= "\n💰 Website giá tốt hơn: " . $baseUrl . '/catfilter';
         }
         elseif (strpos($userMessageLower, 'liên hệ') !== false ||
                  strpos($userMessageLower, 'hỗ trợ') !== false) {
@@ -574,12 +589,32 @@ STYLE: Ngắn gọn, thân thiện, sales-oriented. Ví dụ: 'Giày Nike chất
         }
 
         // Fallback CTA
-        if (!strpos($enhancedResponse, 'http://127.0.0.1:8000') &&
+        if (!strpos($enhancedResponse, $baseUrl) &&
             (strpos($userMessageLower, 'giày') !== false || strpos($userMessageLower, 'sản phẩm') !== false)) {
-            $enhancedResponse .= "\n🛍️ " . 'http://127.0.0.1:8000/catfilter';
+            $enhancedResponse .= "\n🛍️ " . $baseUrl . '/catfilter';
         }
 
         return $enhancedResponse;
+    }
+
+    /**
+     * Clean up markdown links để tránh lỗi format
+     */
+    private function cleanMarkdownLinks(string $response): string
+    {
+        // Pattern để tìm markdown links: [text](url)
+        $pattern = '/\[([^\]]*)\]\(([^)]+)\)/';
+
+        // Replace với chỉ URL thuần
+        $cleaned = preg_replace($pattern, '$2', $response);
+
+        // Loại bỏ các ký tự markdown khác có thể gây lỗi
+        $cleaned = str_replace(['**', '*', '`'], '', $cleaned);
+
+        // Loại bỏ dấu ngoặc vuông thừa
+        $cleaned = str_replace(['[', ']'], '', $cleaned);
+
+        return $cleaned;
     }
 
     /**

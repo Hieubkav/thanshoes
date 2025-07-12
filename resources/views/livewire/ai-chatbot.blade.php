@@ -172,7 +172,17 @@
         color: #2563eb !important;
         text-decoration: underline !important;
         font-weight: 600 !important;
-        word-break: break-all;
+        word-break: break-all !important;
+        display: inline-block !important;
+        max-width: 100% !important;
+        overflow-wrap: break-word !important;
+    }
+
+    .chat-message a:hover {
+        color: #1d4ed8 !important;
+        background-color: #eff6ff !important;
+        padding: 1px 2px !important;
+        border-radius: 2px !important;
     }
 
     /* Optimized text for vertical layout */

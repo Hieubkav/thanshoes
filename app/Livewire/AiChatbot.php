@@ -7,20 +7,35 @@ use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Http\Controllers\AiChatController;
+use App\Services\ProductCacheService;
 
 class AiChatbot extends Component
 {
-    public $isOpen = true; // Mở mặc định
+    public $isOpen = false; // Sẽ được set trong mount() dựa trên setting
     public $message = '';
     public $messages = [];
     public $isLoading = false;
     public $sessionId;
-    
+    public $aiSpeedialDisplay = 'visible_auto'; // Default value
+
     public function mount()
     {
         // Tạo session ID unique cho mỗi phiên chat
         $this->sessionId = session()->getId() . '_' . Str::random(8);
-        
+
+        // Lấy setting ai_speedial_display
+        $settings = ProductCacheService::getSettings();
+        $this->aiSpeedialDisplay = $settings->ai_speedial_display ?? 'visible_auto';
+
+        // Kiểm tra setting để quyết định có tự động mở không
+        if ($this->aiSpeedialDisplay === 'visible_auto') {
+            $this->isOpen = true;
+        } elseif ($this->aiSpeedialDisplay === 'visible_manual') {
+            $this->isOpen = false;
+        } else { // hidden
+            $this->isOpen = false;
+        }
+
         // Tin nhắn chào mừng với social proof mạnh
         $this->messages = [
             [
@@ -255,10 +270,14 @@ class AiChatbot extends Component
      */
     public function formatMessage($message)
     {
-        // Convert URLs to clickable links
+        // Clean up any remaining markdown artifacts first
+        $message = preg_replace('/\[([^\]]*)\]\(([^)]+)\)/', '$2', $message);
+        $message = str_replace(['[', ']', '**', '*', '`'], '', $message);
+
+        // Convert URLs to clickable links (improved pattern)
         $message = preg_replace(
-            '/(http[s]?:\/\/[^\s]+)/',
-            '<a href="$1" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-medium">$1</a>',
+            '/(https?:\/\/[^\s\)]+)/',
+            '<a href="$1" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-medium break-all">$1</a>',
             $message
         );
 
@@ -269,6 +288,8 @@ class AiChatbot extends Component
         $message = str_replace('👉', '<span class="text-orange-500">👉</span>', $message);
         $message = str_replace('🛍️', '<span class="text-green-500">🛍️</span>', $message);
         $message = str_replace('💡', '<span class="text-yellow-500">💡</span>', $message);
+        $message = str_replace('🏆', '<span class="text-yellow-600">🏆</span>', $message);
+        $message = str_replace('💰', '<span class="text-green-600">💰</span>', $message);
 
         return $message;
     }
