@@ -26,7 +26,7 @@
             }
         }
 
-        $description .= ' | ' . config('app.name') . ' - Chuyên giày thể thao chính hãng';
+        $description .= ' | ' . config('app.name') . ' - Chuyên giày thể thao chất lượng cao';
         return $description;
     }
 
