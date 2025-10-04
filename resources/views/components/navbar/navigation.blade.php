@@ -2,7 +2,7 @@
 <div class="relative w-full">
 
     <!-- Desktop Navigation -->
-    <nav class="hidden lg:block py-3">
+    <nav class="hidden lg:block py-2.5">
         <ul class="flex items-center justify-center space-x-8">
             <li>
                 <a href="{{ route('shop.cat_filter') }}"

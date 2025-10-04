@@ -1,5 +1,5 @@
 <div class="topbar">
-    <div class="enhanced-topbar bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 text-white py-4 px-4 flex justify-between items-center shadow-lg relative overflow-hidden">
+    <div class="enhanced-topbar bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 text-white py-2 lg:py-3 px-4 flex justify-between items-center shadow-lg relative overflow-hidden">
         <!-- Background Animation Elements -->
         <div class="absolute inset-0 opacity-30">
             <div class="floating-shapes">

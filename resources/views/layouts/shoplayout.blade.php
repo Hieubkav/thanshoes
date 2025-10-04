@@ -105,7 +105,7 @@
     </div>
 @endif
 
-<main class="mt-[11rem] lg:mt-[12rem]">
+<main data-main-content class="pt-48 lg:pt-52 transition-all duration-300">
     @yield('content')
 </main>
 
@@ -118,6 +118,31 @@
 
 <script defer>
     document.addEventListener("DOMContentLoaded", function () {
+        const navbar = document.querySelector("[data-navbar]");
+        const mainContent = document.querySelector("[data-main-content]");
+
+        const updateMainOffset = () => {
+            if (!navbar || !mainContent) {
+                return;
+            }
+
+            const navRect = navbar.getBoundingClientRect();
+            const buffer = window.innerWidth < 1024 ? 16 : 24;
+            mainContent.style.paddingTop = `${Math.round(navRect.height + buffer)}px`;
+        };
+
+        updateMainOffset();
+        window.addEventListener("resize", updateMainOffset);
+        window.addEventListener("load", updateMainOffset);
+
+        if (navbar) {
+            const observer = new MutationObserver(updateMainOffset);
+            observer.observe(navbar, { childList: true, subtree: true, attributes: true });
+        }
+
+        setTimeout(updateMainOffset, 300);
+        setTimeout(updateMainOffset, 1000);
+
         const allImages = document.querySelectorAll("img");
 
         allImages.forEach((img) => {

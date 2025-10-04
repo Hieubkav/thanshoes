@@ -36,8 +36,8 @@
         </span>
     </div>
 
-    <!-- Success Animation (Optional) -->
-    <div class="absolute inset-0 bg-success-500 transform scale-0 rounded-lg transition-transform duration-300"
+    <!-- Subtle highlight overlay for hover feedback -->
+    <div class="absolute inset-0 bg-primary-500/20 transform scale-0 rounded-lg transition-transform duration-300"
          :class="{ 'scale-100': hover }"
          style="animation-delay: 0.1s;">
     </div>

@@ -1,11 +1,11 @@
 <div>
-    <nav class="bg-white/95 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900/95 fixed top-0 right-0 left-0 shadow-soft z-50">
+    <nav data-navbar class="bg-white/95 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900/95 fixed top-0 right-0 left-0 shadow-soft z-50">
         <!-- Topbar -->
         @include('component.topbar')
 
         <!-- Top Section: Logo + Search + Icons -->
         <div class="border-b border-neutral-100">
-            <div class="flex items-center justify-between mx-auto max-w-screen-xl px-6 py-4 gap-4">
+            <div class="flex items-center justify-between mx-auto max-w-screen-xl px-6 py-3 lg:py-4 gap-4">
                 <!-- Left: Mobile Menu + Logo -->
                 <div class="flex items-center space-x-4 flex-shrink-0">
                     <!-- Mobile Menu Button -->
