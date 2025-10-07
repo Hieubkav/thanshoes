@@ -2,35 +2,33 @@
 
 @php
     // Tạo SEO description tùy chỉnh cho sản phẩm
-    function generateProductSeoDescription($product) {
-        if ($product->seo_description) {
-            return $product->seo_description;
+    $productSeoDescription = $product->seo_description;
+
+    if (empty($productSeoDescription)) {
+        $seoBase = $product->name;
+
+        if ($product->brand) {
+            $seoBase .= ' - ' . $product->brand;
         }
 
-        $description = $product->name;
-        if ($product->brand) {
-            $description .= ' - ' . $product->brand;
-        }
         if ($product->type) {
-            $description .= ' (' . $product->type . ')';
+            $seoBase .= ' (' . $product->type . ')';
         }
 
         // Thêm thông tin giá
         $minPrice = $product->variants->min('price');
         $maxPrice = $product->variants->max('price');
+
         if ($minPrice && $maxPrice) {
             if ($minPrice == $maxPrice) {
-                $description .= ' - Giá: ' . number_format($minPrice, 0, ',', '.') . 'đ';
+                $seoBase .= ' - Giá: ' . number_format($minPrice, 0, ',', '.') . 'đ';
             } else {
-                $description .= ' - Giá từ: ' . number_format($minPrice, 0, ',', '.') . 'đ';
+                $seoBase .= ' - Giá từ: ' . number_format($minPrice, 0, ',', '.') . 'đ';
             }
         }
 
-        $description .= ' | ' . config('app.name') . ' - Chuyên giày thể thao chất lượng cao';
-        return $description;
+        $productSeoDescription = $seoBase . ' | ' . config('app.name') . ' - Chuyên giày thể thao chất lượng cao';
     }
-
-    $productSeoDescription = generateProductSeoDescription($product);
 @endphp
 
 @section('meta_description')

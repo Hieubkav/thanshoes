@@ -1,11 +1,4 @@
 <div>
-    @php
-        use App\Helpers\PriceHelper;
-        use App\Models\Setting;
-        $settings = Setting::first();
-        $discountPercent = PriceHelper::getDiscountPercentage();
-        $discountType = PriceHelper::getDiscountType();
-    @endphp
     <div class="bg-gray-50 dark:bg-gray-800 py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-wrap -mx-4">
@@ -21,12 +14,12 @@
                                 Freeship
                             </div>
                         @endif
-                        @if($discountPercent > 0)
+                        @if($globalDiscountPercent > 0)
                         <div class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded-bl-lg">
-                            @if($discountType === 'percent')
-                                -{{ $discountPercent }}%
+                            @if($globalDiscountType === 'percent')
+                                -{{ $globalDiscountPercent }}%
                             @else
-                                -{{ number_format($discountPercent, 0, ',', '.') }}đ
+                                -{{ number_format($globalDiscountPercent, 0, ',', '.') }}đ
                             @endif
                         </div>
                         @endif
@@ -70,25 +63,25 @@
                             @if ($product->variants->min('price') == $product->variants->max('price'))
                                 @php
                                     $price = $product->variants->min('price');
-                                    $discountedPrice = PriceHelper::calculateDiscountedPrice($price);
+                                    $discountedPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($price);
                                 @endphp
                                 {{ number_format($discountedPrice, 0, ',', '.') }}vnd
                             @else
                                 @php
                                     $minPrice = $product->variants->min('price');
                                     $maxPrice = $product->variants->max('price');
-                                    $discountedMinPrice = PriceHelper::calculateDiscountedPrice($minPrice);
-                                    $discountedMaxPrice = PriceHelper::calculateDiscountedPrice($maxPrice);
+                                    $discountedMinPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($minPrice);
+                                    $discountedMaxPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($maxPrice);
                                 @endphp
                                 {{ number_format($discountedMinPrice, 0, ',', '.') }}vnd
                                 -
                                 {{ number_format($discountedMaxPrice, 0, ',', '.') }}vnd
                             @endif
                         </span>
-                        @if($discountPercent > 0)
+                        @if($globalDiscountPercent > 0)
                         <span class="text-gray-500 line-through italic">
                             @php
-                                $displayOriginalPrice = PriceHelper::getDisplayOriginalPrice($product->variants->max('price'));
+                                $displayOriginalPrice = \App\Helpers\PriceHelper::getDisplayOriginalPrice($product->variants->max('price'));
                             @endphp
                             {{ number_format($displayOriginalPrice, 0, ',', '.') }}vnd
                         </span>
@@ -183,15 +176,29 @@
 
                     <!-- Nút Thêm vào giỏ hàng và Bảng size -->
                     <div class="flex items-start space-x-4 mb-6" x-data="{ showSizeModal: false }">
-                        <div>
+                        <div class="w-full max-w-full md:max-w-[220px] flex flex-col gap-2 flex-shrink-0">
+                            <button type="button"
+                                    wire:click="openQuickBuy"
+                                    wire:loading.attr="disabled"
+                                    wire:target="openQuickBuy"
+                                    class="w-full px-4 py-3 text-white font-semibold rounded-lg shadow-md bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 transition-all duration-300 text-center disabled:opacity-60 disabled:cursor-not-allowed">
+                                <span wire:loading.remove wire:target="openQuickBuy">Mua ngay</span>
+                                <span wire:loading wire:target="openQuickBuy" class="inline-flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V2a10 10 0 100 20v-2a8 8 0 01-8-8z"></path>
+                                    </svg>
+                                    <span>Dang mo</span>
+                                </span>
+                            </button>
                             @include('partials.button_add_cart')
                         </div>
-                        @if(\App\Models\Setting::first()->size_shoes_image)
+                        @if($sizeShoesImage)
                             <div class="relative">
                                 <button type="button"
                                     @click="showSizeModal = true"
                                     class="group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                                    <img src="{{ asset('storage/' . \App\Models\Setting::first()->size_shoes_image) }}"
+                                    <img src="{{ asset('storage/' . $sizeShoesImage) }}"
                                         alt="Bảng size giày"
                                         loading="lazy"
                                         class="w-auto h-[200px] object-cover rounded-lg group-hover:opacity-90 transition-opacity">
@@ -223,7 +230,7 @@
                                                         <h3 class="text-lg font-medium text-gray-900 mb-4">
                                                             Bảng Size Giày
                                                         </h3>
-                                                        <img src="{{ asset('storage/' . \App\Models\Setting::first()->size_shoes_image) }}"
+                                                        <img src="{{ asset('storage/' . $sizeShoesImage) }}"
                                                             alt="Bảng size giày"
                                                             loading="lazy"
                                                             class="w-full h-auto rounded-lg">
@@ -257,7 +264,7 @@
         </div>
     </div>
 
-    <!-- Image Gallery Modal -->
+    <!-- Image Gallery Modal (inside main div) -->
     <div id="imageGalleryModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden items-center justify-center">
         <div class="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center p-4">
             <!-- Close button -->
@@ -296,7 +303,313 @@
         </div>
     </div>
 
-    <script>
+
+
+
+    <style>
+        /* Gallery Modal Styles */
+        #imageGalleryModal {
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        #imageGalleryModal.hidden {
+            animation: fadeOut 0.3s ease-out;
+        }
+
+        #galleryMainImage {
+            max-height: 80vh;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #galleryThumbnails {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        #galleryThumbnails::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        #galleryThumbnails::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #galleryThumbnails::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Button hover effects */
+        #imageGalleryModal button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            #galleryThumbnails {
+                bottom: 8px;
+                padding: 0 8px;
+            }
+
+            #imageGalleryModal .absolute.bottom-4 {
+                bottom: 16px;
+            }
+
+            #imageGalleryModal .absolute.left-4,
+            #imageGalleryModal .absolute.right-4 {
+                padding: 8px;
+            }
+
+            #galleryMainImage {
+                max-height: 70vh;
+            }
+        }
+
+        /* Touch gestures for mobile */
+        #galleryMainImage {
+            touch-action: pan-x;
+        }
+    </style>
+<!-- Keep everything above the related products section the same -->
+
+    <!-- Sản phẩm cùng danh mục -->
+    @if ($related_products->isNotEmpty())
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold text-gray-800">Sản phẩm cùng danh mục</h3>
+                <a href="/catfilter?type={{ urlencode($product->type) }}"
+                    class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-200">
+                    Xem tất cả
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </a>
+            </div>
+            @if ($related_products->count() <= 4)
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    @foreach ($related_products as $related)
+                        @php
+                            $relatedMinPrice = $related->variants->min('price');
+                            $relatedDiscountedPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($relatedMinPrice);
+                            $relatedOriginalPrice = \App\Helpers\PriceHelper::getDisplayOriginalPrice($relatedMinPrice);
+                        @endphp
+                        <div
+                            class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
+                            <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
+                                <div class="relative pt-[100%]">
+                                    <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
+                                        alt="{{ $related->name }}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">
+                                </div>
+                                <div class="p-3">
+                                    <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
+                                        {{ $related->name }}</h4>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-sm font-bold text-blue-600">
+                                            {{ number_format($relatedDiscountedPrice, 0, ',', '.') }}đ
+                                        </span>
+                                        @if($globalDiscountPercent > 0)
+                                        <span class="text-xs text-gray-500 line-through">
+                                            {{ number_format($relatedOriginalPrice, 0, ',', '.') }}đ
+                                        </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="relative">
+                    <div class="carousel-related overflow-hidden px-4">
+                        <div class="carousel-inner flex transition-transform duration-300 ease-in-out gap-4">
+                            @foreach ($related_products as $related)
+                                @php
+                                    $relatedMinPrice = $related->variants->min('price');
+                                    $relatedDiscountedPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($relatedMinPrice);
+                                    $relatedOriginalPrice = \App\Helpers\PriceHelper::getDisplayOriginalPrice($relatedMinPrice);
+                                @endphp
+                                <div class="carousel-item flex-none w-1/2 md:w-1/4 min-w-[50%] md:min-w-[25%]">
+                                    <div
+                                        class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
+                                        <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
+                                            <div class="relative pt-[100%]">
+                                                <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
+                                                    alt="{{ $related->name }}"
+                                                    loading="lazy"
+                                                    class="absolute inset-0 w-full h-full object-cover">
+                                            </div>
+                                            <div class="p-3">
+                                                <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
+                                                    {{ $related->name }}</h4>
+                                                <div class="flex items-baseline gap-1">
+                                                    <span class="text-sm font-bold text-blue-600">
+                                                        {{ number_format($relatedDiscountedPrice, 0, ',', '.') }}đ
+                                                    </span>
+                                                    @if($globalDiscountPercent > 0)
+                                                    <span class="text-xs text-gray-500 line-through">
+                                                        {{ number_format($relatedOriginalPrice, 0, ',', '.') }}đ
+                                                    </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="flex justify-center gap-4 mt-4">
+                        <button
+                            class="prev-related bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <button
+                            class="next-related bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    <!-- Sản phẩm cùng thương hiệu -->
+    @if ($same_brand_products->isNotEmpty())
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold text-gray-800">Sản phẩm cùng thương hiệu</h3>
+                <a href="/catfilter?brand={{ urlencode($product->brand) }}"
+                    class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-200">
+                    Xem tất cả
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </a>
+            </div>
+            @if ($same_brand_products->count() <= 4)
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    @foreach ($same_brand_products as $brand_product)
+                        @php
+                            $brandProductMinPrice = $brand_product->variants->min('price');
+                            $brandProductDiscountedPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($brandProductMinPrice);
+                            $brandProductOriginalPrice = \App\Helpers\PriceHelper::getDisplayOriginalPrice($brandProductMinPrice);
+                        @endphp
+                        <div
+                            class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
+                            <a href="{{ route('shop.product_overview', $brand_product->slug) }}" class="block">
+                                <div class="relative pt-[100%]">
+                                    <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
+                                        alt="{{ $brand_product->name }}"
+                                        loading="lazy"
+                                        class="absolute inset-0 w-full h-full object-cover">
+                                </div>
+                                <div class="p-3">
+                                    <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
+                                        {{ $brand_product->name }}</h4>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-sm font-bold text-blue-600">
+                                            {{ number_format($brandProductDiscountedPrice, 0, ',', '.') }}đ
+                                        </span>
+                                        @if($globalDiscountPercent > 0)
+                                        <span class="text-xs text-gray-500 line-through">
+                                            {{ number_format($brandProductOriginalPrice, 0, ',', '.') }}đ
+                                        </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="relative">
+                    <div class="carousel-brand overflow-hidden px-4">
+                        <div class="carousel-inner flex transition-transform duration-300 ease-in-out gap-4">
+                            @foreach ($same_brand_products as $brand_product)
+                                @php
+                                    $brandProductMinPrice = $brand_product->variants->min('price');
+                                    $brandProductDiscountedPrice = \App\Helpers\PriceHelper::calculateDiscountedPrice($brandProductMinPrice);
+                                    $brandProductOriginalPrice = \App\Helpers\PriceHelper::getDisplayOriginalPrice($brandProductMinPrice);
+                                @endphp
+                                <div class="carousel-item flex-none w-1/2 md:w-1/4 min-w-[50%] md:min-w-[25%]">
+                                    <div
+                                        class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
+                                        <a href="{{ route('shop.product_overview', $brand_product->slug) }}"
+                                            class="block">
+                                            <div class="relative pt-[100%]">
+                                                <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
+                                                    alt="{{ $brand_product->name }}"
+                                                    loading="lazy"
+                                                    class="absolute inset-0 w-full h-full object-cover">
+                                            </div>
+                                            <div class="p-3">
+                                                <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
+                                                    {{ $brand_product->name }}</h4>
+                                                <div class="flex items-baseline gap-1">
+                                                    <span class="text-sm font-bold text-blue-600">
+                                                        {{ number_format($brandProductDiscountedPrice, 0, ',', '.') }}đ
+                                                    </span>
+                                                    @if($globalDiscountPercent > 0)
+                                                    <span class="text-xs text-gray-500 line-through">
+                                                        {{ number_format($brandProductOriginalPrice, 0, ',', '.') }}đ
+                                                    </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="flex justify-center gap-4 mt-4">
+                        <button
+                            class="prev-brand bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <button
+                            class="next-brand bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    
+
+
+    @include('partials.quick_buy_modal')
+</div>
+
+@push('scripts')
+<script>
         // Gallery data
         let galleryImages = [];
         let currentGalleryIndex = 0;
@@ -328,6 +641,19 @@
                 if (img && !galleryImages.includes(img)) {
                     galleryImages.push(img);
                 }
+            });
+
+            // Register Livewire event hooks
+            Livewire.on('colorSelected', (data) => {
+                console.log(data[0]);
+            });
+
+            Livewire.on('sizeSelected', (data) => {
+                console.log(data[0]);
+            });
+
+            Livewire.on('checkcolorfirst', () => {
+                alert('Vui lòng ch?n phân m?c ? trên tru?c');
             });
 
             // Setup event listeners
@@ -476,395 +802,4 @@
             }
         }
     </script>
-
-    <style>
-        /* Gallery Modal Styles */
-        #imageGalleryModal {
-            backdrop-filter: blur(4px);
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        #imageGalleryModal.hidden {
-            animation: fadeOut 0.3s ease-out;
-        }
-
-        #galleryMainImage {
-            max-height: 80vh;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        #galleryThumbnails {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-        }
-
-        #galleryThumbnails::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        #galleryThumbnails::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        #galleryThumbnails::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-
-        /* Button hover effects */
-        #imageGalleryModal button:hover {
-            transform: scale(1.05);
-        }
-
-        /* Mobile responsive adjustments */
-        @media (max-width: 768px) {
-            #galleryThumbnails {
-                bottom: 8px;
-                padding: 0 8px;
-            }
-
-            #imageGalleryModal .absolute.bottom-4 {
-                bottom: 16px;
-            }
-
-            #imageGalleryModal .absolute.left-4,
-            #imageGalleryModal .absolute.right-4 {
-                padding: 8px;
-            }
-
-            #galleryMainImage {
-                max-height: 70vh;
-            }
-        }
-
-        /* Touch gestures for mobile */
-        #galleryMainImage {
-            touch-action: pan-x;
-        }
-    </style>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            Livewire.on('colorSelected', (data) => {
-                console.log(data[0]);
-            });
-
-            Livewire.on('sizeSelected', (data) => {
-                console.log(data[0]);
-            });
-
-            Livewire.on('checkcolorfirst', () => {
-                alert('Vui lòng chọn phân mục ở trên trước');
-            });
-        });
-    </script>
-
-
-    <!-- Keep everything above the related products section the same -->
-
-    <!-- Sản phẩm cùng danh mục -->
-    @if ($related_products->isNotEmpty())
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-semibold text-gray-800">Sản phẩm cùng danh mục</h3>
-                <a href="/catfilter?type={{ urlencode($product->type) }}"
-                    class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-200">
-                    Xem tất cả
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                </a>
-            </div>
-            @if ($related_products->count() <= 4)
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    @foreach ($related_products as $related)
-                        @php
-                            $relatedMinPrice = $related->variants->min('price');
-                            $relatedDiscountedPrice = PriceHelper::calculateDiscountedPrice($relatedMinPrice);
-                            $relatedOriginalPrice = PriceHelper::getDisplayOriginalPrice($relatedMinPrice);
-                        @endphp
-                        <div
-                            class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                            <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
-                                <div class="relative pt-[100%]">
-                                    <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
-                                        alt="{{ $related->name }}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">
-                                </div>
-                                <div class="p-3">
-                                    <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
-                                        {{ $related->name }}</h4>
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-sm font-bold text-blue-600">
-                                            {{ number_format($relatedDiscountedPrice, 0, ',', '.') }}đ
-                                        </span>
-                                        @if($discountPercent > 0)
-                                        <span class="text-xs text-gray-500 line-through">
-                                            {{ number_format($relatedOriginalPrice, 0, ',', '.') }}đ
-                                        </span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="relative">
-                    <div class="carousel-related overflow-hidden px-4">
-                        <div class="carousel-inner flex transition-transform duration-300 ease-in-out gap-4">
-                            @foreach ($related_products as $related)
-                                @php
-                                    $relatedMinPrice = $related->variants->min('price');
-                                    $relatedDiscountedPrice = PriceHelper::calculateDiscountedPrice($relatedMinPrice);
-                                    $relatedOriginalPrice = PriceHelper::getDisplayOriginalPrice($relatedMinPrice);
-                                @endphp
-                                <div class="carousel-item flex-none w-1/2 md:w-1/4 min-w-[50%] md:min-w-[25%]">
-                                    <div
-                                        class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                                        <a href="{{ route('shop.product_overview', $related->slug) }}" class="block">
-                                            <div class="relative pt-[100%]">
-                                                <img src="{{ $related->first_image ?? asset('images/logo.svg') }}"
-                                                    alt="{{ $related->name }}"
-                                                    loading="lazy"
-                                                    class="absolute inset-0 w-full h-full object-cover">
-                                            </div>
-                                            <div class="p-3">
-                                                <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
-                                                    {{ $related->name }}</h4>
-                                                <div class="flex items-baseline gap-1">
-                                                    <span class="text-sm font-bold text-blue-600">
-                                                        {{ number_format($relatedDiscountedPrice, 0, ',', '.') }}đ
-                                                    </span>
-                                                    @if($discountPercent > 0)
-                                                    <span class="text-xs text-gray-500 line-through">
-                                                        {{ number_format($relatedOriginalPrice, 0, ',', '.') }}đ
-                                                    </span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="flex justify-center gap-4 mt-4">
-                        <button
-                            class="prev-related bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <button
-                            class="next-related bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    <!-- Sản phẩm cùng thương hiệu -->
-    @if ($same_brand_products->isNotEmpty())
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-semibold text-gray-800">Sản phẩm cùng thương hiệu</h3>
-                <a href="/catfilter?brand={{ urlencode($product->brand) }}"
-                    class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-200">
-                    Xem tất cả
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                </a>
-            </div>
-            @if ($same_brand_products->count() <= 4)
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    @foreach ($same_brand_products as $brand_product)
-                        @php
-                            $brandProductMinPrice = $brand_product->variants->min('price');
-                            $brandProductDiscountedPrice = PriceHelper::calculateDiscountedPrice($brandProductMinPrice);
-                            $brandProductOriginalPrice = PriceHelper::getDisplayOriginalPrice($brandProductMinPrice);
-                        @endphp
-                        <div
-                            class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                            <a href="{{ route('shop.product_overview', $brand_product->slug) }}" class="block">
-                                <div class="relative pt-[100%]">
-                                    <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
-                                        alt="{{ $brand_product->name }}"
-                                        loading="lazy"
-                                        class="absolute inset-0 w-full h-full object-cover">
-                                </div>
-                                <div class="p-3">
-                                    <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
-                                        {{ $brand_product->name }}</h4>
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-sm font-bold text-blue-600">
-                                            {{ number_format($brandProductDiscountedPrice, 0, ',', '.') }}đ
-                                        </span>
-                                        @if($discountPercent > 0)
-                                        <span class="text-xs text-gray-500 line-through">
-                                            {{ number_format($brandProductOriginalPrice, 0, ',', '.') }}đ
-                                        </span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="relative">
-                    <div class="carousel-brand overflow-hidden px-4">
-                        <div class="carousel-inner flex transition-transform duration-300 ease-in-out gap-4">
-                            @foreach ($same_brand_products as $brand_product)
-                                @php
-                                    $brandProductMinPrice = $brand_product->variants->min('price');
-                                    $brandProductDiscountedPrice = PriceHelper::calculateDiscountedPrice($brandProductMinPrice);
-                                    $brandProductOriginalPrice = PriceHelper::getDisplayOriginalPrice($brandProductMinPrice);
-                                @endphp
-                                <div class="carousel-item flex-none w-1/2 md:w-1/4 min-w-[50%] md:min-w-[25%]">
-                                    <div
-                                        class="bg-white rounded-lg shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-                                        <a href="{{ route('shop.product_overview', $brand_product->slug) }}"
-                                            class="block">
-                                            <div class="relative pt-[100%]">
-                                                <img src="{{ $brand_product->first_image ?? asset('images/logo.svg') }}"
-                                                    alt="{{ $brand_product->name }}"
-                                                    loading="lazy"
-                                                    class="absolute inset-0 w-full h-full object-cover">
-                                            </div>
-                                            <div class="p-3">
-                                                <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">
-                                                    {{ $brand_product->name }}</h4>
-                                                <div class="flex items-baseline gap-1">
-                                                    <span class="text-sm font-bold text-blue-600">
-                                                        {{ number_format($brandProductDiscountedPrice, 0, ',', '.') }}đ
-                                                    </span>
-                                                    @if($discountPercent > 0)
-                                                    <span class="text-xs text-gray-500 line-through">
-                                                        {{ number_format($brandProductOriginalPrice, 0, ',', '.') }}đ
-                                                    </span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="flex justify-center gap-4 mt-4">
-                        <button
-                            class="prev-brand bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <button
-                            class="next-brand bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    <script>
-        function initCarousel(carouselClass, prevBtnClass, nextBtnClass) {
-            const carousel = document.querySelector(carouselClass);
-            const inner = carousel.querySelector('.carousel-inner');
-            const items = carousel.querySelectorAll('.carousel-item');
-            const prevBtn = document.querySelector(prevBtnClass);
-            const nextBtn = document.querySelector(nextBtnClass);
-
-            let currentIndex = 0;
-            const totalItems = items.length;
-
-            function getItemsPerView() {
-                return window.innerWidth >= 768 ? 4 : 2; // 4 on md+, 2 on mobile
-            }
-
-            function getItemWidth() {
-                return window.innerWidth >= 768 ? 25 : 50; // 25% on md+, 50% on mobile
-            }
-
-            function getVisibleItemsOffset() {
-                return window.innerWidth >= 768 ? 0.5 : 0.5; // Show 4.5 items on desktop, 2.5 on mobile
-            }
-
-            function updateCarousel() {
-                const itemsPerView = getItemsPerView();
-                const itemWidth = getItemWidth();
-                const offset = -currentIndex * itemWidth;
-                inner.style.transform = `translateX(${offset}%)`;
-
-                prevBtn.disabled = currentIndex === 0;
-                nextBtn.disabled = currentIndex >= totalItems - itemsPerView - getVisibleItemsOffset();
-            }
-
-            prevBtn.addEventListener('click', () => {
-                if (currentIndex > 0) {
-                    currentIndex--;
-                    updateCarousel();
-                }
-            });
-
-            nextBtn.addEventListener('click', () => {
-                const itemsPerView = getItemsPerView();
-                if (currentIndex < totalItems - itemsPerView - getVisibleItemsOffset()) {
-                    currentIndex++;
-                    updateCarousel();
-                }
-            });
-
-            // Initial update
-            updateCarousel();
-
-            // Update on resize
-            window.addEventListener('resize', updateCarousel);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            if (document.querySelector('.carousel-related')) {
-                initCarousel('.carousel-related', '.prev-related', '.next-related');
-            }
-            if (document.querySelector('.carousel-brand')) {
-                initCarousel('.carousel-brand', '.prev-brand', '.next-brand');
-            }
-
-            Livewire.on('colorSelected', (data) => {
-                console.log(data[0]);
-            });
-
-            Livewire.on('sizeSelected', (data) => {
-                console.log(data[0]);
-            });
-
-            Livewire.on('checkcolorfirst', () => {
-                alert('Vui lòng chọn phân mục ở trên trước');
-            });
-        });
-    </script>
-</div>
+@endpush

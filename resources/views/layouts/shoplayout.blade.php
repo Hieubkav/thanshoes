@@ -173,7 +173,9 @@
         }
     }
 </script>
+@stack('modals')
 @livewire('notifications')
+@stack('scripts')
 @filamentScripts
 @vite('resources/js/app.js')
 </body>

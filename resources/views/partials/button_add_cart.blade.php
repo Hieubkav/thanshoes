@@ -2,7 +2,7 @@
 <button wire:click="addToCart"
         wire:loading.attr="disabled"
         wire:target="addToCart"
-        class="btn btn-primary btn-lg group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+        class="btn btn-primary btn-lg w-full group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
         x-data="{ hover: false }"
         @mouseenter="hover = true"
         @mouseleave="hover = false">
