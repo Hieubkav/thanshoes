@@ -7,7 +7,7 @@
             <!-- Modal header -->
             <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    @auth
+                    @auth('customers')
                         Đơn hàng của tôi
                     @else
                         Lịch sử đơn hàng
@@ -26,8 +26,17 @@
             </div>
             <!-- Modal body -->
             <div class="p-4 md:p-5 space-y-4 text-gray-700 dark:text-gray-300">
-                @auth
+                @auth('customers')
                     <!-- Hiển thị đơn hàng cho user đã đăng nhập -->
+                    @if(($pendingOrdersCount ?? 0) > 0)
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm flex items-start gap-2">
+                            <i class="fas fa-hourglass-half mt-0.5"></i>
+                            <div>
+                                <p class="font-semibold">Bạn có {{ $pendingOrdersCount }} đơn hàng chưa hoàn thành</p>
+                                <p>Theo dõi thường xuyên để cập nhật trạng thái và hỗ trợ xử lý nhanh chóng.</p>
+                            </div>
+                        </div>
+                    @endif
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                             <thead class="bg-gray-50 dark:bg-gray-700">

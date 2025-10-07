@@ -34,11 +34,13 @@ class Login extends Component
             'password' => $this->password
         ];
 
-        if (Auth::attempt($credentials, $this->remember)) {
+        $previousSessionId = session()->getId();
+
+        if (Auth::guard('customers')->attempt($credentials, $this->remember)) {
             session()->regenerate();
 
             // Merge cart từ session sang user cart
-            $this->mergeSessionCartToUserCart();
+            $this->mergeSessionCartToUserCart($previousSessionId);
 
             // Dispatch event để cập nhật navbar
             $this->dispatch('user_logged_in');
@@ -54,23 +56,23 @@ class Login extends Component
         return filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
     }
 
-    private function mergeSessionCartToUserCart()
+    private function mergeSessionCartToUserCart(?string $previousSessionId = null)
     {
-        $sessionId = session()->getId();
-        $userId = auth()->id();
+        $sessionId = $previousSessionId ?? session()->getId();
+        $customerId = Auth::guard('customers')->id();
 
         // Tìm cart của session (guest)
         $sessionCart = \App\Models\Cart::where('session_id', $sessionId)
-            ->whereNull('user_id')
+            ->whereNull('customer_id')
             ->first();
 
         if (!$sessionCart) {
             return; // Không có cart session
         }
 
-        // Tìm hoặc tạo cart cho user
+        // Tìm hoặc tạo cart cho khách hàng
         $userCart = \App\Models\Cart::firstOrCreate([
-            'user_id' => $userId,
+            'customer_id' => $customerId,
             'session_id' => null
         ]);
 

@@ -68,12 +68,14 @@ class Register extends Component
             'password' => Hash::make($this->password),
         ]);
 
-        Auth::login($customer);
+        $previousSessionId = session()->getId();
+
+        Auth::guard('customers')->login($customer);
 
         session()->regenerate();
 
         // Merge cart từ session sang user cart
-        $this->mergeSessionCartToUserCart();
+        $this->mergeSessionCartToUserCart($previousSessionId);
 
         // Dispatch event để cập nhật navbar
         $this->dispatch('user_logged_in');
@@ -81,26 +83,26 @@ class Register extends Component
         return redirect()->route('shop.store_front')->with('success', 'Đăng ký thành công!');
     }
 
-    private function mergeSessionCartToUserCart()
+    private function mergeSessionCartToUserCart(?string $previousSessionId = null)
     {
-        $sessionId = session()->getId();
-        $userId = auth()->id();
+        $sessionId = $previousSessionId ?? session()->getId();
+        $customerId = Auth::guard('customers')->id();
 
         // Tìm cart của session (guest)
         $sessionCart = \App\Models\Cart::where('session_id', $sessionId)
-            ->whereNull('user_id')
+            ->whereNull('customer_id')
             ->first();
 
         if (!$sessionCart) {
             return; // Không có cart session
         }
 
-        // Tạo cart cho user mới
+        // Tạo cart cho khách hàng mới
         $userCart = \App\Models\Cart::create([
-            'user_id' => $userId,
+            'customer_id' => $customerId,
             'session_id' => null,
-            'total' => $sessionCart->total,
-            'original_total' => $sessionCart->original_total ?? $sessionCart->total
+            'total_amount' => $sessionCart->total_amount ?? 0,
+            'original_total_amount' => $sessionCart->original_total_amount ?? ($sessionCart->total_amount ?? 0)
         ]);
 
         // Chuyển các items từ session cart sang user cart

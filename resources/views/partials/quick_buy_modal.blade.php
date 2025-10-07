@@ -93,6 +93,21 @@
                 </button>
 
                 <div class="flex-1 overflow-y-auto pt-12 pb-4 px-4 md:px-8 space-y-6">
+                    @if (!$quickBuySuccess && !empty($quickBuyInlineErrors))
+                        <div class="rounded-xl border border-red-200 bg-red-50 text-red-700 p-4 space-y-2">
+                            <div class="flex items-center gap-2 font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m0 3.75h.008v.008H12zm9-3.75a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Vui lòng kiểm tra lại thông tin</span>
+                            </div>
+                            <ul class="list-disc list-inside space-y-1 text-sm">
+                                @foreach ($quickBuyInlineErrors as $inlineError)
+                                    <li>{{ $inlineError }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     @if ($quickBuySuccess)
                         <div class="flex flex-col items-center justify-center gap-6 py-12 text-center">
                             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
@@ -356,15 +371,14 @@
                                 <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">#{{ $quickBuySuccessOrderCode }} · {{ number_format($quickBuySuccessTotal, 0, ',', '.') }}đ</p>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2">
+                                <a href="{{ route('customer.orders.show', ['order' => $quickBuySuccessOrderCode]) }}"
+                                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 text-sm font-semibold shadow transition">
+                                    Xem chi tiết đơn
+                                </a>
                                 <button type="button"
                                         wire:click="closeQuickBuy"
                                         class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition hover:border-gray-400 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500">
                                     Tiếp tục mua sắm
-                                </button>
-                                <button type="button"
-                                        wire:click="startNewQuickBuy"
-                                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 text-sm font-semibold shadow transition">
-                                    Đặt thêm sản phẩm
                                 </button>
                             </div>
                         </div>

@@ -41,6 +41,7 @@ class Navbar extends Component
 
     // Order related properties
     public $order;
+    public $pendingOrdersCount = 0;
 
     public function mount()
     {
@@ -71,18 +72,20 @@ class Navbar extends Component
         $this->email_customer = "";
         $this->address_customer = "";
         $this->order = new Collection();
+        $this->pendingOrdersCount = 0;
     }
 
     private function initializeOrder()
     {
         $this->order = new Collection();
+        $this->pendingOrdersCount = 0;
     }
 
     private function loadCustomerData()
     {
         // Ưu tiên customer đã đăng nhập
-        if (auth()->check()) {
-            $customer = auth()->user(); // Đây giờ là Customer model
+        if (auth('customers')->check()) {
+            $customer = auth('customers')->user(); // Đây giờ là Customer model
             $this->customer_id = $customer->id;
             $this->name_customer = $customer->name;
             $this->email_customer = $customer->email;
@@ -119,16 +122,20 @@ class Navbar extends Component
         $this->order = Order::where('customer_id', $this->customer_id)
             ->latest()
             ->get();
+
+        $this->pendingOrdersCount = $this->order
+            ->whereIn('status', ['pending', 'processing'])
+            ->count();
     }
 
     #[On('cart_updated')]
     public function updateCart()
     {
-        // Sử dụng user_id nếu đã đăng nhập, ngược lại dùng session_id
-        $userId = auth()->check() ? auth()->id() : null;
-        $sessionId = auth()->check() ? null : session()->getId();
+        // Sử dụng customer_id nếu đã đăng nhập, ngược lại dùng session_id
+        $customerId = auth('customers')->check() ? auth('customers')->id() : null;
+        $sessionId = auth('customers')->check() ? null : session()->getId();
 
-        $cart = Cart::getCart($userId, $sessionId);
+        $cart = Cart::getCart($customerId, $sessionId);
 
         // Make sure the cart exists
         if (!$cart) {
@@ -221,10 +228,10 @@ class Navbar extends Component
     #[On('clear_cart_after_dat_hang')]
     public function handle_clear_cart_after_dat_hang()
     {
-        $userId = auth()->check() ? auth()->id() : null;
-        $sessionId = auth()->check() ? null : session()->getId();
+        $customerId = auth('customers')->check() ? auth('customers')->id() : null;
+        $sessionId = auth('customers')->check() ? null : session()->getId();
 
-        $cart = Cart::getCart($userId, $sessionId);
+        $cart = Cart::getCart($customerId, $sessionId);
         if ($cart) {
             $cart->items()->delete();
             $cart->delete();
@@ -236,10 +243,10 @@ class Navbar extends Component
 
     public function clear_cart()
     {
-        $userId = auth()->check() ? auth()->id() : null;
-        $sessionId = auth()->check() ? null : session()->getId();
+        $customerId = auth('customers')->check() ? auth('customers')->id() : null;
+        $sessionId = auth('customers')->check() ? null : session()->getId();
 
-        $cart = Cart::getCart($userId, $sessionId);
+        $cart = Cart::getCart($customerId, $sessionId);
         if ($cart) {
             $cart->items()->delete();
             $cart->delete();

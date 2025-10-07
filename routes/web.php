@@ -22,13 +22,20 @@ Route::get('/checkout', [ShopController::class, 'checkout'])
     ->name('shop.checkout');
 
 // Authentication routes
-Route::middleware('guest')->group(function () {
+Route::middleware('guest:customers')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:customers')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
+
+Route::middleware('auth:customers')->group(function () {
+    Route::get('/orders', fn () => view('shop.customer-orders'))->name('customer.orders.index');
+    Route::get('/orders/{order}', function (\App\Models\Order $order) {
+        return view('shop.customer-order-detail', compact('order'));
+    })->name('customer.orders.show');
 });
 
 // Blog routes

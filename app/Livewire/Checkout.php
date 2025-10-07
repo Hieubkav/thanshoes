@@ -13,6 +13,7 @@ use App\Mail\OrderShipped;
 use App\Services\PriceService;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
+use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 
 class Checkout extends Component
@@ -36,7 +37,7 @@ class Checkout extends Component
     public function mount()
     {
         $this->payment_method = 'cod';
-        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart = Cart::getCart(auth('customers')->id(), session()->getId());
         
         if (!$cart || $cart->items()->count() === 0) {
             return redirect()->route('shop.store_front')
@@ -148,6 +149,12 @@ class Checkout extends Component
                 ]
             );
 
+            $previousSessionId = session()->getId();
+
+            Auth::guard('customers')->login($customer);
+            session()->regenerate();
+            $this->dispatch('user_logged_in');
+
             // Tạo đơn hàng mới với thông tin giảm giá
             $order = Order::create([
                 'customer_id' => $customer->id,
@@ -191,12 +198,11 @@ class Checkout extends Component
             Mail::to('tranmanhhieu10@gmail.com')->send(new OrderShipped($orderWithRelations));
 
             // Xóa giỏ hàng
-            $cart = Cart::getCart(auth()->id(), session()->getId());
-            $cart->items()->delete();
-            $cart->delete();
+            $this->clearCheckoutCarts($customer->id, $previousSessionId);
             
             // Lưu ID khách hàng vào session
             session()->put('customer_id', $customer->id);
+            session()->put('recent_order_id', $order->id);
             
             // Thông báo cho các component khác
             $this->dispatch('clear_cart_after_dat_hang');
@@ -223,5 +229,24 @@ class Checkout extends Component
     public function render()
     {
         return view('livewire.checkout');
+    }
+
+    private function clearCheckoutCarts(int $customerId, string $previousSessionId): void
+    {
+        $sessionCarts = Cart::where('session_id', $previousSessionId)
+            ->whereNull('customer_id')
+            ->get();
+
+        foreach ($sessionCarts as $cart) {
+            $cart->items()->delete();
+            $cart->delete();
+        }
+
+        $customerCarts = Cart::where('customer_id', $customerId)->get();
+
+        foreach ($customerCarts as $cart) {
+            $cart->items()->delete();
+            $cart->delete();
+        }
     }
 }

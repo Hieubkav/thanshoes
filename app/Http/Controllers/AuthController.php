@@ -28,7 +28,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
+        if (Auth::guard('customers')->check()) {
+            Auth::guard('customers')->logout();
+        }
         
         $request->session()->invalidate();
         $request->session()->regenerateToken();

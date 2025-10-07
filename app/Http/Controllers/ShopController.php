@@ -29,7 +29,7 @@ class ShopController extends Controller
 
     public function checkout()
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart = Cart::getCart(auth('customers')->id(), session()->getId());
         
         if (!$cart || $cart->items()->count() === 0) {
             return redirect()->route('shop.store_front')

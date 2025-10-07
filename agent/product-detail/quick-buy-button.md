@@ -1,5 +1,6 @@
 # Nut Mua Ngay Tren Trang Chi Tiet
 
+- Trigger: button `wire:click="openQuickBuy"` tai `resources/views/livewire/product-overview.blade.php:185` doi `showQuickBuyModal` sang `true`, reset state (`quickBuyQuantity`, `quickBuySuccess...`) truoc khi render drawer.
 - Bottom drawer: `resources/views/partials/quick_buy_modal.blade.php` dung overlay `overflow-y-auto`, container `flex flex-col` (max-h ~94vh). Header co badge tom tat (mau/size, so luong, don gia) + preview anh bien the.
 - Form lien he: input ho ten/so dien thoai/email + dropdown tinh (`quickBuyProvince`) va phuong (`quickBuyWard`) du lieu tu `resources/data/provinces.json` va `resources/data/wards.json`; textarea `quickBuyAddressDetail` ghi chi tiet.
 - Sticky action bar o duoi hien tong thanh toan va nut `Xac nhan mua ngay`; phan chon thanh toan (COD/Chuyen khoan) dung button `wire:click` de doi `quickBuyPaymentMethod`.

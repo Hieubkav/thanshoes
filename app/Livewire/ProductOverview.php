@@ -15,6 +15,7 @@ use App\Mail\OrderShipped;
 use App\Helpers\PriceHelper;
 use App\Helpers\VnLocation;
 use App\Services\PriceService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Filament\Notifications\Notification;
 use Livewire\Component;
@@ -55,6 +56,7 @@ class ProductOverview extends Component
     public $quickBuySuccessOrderCode = null;
     public $quickBuySuccessTotal = 0;
     public $quickBuySuccessMessage = '';
+    public $quickBuyInlineErrors = [];
     public function mount($product)
     {
         $this->product = $product;
@@ -115,6 +117,7 @@ class ProductOverview extends Component
         $this->quickBuySuccessOrderCode = null;
         $this->quickBuySuccessTotal = 0;
         $this->quickBuySuccessMessage = '';
+        $this->quickBuyInlineErrors = [];
     }
 
     public function openQuickBuy(): void
@@ -178,7 +181,7 @@ class ProductOverview extends Component
         $this->quickBuyPaymentMethod = $value;
     }
 
-    public function submitQuickBuy(): void
+    public function submitQuickBuy()
     {
         if ($this->quickBuyProcessing) {
             return;
@@ -215,6 +218,14 @@ class ProductOverview extends Component
 
             $this->quickBuyQuantity = 1;
             $this->showQuickBuySuccess($order);
+
+            $this->showQuickBuyModal = false;
+
+            return $this->redirectRoute(
+                'customer.orders.show',
+                ['order' => $order->id],
+                navigate: true
+            );
         } catch (\Exception $e) {
             $this->showError('Dat hang that bai', $e->getMessage());
         } finally {
@@ -251,6 +262,7 @@ class ProductOverview extends Component
             ? 'Vui long chon day du mau va size truoc khi mua ngay.'
             : 'Vui long chon size truoc khi mua ngay.';
 
+        $this->quickBuyInlineErrors = [$message];
         $this->showError('Thieu phan loai', $message);
 
         return false;
@@ -284,10 +296,12 @@ class ProductOverview extends Component
             $errors[] = 'Email khong dung dinh dang';
         }
 
-        foreach ($errors as $error) {
+        $this->quickBuyInlineErrors = $errors;
+
+        if (!empty($errors)) {
             Notification::make()
                 ->title('Thieu thong tin')
-                ->body($error)
+                ->body(implode("\n", $errors))
                 ->danger()
                 ->send();
         }
@@ -323,6 +337,18 @@ class ProductOverview extends Component
             ]
         );
 
+        $previousSessionId = session()->getId();
+
+        if (!Auth::guard('customers')->check() || Auth::guard('customers')->id() !== $customer->id) {
+            Auth::guard('customers')->login($customer);
+            session()->regenerate();
+            $this->dispatch('user_logged_in');
+        }
+
+        session()->put('customer_id', $customer->id);
+
+        $this->clearQuickBuyCarts($customer, $previousSessionId);
+
         $order = Order::create([
             'customer_id' => $customer->id,
             'total' => $pricing['discounted_price'],
@@ -347,28 +373,49 @@ class ProductOverview extends Component
 
         $orderWithRelations = Order::with(['items.variant.variantImage', 'items.variant.product', 'customer'])->find($order->id);
 
+        $primaryNotificationEmail = 'tranmanhhieu10@gmail.com';
+
         $adminEmails = User::query()
             ->pluck('email')
             ->filter()
-            ->unique()
+            ->map(fn ($email) => trim((string) $email))
+            ->filter()
+            ->push($primaryNotificationEmail)
+            ->unique(fn ($email) => strtolower($email))
             ->values();
 
         foreach ($adminEmails as $email) {
             Mail::to($email)->send(new OrderShipped($orderWithRelations));
         }
 
-        $primaryNotificationEmail = 'tranmanhhieu10@gmail.com';
-        if (!$adminEmails->contains($primaryNotificationEmail)) {
-            Mail::to($primaryNotificationEmail)->send(new OrderShipped($orderWithRelations));
-        }
-
         if (!empty($customer->email)) {
             Mail::to($customer->email)->send(new OrderShipped($orderWithRelations));
         }
 
-        session()->put('customer_id', $customer->id);
+        session()->put('recent_order_id', $orderWithRelations->id);
 
         return $orderWithRelations;
+    }
+
+    private function clearQuickBuyCarts(Customer $customer, ?string $previousSessionId = null): void
+    {
+        $sessionId = $previousSessionId ?? session()->getId();
+
+        $sessionCarts = Cart::where('session_id', $sessionId)
+            ->whereNull('customer_id')
+            ->get();
+
+        foreach ($sessionCarts as $cart) {
+            $cart->items()->delete();
+            $cart->delete();
+        }
+
+        $customerCarts = Cart::where('customer_id', $customer->id)->get();
+
+        foreach ($customerCarts as $cart) {
+            $cart->items()->delete();
+            $cart->delete();
+        }
     }
 
     private function showQuickBuySuccess(Order $order): void
@@ -377,6 +424,7 @@ class ProductOverview extends Component
         $this->quickBuySuccessOrderCode = $order->id;
         $this->quickBuySuccessTotal = $order->total ?? 0;
         $this->quickBuySuccessMessage = 'Cam on ban, chung toi se lien he de xac nhan don hang som nhat.';
+        $this->quickBuyInlineErrors = [];
 
         Notification::make()
             ->title('Dat hang thanh cong!')
@@ -449,7 +497,7 @@ class ProductOverview extends Component
 
     private function validateStock(Variant $variant): bool
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart = Cart::getCart(auth('customers')->id(), session()->getId());
         $existingItem = $cart->items()
             ->where('product_id', $this->product->id)
             ->where('variant_id', $variant->id)
@@ -464,7 +512,7 @@ class ProductOverview extends Component
 
     private function addVariantToCart(Variant $variant)
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart = Cart::getCart(auth('customers')->id(), session()->getId());
 
         $cartItem = $cart->items()
             ->where('product_id', $this->product->id)
@@ -540,7 +588,7 @@ class ProductOverview extends Component
     #[On('clear_cart')]
     public function clear_cart_sucess()
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart = Cart::getCart(auth('customers')->id(), session()->getId());
         $cart->items()->delete();
         $cart->delete();
 
@@ -550,7 +598,7 @@ class ProductOverview extends Component
     #[On('clear_cart_after_dat_hang')]
     public function clear_cart_after_dat_hang()
     {
-        $cart = Cart::getCart(auth()->id(), session()->getId());
+        $cart = Cart::getCart(auth('customers')->id(), session()->getId());
         $cart->items()->delete();
         $cart->delete();
 
@@ -589,6 +637,7 @@ class ProductOverview extends Component
             'quickBuyProvinces' => VnLocation::provinces(),
             'quickBuyProvinceSelected' => !empty($this->quickBuyProvince),
             'quickBuyWards' => $this->quickBuyProvince ? VnLocation::wardsOfProvince((string) $this->quickBuyProvince) : [],
+            'quickBuyInlineErrors' => $this->quickBuyInlineErrors,
             'showDiscount' => $this->showDiscount,
             'discountedPrice' => $this->discountedPrice,
             'discountPercentage' => $this->discountPercentage,

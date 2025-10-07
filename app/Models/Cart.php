@@ -14,6 +14,7 @@ class Cart extends Model
 
     protected $fillable = [
         'user_id',
+        'customer_id',
         'session_id',
         'total_amount',
         'original_total_amount',
@@ -34,12 +35,22 @@ class Cart extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Helper method để lấy hoặc tạo giỏ hàng
-    public static function getCart($userId = null, $sessionId = null)
+    public function customer(): BelongsTo
     {
-        if ($userId) {
-            return self::firstOrCreate(['user_id' => $userId]);
+        return $this->belongsTo(Customer::class);
+    }
+
+    // Helper method để lấy hoặc tạo giỏ hàng
+    public static function getCart($customerId = null, $sessionId = null)
+    {
+        if ($customerId) {
+            return self::firstOrCreate(['customer_id' => $customerId]);
         }
+
+        if (!$sessionId) {
+            throw new \InvalidArgumentException('Cart::getCart requires either customerId or sessionId.');
+        }
+
         return self::firstOrCreate(['session_id' => $sessionId]);
     }
 

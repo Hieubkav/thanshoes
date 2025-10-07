@@ -7,7 +7,7 @@
             <!-- Modal header -->
             <div class="flex items-center justify-between p-5 border-b rounded-t dark:border-gray-600">
                 <h3 class="text-2xl font-semibold text-gray-900 dark:text-white">
-                    @auth
+                    @auth('customers')
                         Thông tin tài khoản
                     @else
                         Thông tin khách hàng
@@ -25,39 +25,52 @@
             </div>
             <!-- Modal body -->
             <div class="p-6 space-y-6 text-gray-700 dark:text-gray-300">
-                @auth
+                @auth('customers')
+                    @if(($pendingOrdersCount ?? 0) > 0)
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm flex items-start gap-2">
+                            <i class="fas fa-exclamation-triangle mt-0.5"></i>
+                            <div>
+                                <p class="font-semibold">Đơn hàng đang xử lý</p>
+                                <p>Bạn còn {{ $pendingOrdersCount }} đơn hàng chưa hoàn thành. Theo dõi để nhận cập nhật giao hàng nhé.</p>
+                                <a href="{{ route('customer.orders.index') }}" class="mt-2 inline-flex items-center gap-1 text-amber-900 font-semibold hover:text-amber-700">
+                                    Xem tất cả đơn
+                                    <i class="fas fa-arrow-right text-xs"></i>
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                     <!-- Thông tin từ Customer đã đăng nhập -->
                     <div class="flex items-center space-x-4">
                         <i class="fas fa-user-circle text-3xl text-blue-600"></i>
                         <div>
                             <p class="font-semibold">Tên khách hàng</p>
-                            <p>{{ Auth::user()->name }}</p>
+                            <p>{{ auth('customers')->user()->name }}</p>
                         </div>
                     </div>
-                    @if(Auth::user()->email)
+                    @if(auth('customers')->user()->email)
                         <div class="flex items-center space-x-4">
                             <i class="fas fa-envelope text-3xl text-red-600"></i>
                             <div>
                                 <p class="font-semibold">Email</p>
-                                <p>{{ Auth::user()->email }}</p>
+                                <p>{{ auth('customers')->user()->email }}</p>
                             </div>
                         </div>
                     @endif
-                    @if(Auth::user()->phone)
+                    @if(auth('customers')->user()->phone)
                         <div class="flex items-center space-x-4">
                             <i class="fas fa-phone-alt text-3xl text-green-600"></i>
                             <div>
                                 <p class="font-semibold">Số điện thoại</p>
-                                <p>{{ Auth::user()->phone }}</p>
+                                <p>{{ auth('customers')->user()->phone }}</p>
                             </div>
                         </div>
                     @endif
-                    @if(Auth::user()->address)
+                    @if(auth('customers')->user()->address)
                         <div class="flex items-center space-x-4">
                             <i class="fas fa-map-marker-alt text-3xl text-yellow-600"></i>
                             <div>
                                 <p class="font-semibold">Địa chỉ</p>
-                                <p>{{ Auth::user()->address }}</p>
+                                <p>{{ auth('customers')->user()->address }}</p>
                             </div>
                         </div>
                     @endif

@@ -29,8 +29,13 @@ class CartResource extends Resource
                 Forms\Components\Section::make('Thông tin giỏ hàng')
                     ->schema([
                         Forms\Components\Select::make('user_id')
-                            ->label('Người dùng')
+                            ->label('Người dùng (Admin)')
                             ->relationship('user', 'name')
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\Select::make('customer_id')
+                            ->label('Khách hàng')
+                            ->relationship('customer', 'name')
                             ->searchable()
                             ->preload(),
                         Forms\Components\TextInput::make('session_id')
@@ -58,11 +63,17 @@ class CartResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Người dùng')
+                Tables\Columns\TextColumn::make('customer.name')
+                    ->label('Khách hàng')
                     ->searchable()
                     ->sortable()
                     ->placeholder('Khách vãng lai'),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Người dùng (Admin)')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('---')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('session_id')
                     ->label('Session ID')
                     ->searchable()
@@ -96,12 +107,12 @@ class CartResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                Tables\Filters\Filter::make('has_user')
-                    ->label('Có tài khoản')
-                    ->query(fn (Builder $query): Builder => $query->whereNotNull('user_id')),
+                Tables\Filters\Filter::make('has_customer')
+                    ->label('Khách đã đăng nhập')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('customer_id')),
                 Tables\Filters\Filter::make('guest')
                     ->label('Khách vãng lai')
-                    ->query(fn (Builder $query): Builder => $query->whereNull('user_id')),
+                    ->query(fn (Builder $query): Builder => $query->whereNull('customer_id')),
                 Tables\Filters\Filter::make('has_items')
                     ->label('Có sản phẩm')
                     ->query(fn (Builder $query): Builder => $query->has('items')),
@@ -145,7 +156,7 @@ class CartResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['user', 'items'])
+            ->with(['user', 'customer', 'items'])
             ->withCount('items');
     }
 }

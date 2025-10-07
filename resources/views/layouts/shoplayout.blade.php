@@ -76,6 +76,11 @@
         .animate-fade-in-down {
             animation: fade-in-down 0.5s ease-out;
         }
+
+        .fi-notifications,
+        .fi-notifications .fi-notification {
+            z-index: 120 !important;
+        }
     </style>
 
     @filamentStyles
@@ -88,7 +93,7 @@
 
 <!-- Flash Messages -->
 @if(session('success'))
-    <div class="fixed top-24 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-xl shadow-soft-lg border border-green-400 animate-fade-in-down">
+    <div class="fixed top-24 right-4 z-[80] bg-green-500 text-white px-6 py-3 rounded-xl shadow-soft-lg border border-green-400 animate-fade-in-down">
         <div class="flex items-center">
             <i class="fas fa-check-circle mr-2"></i>
             {{ session('success') }}
@@ -97,7 +102,7 @@
 @endif
 
 @if(session('error'))
-    <div class="fixed top-24 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-xl shadow-soft-lg border border-red-400 animate-fade-in-down">
+    <div class="fixed top-24 right-4 z-[80] bg-red-500 text-white px-6 py-3 rounded-xl shadow-soft-lg border border-red-400 animate-fade-in-down">
         <div class="flex items-center">
             <i class="fas fa-exclamation-circle mr-2"></i>
             {{ session('error') }}

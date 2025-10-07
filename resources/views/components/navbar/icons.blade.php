@@ -1,3 +1,4 @@
+@props(['cartCount' => 0, 'pendingOrdersCount' => 0])
 <!-- Modern Navigation Icons -->
 <div class="flex items-center space-x-4">
     <!-- Extended Search Bar -->
@@ -34,19 +35,30 @@
                 data-dropdown-toggle="dropdown_user">
             <i class="fas fa-user text-neutral-600 group-hover:text-primary-600 transition-colors duration-200 text-lg"></i>
             <div class="absolute inset-0 rounded-xl bg-primary-500/10 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+            @if($pendingOrdersCount > 0)
+                <span class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-semibold text-white shadow">
+                    {{ $pendingOrdersCount > 9 ? '9+' : $pendingOrdersCount }}
+                </span>
+            @endif
         </button>
 
         <!-- Modern Dropdown Menu -->
         <div id="dropdown_user"
              class="z-50 hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-soft-lg border border-neutral-200/50 overflow-hidden">
             <div class="py-2">
-                @auth
+                @auth('customers')
                     <!-- Authenticated Customer Menu -->
                     <div class="px-4 py-3 border-b border-neutral-100">
-                        <p class="text-sm font-semibold text-neutral-900">{{ Auth::user()->name }}</p>
+                        <p class="text-sm font-semibold text-neutral-900">{{ auth('customers')->user()->name }}</p>
                         <p class="text-xs text-neutral-500">
-                            {{ Auth::user()->email ?: Auth::user()->phone }}
+                            {{ auth('customers')->user()->email ?: auth('customers')->user()->phone }}
                         </p>
+                        @if($pendingOrdersCount > 0)
+                            <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>Bạn có {{ $pendingOrdersCount }} đơn hàng chưa hoàn tất.</span>
+                            </div>
+                        @endif
                     </div>
 
                     <a href="#"
