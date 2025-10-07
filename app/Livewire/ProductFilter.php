@@ -2,9 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\Product;
-use App\Models\Setting;
 use App\Models\Tag;
+use App\Services\ProductCacheService;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Request;
@@ -129,7 +128,8 @@ class ProductFilter extends Component
 
     public function render()
     {
-        $query = Product::query()->where('name', 'like', '%' . $this->search . '%');
+        $query = ProductCacheService::queryWithEagerLoads()
+            ->where('name', 'like', '%' . $this->search . '%');
         
         // Lấy những sản phẩm có số lượng lớn hơn 0
         $query->whereHas('variants', function ($q) {
@@ -137,14 +137,7 @@ class ProductFilter extends Component
         });
 
         // Lọc bỏ các sản phẩm bị cấm
-        $setting = Setting::first();
-        $bannedNames = array_filter([
-            $setting->ban_name_product_one,
-            $setting->ban_name_product_two,
-            $setting->ban_name_product_three,
-            $setting->ban_name_product_four,
-            $setting->ban_name_product_five
-        ]);
+        $bannedNames = ProductCacheService::getBannedNames();
         
         foreach($bannedNames as $bannedName) {
             if(!empty($bannedName)) {
@@ -200,7 +193,7 @@ class ProductFilter extends Component
             $query = $query->orderBy('updated_at', 'desc');
         } elseif ($this->sort === 'price_asc') {
             $query = $query->with(['variants' => function ($q) {
-                $q->orderBy('price', 'asc');
+                $q->with('variantImage')->orderBy('price', 'asc');
             }])->orderBy(function ($q) {
                 $q->selectRaw('MIN(price)')
                     ->from('variants')
@@ -208,7 +201,7 @@ class ProductFilter extends Component
             }, 'asc');
         } elseif ($this->sort === 'price_desc') {
             $query = $query->with(['variants' => function ($q) {
-                $q->orderBy('price', 'desc');
+                $q->with('variantImage')->orderBy('price', 'desc');
             }])->orderBy(function ($q) {
                 $q->selectRaw('MIN(price)')
                     ->from('variants')

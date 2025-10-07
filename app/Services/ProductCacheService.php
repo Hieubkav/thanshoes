@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\WebsiteDesign;
 use App\Models\Post;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 
@@ -21,12 +22,32 @@ class ProductCacheService
     public static function getHomepageProducts(): Collection
     {
         return Cache::remember('homepage_products_v2', self::CACHE_TTL, function () {
-            return Product::with([
-                'variants' => function ($query) {
-                    $query->with('variantImage');
-                }
-            ])->get();
+            return self::queryWithEagerLoads()->get();
         });
+    }
+
+    /**
+     * Base query for products with consistent eager loading
+     */
+    public static function queryWithEagerLoads(): Builder
+    {
+        return Product::query()->with(self::eagerLoadRelations());
+    }
+
+    /**
+     * Define eager loads used across the cache service
+     */
+    public static function eagerLoadRelations(): array
+    {
+        return [
+            'variants' => function ($query) {
+                $query->with('variantImage');
+            },
+            'productImages' => function ($query) {
+                $query->ordered();
+            },
+            'tags',
+        ];
     }
 
     /**

@@ -1,6 +1,6 @@
 @php
-    use App\Models\Product;
-    $products = Product::all();
+    use App\Services\ProductCacheService;
+    $products = ProductCacheService::getHomepageProducts();
 
     $brands = $products->pluck('brand')->filter()->unique();
     $types = $products->pluck('type')->filter()->unique();

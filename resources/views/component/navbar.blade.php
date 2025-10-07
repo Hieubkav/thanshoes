@@ -1,6 +1,6 @@
 @php
-    use App\Models\Product;
-    $products = Product::all();
+    use App\Services\ProductCacheService;
+    $products = ProductCacheService::getHomepageProducts();
 
     // Lấy ra danh sách những thuộc tính khác nhau có thể có của product->brand trừ rỗng
     $brands = $products->pluck('brand')->filter()->unique();

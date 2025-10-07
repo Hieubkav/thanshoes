@@ -9,9 +9,9 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
 use App\Services\PriceService;
+use App\Services\ProductCacheService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 use Livewire\Attributes\On;
 
@@ -257,9 +257,7 @@ class Navbar extends Component
 
     private function loadProducts()
     {
-        $this->products = Cache::remember('all_products', 3600, function () {
-            return Product::all();
-        });
+        $this->products = ProductCacheService::getHomepageProducts();
 
         $this->brands = $this->products->pluck('brand')->filter()->unique();
         $this->types = $this->products->pluck('type')->filter()->unique();

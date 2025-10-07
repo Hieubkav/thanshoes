@@ -1,7 +1,5 @@
 @php
     use App\Helpers\PriceHelper;
-    use App\Models\Setting;
-    $settings = Setting::first();
     $discountType = PriceHelper::getDiscountType();
     $discountPercent = PriceHelper::getDiscountPercentage();
 @endphp
