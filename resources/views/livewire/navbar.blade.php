@@ -23,23 +23,36 @@
 
         <!-- Top Section: Logo + Search + Icons -->
         <div class="border-b border-neutral-100">
-            <div class="flex items-center justify-between mx-auto max-w-screen-xl px-2.5 py-1 lg:py-1.5 gap-3.5">
+            <div class="flex items-center justify-between mx-auto max-w-screen-xl px-2.5 py-2 lg:py-1.5 gap-3.5">
                 <!-- Left: Mobile Menu + Logo -->
-                <div class="flex items-center space-x-4 flex-shrink-0">
-                    <!-- Mobile Menu Button -->
+                <div class="flex items-center space-x-3 flex-1 lg:flex-initial">
+                    <!-- Mobile Menu Button - Optimized for touch -->
                     <button id="mobile-menu-button" type="button"
-                            class="lg:hidden p-2 rounded-xl hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            class="lg:hidden p-2.5 sm:p-3 rounded-xl hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
                         </svg>
                     </button>
 
-                    <!-- Logo -->
+                    <!-- Logo - Mobile Optimized -->
                     @include('components.navbar.logo')
                 </div>
 
-                <!-- Center + Right: Search Bar + Icons -->
-                <div class="flex items-center flex-1 justify-end">
+                <!-- Mobile-centered Search (hidden on larger screens) -->
+                <div class="flex-1 max-w-xs mx-auto hidden md:flex justify-center">
+                    <div class="relative group w-full">
+                        <button type="button"
+                                class="w-full flex items-center space-x-2 px-3 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 hover:border-primary-300 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                                data-modal-target="search_modal"
+                                data-modal-toggle="search_modal">
+                            <i class="fas fa-search text-neutral-500 group-hover:text-primary-600 transition-colors duration-200 text-sm"></i>
+                            <span class="text-neutral-500 group-hover:text-neutral-700 transition-colors duration-200 flex-1 text-left text-sm">Tìm kiếm...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Icons -->
+                <div class="flex items-center gap-1 sm:gap-2">
                     <x-navbar.icons :cart-count="$cartCount" :pending-orders-count="$pendingOrdersCount" />
                 </div>
             </div>

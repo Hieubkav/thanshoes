@@ -1,6 +1,6 @@
 @props(['cartCount' => 0, 'pendingOrdersCount' => 0])
 <!-- Modern Navigation Icons -->
-<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-2 sm:space-x-4">
     <!-- Extended Search Bar -->
     <div class="relative group hidden sm:block">
         <button type="button"
@@ -17,13 +17,13 @@
         </button>
     </div>
 
-    <!-- Mobile Search Icon -->
+    <!-- Mobile Search Icon (optimized touch targets) -->
     <div class="relative group sm:hidden">
         <button type="button"
-                class="group relative p-3 rounded-xl hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                class="group relative p-2.5 sm:p-3 rounded-xl hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 data-modal-target="search_modal"
                 data-modal-toggle="search_modal">
-            <i class="fas fa-search text-neutral-600 group-hover:text-primary-600 transition-colors duration-200"></i>
+            <i class="fas fa-search text-neutral-600 group-hover:text-primary-600 transition-colors duration-200 text-sm sm:text-base"></i>
             <div class="absolute inset-0 rounded-xl bg-primary-500/10 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
         </button>
     </div>
@@ -31,9 +31,9 @@
     <!-- User Dropdown -->
     <div class="relative">
         <button type="button"
-                class="group relative p-3 rounded-xl hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                class="group relative p-2.5 sm:p-3 rounded-xl hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 data-dropdown-toggle="dropdown_user">
-            <i class="fas fa-user text-neutral-600 group-hover:text-primary-600 transition-colors duration-200 text-lg"></i>
+            <i class="fas fa-user text-neutral-600 group-hover:text-primary-600 transition-colors duration-200 text-sm sm:text-base"></i>
             <div class="absolute inset-0 rounded-xl bg-primary-500/10 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
             @if($pendingOrdersCount > 0)
                 <span class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-semibold text-white shadow">
@@ -126,14 +126,14 @@
 
     <!-- Cart Button -->
     <button type="button"
-            class="group relative p-3 rounded-xl hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            class="group relative p-2.5 sm:p-3 rounded-xl hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             data-drawer-target="drawer_cart"
             data-drawer-show="drawer_cart"
             data-drawer-backdrop="false"
             data-drawer-placement="right"
             aria-controls="drawer_cart"
             data-drawer-body-scrolling="true">
-        <i class="fas fa-shopping-bag text-neutral-600 group-hover:text-primary-600 transition-colors duration-200 text-lg"></i>
+        <i class="fas fa-shopping-bag text-neutral-600 group-hover:text-primary-600 transition-colors duration-200 text-sm sm:text-base"></i>
 
         <!-- Cart Count Badge -->
         @if($cartCount > 0)

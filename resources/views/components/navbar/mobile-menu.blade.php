@@ -13,6 +13,14 @@
         bottom: 0 !important;
     }
 
+    /* Optimized for smaller mobile screens */
+    @media (max-width: 380px) {
+        .mobile-sidebar-content {
+            width: 85% !important;
+            max-width: none !important;
+        }
+    }
+
     #mobile-menu-backdrop {
         background: rgba(0, 0, 0, 0.6) !important;
         backdrop-filter: blur(4px);
@@ -64,28 +72,28 @@
     <div id="mobile-menu-backdrop"></div>
 
     <!-- Sidebar Content -->
-    <div class="mobile-sidebar-content w-3/4 max-w-xs h-full bg-white dark:bg-gray-800 shadow-2xl overflow-y-auto">
+    <div class="mobile-sidebar-content w-3/4 sm:w-80 max-w-xs h-full bg-white dark:bg-gray-800 shadow-2xl overflow-y-auto">
         <!-- Modern Header -->
-        <div class="p-6 bg-gradient-to-r from-primary-50 to-accent border-b border-neutral-200">
+        <div class="p-4 sm:p-6 bg-gradient-to-r from-primary-50 to-accent border-b border-neutral-200">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
-                        <i class="fas fa-bars text-white"></i>
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-primary-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-bars text-white text-sm sm:text-base"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-neutral-900">Menu</h2>
-                        <p class="text-sm text-neutral-600">Danh mục sản phẩm</p>
+                        <h2 class="text-lg sm:text-xl font-bold text-neutral-900">Menu</h2>
+                        <p class="text-xs sm:text-sm text-neutral-600">Danh mục sản phẩm</p>
                     </div>
                 </div>
                 <button id="close-mobile-menu"
-                        class="w-10 h-10 rounded-full bg-white/80 hover:bg-white text-neutral-500 hover:text-neutral-700 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md">
-                    <i class="fas fa-times text-lg"></i>
+                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white text-neutral-500 hover:text-neutral-700 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md">
+                    <i class="fas fa-times text-sm sm:text-lg"></i>
                 </button>
             </div>
         </div>
         
-        <nav class="p-6">
-            <ul class="space-y-3">
+        <nav class="p-3 sm:p-6">
+            <ul class="space-y-2 sm:space-y-3">
                 <!-- Mobile Menu Items -->
                 <li>
                     <a href="{{ route('shop.cat_filter') }}"
