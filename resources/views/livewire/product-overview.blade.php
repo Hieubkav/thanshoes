@@ -3,42 +3,87 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-wrap -mx-4">
                 <!-- Phần hình ảnh sản phẩm -->
+                @php
+                    $productGalleryImages = [];
+
+                    if (!empty($main_image)) {
+                        $productGalleryImages[] = $main_image;
+                    }
+
+                    foreach ($list_images_product as $galleryItem) {
+                        $resolvedImage = $galleryItem->type === 'variant'
+                            ? $galleryItem->image
+                            : asset('storage/' . $galleryItem->image);
+
+                        if ($resolvedImage && !in_array($resolvedImage, $productGalleryImages, true)) {
+                            $productGalleryImages[] = $resolvedImage;
+                        }
+                    }
+                @endphp
                 <div class="w-full md:w-1/2 px-4 mb-8">
-                    <div class="relative">
-                        <img id="mainImage" src="{{ $main_image }}" alt="Product Image"
-                            loading="lazy"
-                            class="w-full h-auto rounded-lg shadow-md mb-4 object-cover cursor-pointer"
-                            onclick="openImageGalleryFromMain()">
+                    <div class="relative rounded-2xl bg-white dark:bg-gray-900 shadow-lg overflow-hidden">
                         @if ($product->variants->min('price') >= 500000)
-                            <div class="absolute top-0 left-0 bg-blue-500 text-white px-2 py-1 rounded-br-lg">
+                            <div class="absolute top-3 left-3 z-20 bg-blue-500 text-white text-sm font-semibold px-3 py-1 rounded-full shadow-md">
                                 Freeship
                             </div>
                         @endif
                         @if($globalDiscountPercent > 0)
-                        <div class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded-bl-lg">
-                            @if($globalDiscountType === 'percent')
-                                -{{ $globalDiscountPercent }}%
-                            @else
-                                -{{ number_format($globalDiscountPercent, 0, ',', '.') }}đ
-                            @endif
-                        </div>
+                            <div class="absolute top-3 right-3 z-20 bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-full shadow-md">
+                                @if($globalDiscountType === 'percent')
+                                    -{{ $globalDiscountPercent }}%
+                                @else
+                                    -{{ number_format($globalDiscountPercent, 0, ',', '.') }}đ
+                                @endif
+                            </div>
                         @endif
+                        <div id="productImageWrapper"
+                            class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth pb-6 touch-pan-x gap-4 px-4 md:hidden"
+                            style="-ms-overflow-style: none; scrollbar-width: none;">
+                            @foreach ($productGalleryImages as $index => $imageSrc)
+                                <figure class="relative flex-shrink-0 w-[82%] snap-center">
+                                    <img src="{{ $imageSrc }}"
+                                        loading="lazy"
+                                        alt="Hình sản phẩm {{ $product->name }}"
+                                        class="w-full h-auto object-cover cursor-pointer select-none transition-transform duration-300 hover:scale-[1.01]"
+                                        data-gallery-index="{{ $index }}"
+                                        draggable="false">
+                                </figure>
+                            @endforeach
+                        </div>
+                        <figure class="hidden md:block">
+                            <img id="desktopMainImage"
+                                src="{{ $productGalleryImages[0] ?? $main_image }}"
+                                alt="Hình sản phẩm {{ $product->name }}"
+                                loading="lazy"
+                                class="w-full h-auto object-cover cursor-pointer select-none transition-transform duration-300 hover:scale-[1.01] rounded-2xl">
+                        </figure>
+                        <button
+                            id="mainSliderPrev"
+                            type="button"
+                            class="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg transition hover:bg-white dark:bg-gray-800/90 dark:text-gray-200 md:hidden">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <button
+                            id="mainSliderNext"
+                            type="button"
+                            class="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg transition hover:bg-white dark:bg-gray-800/90 dark:text-gray-200 md:hidden">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
                     </div>
-                    <div class="flex gap-4 py-4 overflow-x-auto">
-                        @foreach ($list_images_product as $index => $item)
-                            @if ($item->type == 'variant')
-                                <img src="{{ $item->image }}"
+                    <div class="hidden md:flex gap-4 py-4 overflow-x-auto">
+                        @foreach ($productGalleryImages as $index => $imageSrc)
+                            <button type="button"
+                                class="desktop-thumbnail relative flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-transparent bg-white opacity-80 shadow transition-all duration-300 hover:border-blue-300 hover:opacity-100"
+                                data-desktop-thumbnail="{{ $index }}">
+                                <img src="{{ $imageSrc }}"
+                                    alt="Ảnh {{ $index + 1 }} - {{ $product->name }}"
                                     loading="lazy"
-                                    class="w-20 h-20 object-cover rounded-md hover:opacity-90 transition duration-300 cursor-pointer border-2 border-transparent hover:border-blue-300"
-                                    onclick="changeImage('{{ $item->image }}')"
-                                    data-gallery-index="{{ $index }}">
-                            @else
-                                <img src="{{ asset('storage/' . $item->image) }}"
-                                    loading="lazy"
-                                    class="w-20 h-20 object-cover rounded-md hover:opacity-90 transition duration-300 cursor-pointer border-2 border-transparent hover:border-blue-300"
-                                    onclick="changeImage('{{ asset('storage/' . $item->image) }}')"
-                                    data-gallery-index="{{ $index }}">
-                            @endif
+                                    class="h-full w-full object-cover">
+                            </button>
                         @endforeach
                     </div>
                 </div>
@@ -667,80 +712,42 @@
 
 @push('scripts')
 <script>
-        // Gallery data
         let galleryImages = [];
         let currentGalleryIndex = 0;
+        let productImageSlider = null;
+        let sliderSlides = [];
+        let sliderScrollTimeout = null;
+        let isProgrammaticSliderScroll = false;
+        let desktopMainImage = null;
+        let desktopThumbnails = [];
 
-        // Initialize gallery images from PHP data
         document.addEventListener('DOMContentLoaded', function() {
-            // Collect all product images including main image
-            galleryImages = [];
+            const initialImages = @json($productGalleryImages);
+            galleryImages = Array.isArray(initialImages) ? initialImages.slice() : [];
 
-            // Add main image first if it exists
-            const mainImageSrc = "{{ $main_image }}";
-            if (mainImageSrc) {
-                galleryImages.push(mainImageSrc);
-            }
-
-            // Add other product images
-            const productImages = [
-                @foreach ($list_images_product as $item)
-                    @if ($item->type == 'variant')
-                        "{{ $item->image }}",
-                    @else
-                        "{{ asset('storage/' . $item->image) }}",
-                    @endif
-                @endforeach
-            ];
-
-            // Add unique images only
-            productImages.forEach(img => {
-                if (img && !galleryImages.includes(img)) {
-                    galleryImages.push(img);
-                }
-            });
-
-            // Register Livewire event hooks
-            Livewire.on('colorSelected', (data) => {
-                console.log(data[0]);
-            });
-
-            Livewire.on('sizeSelected', (data) => {
-                console.log(data[0]);
-            });
-
-            Livewire.on('checkcolorfirst', () => {
-                alert('Vui lòng ch?n phân m?c ? trên tru?c');
-            });
-
-            // Setup event listeners
+            registerLivewireEvents();
+            initializeMainImageSlider();
+            initializeDesktopGallery();
             setupGalleryEventListeners();
         });
 
-        function changeImage(src) {
-            document.getElementById('mainImage').src = src;
-        }
-
-        function openImageGalleryFromMain() {
-            // Find the index of current main image in gallery
-            const mainImageSrc = document.getElementById('mainImage').src;
-            const index = galleryImages.findIndex(img => img === mainImageSrc);
-            openImageGallery(index >= 0 ? index : 0);
+        function openImageGalleryFromMain(index) {
+            const targetIndex = typeof index === 'number' ? index : currentGalleryIndex;
+            openImageGallery(targetIndex);
         }
 
         function openImageGallery(index = 0) {
-            currentGalleryIndex = index;
-            const modal = document.getElementById('imageGalleryModal');
-            const mainImage = document.getElementById('galleryMainImage');
+            if (!galleryImages.length) {
+                return;
+            }
 
-            // Show modal
+            currentGalleryIndex = (index + galleryImages.length) % galleryImages.length;
+            const modal = document.getElementById('imageGalleryModal');
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
-            // Update image and counter
             updateGalleryImage();
-
-            // Prevent body scroll
             document.body.style.overflow = 'hidden';
         }
 
@@ -748,39 +755,50 @@
             const modal = document.getElementById('imageGalleryModal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-
-            // Restore body scroll
             document.body.style.overflow = 'auto';
         }
 
         function nextImage() {
+            if (!galleryImages.length) {
+                return;
+            }
+
             currentGalleryIndex = (currentGalleryIndex + 1) % galleryImages.length;
             updateGalleryImage();
         }
 
         function previousImage() {
+            if (!galleryImages.length) {
+                return;
+            }
+
             currentGalleryIndex = (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
             updateGalleryImage();
         }
 
         function updateGalleryImage() {
+            if (!galleryImages.length) {
+                return;
+            }
+
             const mainImage = document.getElementById('galleryMainImage');
             const currentIndexSpan = document.getElementById('currentImageIndex');
             const totalImagesSpan = document.getElementById('totalImages');
 
-            // Update main image
             mainImage.src = galleryImages[currentGalleryIndex];
-
-            // Update counter
             currentIndexSpan.textContent = currentGalleryIndex + 1;
             totalImagesSpan.textContent = galleryImages.length;
 
-            // Update thumbnails
             updateGalleryThumbnails();
+            syncSliderWithGallery();
         }
 
         function updateGalleryThumbnails() {
             const thumbnailContainer = document.getElementById('galleryThumbnails');
+            if (!thumbnailContainer) {
+                return;
+            }
+
             thumbnailContainer.innerHTML = '';
 
             galleryImages.forEach((imageSrc, index) => {
@@ -798,35 +816,34 @@
         }
 
         function setupGalleryEventListeners() {
-            // Keyboard navigation
             document.addEventListener('keydown', function(e) {
                 const modal = document.getElementById('imageGalleryModal');
-                if (!modal.classList.contains('hidden')) {
-                    switch(e.key) {
-                        case 'Escape':
-                            closeImageGallery();
-                            break;
-                        case 'ArrowLeft':
-                            previousImage();
-                            break;
-                        case 'ArrowRight':
-                            nextImage();
-                            break;
-                    }
+                if (!modal || modal.classList.contains('hidden')) {
+                    return;
+                }
+
+                switch (e.key) {
+                    case 'Escape':
+                        closeImageGallery();
+                        break;
+                    case 'ArrowLeft':
+                        previousImage();
+                        break;
+                    case 'ArrowRight':
+                        nextImage();
+                        break;
                 }
             });
 
-            // Close modal when clicking outside the image
             const modal = document.getElementById('imageGalleryModal');
             if (modal) {
                 modal.addEventListener('click', function(e) {
-                    if (e.target === this) {
+                    if (e.target === modal) {
                         closeImageGallery();
                     }
                 });
             }
 
-            // Touch swipe support for mobile
             const galleryMainImage = document.getElementById('galleryMainImage');
             if (galleryMainImage) {
                 galleryMainImage.addEventListener('touchstart', function(e) {
@@ -840,7 +857,272 @@
             }
         }
 
-        // Touch swipe variables
+        function initializeMainImageSlider() {
+            productImageSlider = document.getElementById('productImageWrapper');
+            const prevButton = document.getElementById('mainSliderPrev');
+            const nextButton = document.getElementById('mainSliderNext');
+
+            if (!productImageSlider) {
+                return;
+            }
+
+            sliderSlides = Array.from(productImageSlider.querySelectorAll('[data-gallery-index]'));
+            attachSliderTapHandlers();
+
+            if (sliderSlides.length <= 1) {
+                if (prevButton) {
+                    prevButton.style.display = 'none';
+                }
+                if (nextButton) {
+                    nextButton.style.display = 'none';
+                }
+            } else {
+                if (prevButton) {
+                    prevButton.style.display = '';
+                    prevButton.addEventListener('click', () => navigateMainSlider(-1));
+                }
+                if (nextButton) {
+                    nextButton.style.display = '';
+                    nextButton.addEventListener('click', () => navigateMainSlider(1));
+                }
+            }
+
+            updateMainSliderState(0);
+
+            productImageSlider.addEventListener('scroll', () => {
+                if (isProgrammaticSliderScroll) {
+                    return;
+                }
+
+                if (sliderScrollTimeout) {
+                    clearTimeout(sliderScrollTimeout);
+                }
+
+                sliderScrollTimeout = setTimeout(() => {
+                    const activeIndex = findActiveSliderIndex();
+                    updateMainSliderState(activeIndex);
+                }, 120);
+            }, { passive: true });
+        }
+
+        function updateMainSliderState(index) {
+            if (!sliderSlides.length) {
+                if (galleryImages.length) {
+                    currentGalleryIndex = Math.max(0, Math.min(index, galleryImages.length - 1));
+                    updateDesktopImage(currentGalleryIndex);
+                }
+                return;
+            }
+
+            const boundedIndex = Math.max(0, Math.min(index, sliderSlides.length - 1));
+            currentGalleryIndex = boundedIndex;
+            updateDesktopImage(boundedIndex);
+        }
+
+        function scrollMainSliderTo(index, options = {}) {
+            if (!productImageSlider || !sliderSlides.length) {
+                return;
+            }
+
+            const slideCount = sliderSlides.length;
+            const safeIndex = ((index % slideCount) + slideCount) % slideCount;
+            const targetSlide = sliderSlides[safeIndex];
+
+            if (!targetSlide) {
+                return;
+            }
+
+            const behavior = options.behavior || 'smooth';
+
+            isProgrammaticSliderScroll = true;
+            productImageSlider.scrollTo({
+                left: targetSlide.offsetLeft,
+                behavior
+            });
+            updateMainSliderState(safeIndex);
+
+            setTimeout(() => {
+                isProgrammaticSliderScroll = false;
+            }, options.resetDelay || 300);
+        }
+
+        function navigateMainSlider(step) {
+            if (!sliderSlides.length) {
+                return;
+            }
+
+            const nextIndex = currentGalleryIndex + step;
+            scrollMainSliderTo(nextIndex);
+        }
+
+        function findActiveSliderIndex() {
+            if (!productImageSlider || !sliderSlides.length) {
+                return 0;
+            }
+
+            let activeIndex = 0;
+            let minDistance = Infinity;
+            const center = productImageSlider.scrollLeft + productImageSlider.clientWidth / 2;
+
+            sliderSlides.forEach((slide, index) => {
+                const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+                const distance = Math.abs(center - slideCenter);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    activeIndex = index;
+                }
+            });
+
+            return activeIndex;
+        }
+
+        function syncSliderWithGallery() {
+            updateDesktopImage(currentGalleryIndex);
+
+            if (!productImageSlider || !sliderSlides.length) {
+                return;
+            }
+            scrollMainSliderTo(currentGalleryIndex, { behavior: 'smooth', resetDelay: 200 });
+        }
+
+        function attachSliderTapHandlers() {
+            if (!sliderSlides.length) {
+                return;
+            }
+
+            sliderSlides.forEach((slide) => {
+                let touchStartX = 0;
+                let touchStartY = 0;
+                let hasMoved = false;
+                let suppressClick = false;
+
+                slide.addEventListener('touchstart', (event) => {
+                    if (event.touches.length !== 1) {
+                        return;
+                    }
+                    touchStartX = event.touches[0].clientX;
+                    touchStartY = event.touches[0].clientY;
+                    hasMoved = false;
+                }, { passive: true });
+
+                slide.addEventListener('touchmove', (event) => {
+                    if (event.touches.length !== 1) {
+                        return;
+                    }
+                    const deltaX = Math.abs(event.touches[0].clientX - touchStartX);
+                    const deltaY = Math.abs(event.touches[0].clientY - touchStartY);
+                    if (deltaX > 10 || deltaY > 10) {
+                        hasMoved = true;
+                    }
+                }, { passive: true });
+
+                slide.addEventListener('touchend', (event) => {
+                    if (!hasMoved) {
+                        event.preventDefault();
+                        suppressClick = true;
+                        const index = Number(slide.dataset.galleryIndex || 0);
+                        openImageGalleryFromMain(index);
+                    }
+                    hasMoved = false;
+                });
+
+                slide.addEventListener('touchcancel', () => {
+                    hasMoved = false;
+                });
+
+                slide.addEventListener('click', (event) => {
+                    if (suppressClick) {
+                        suppressClick = false;
+                        event.preventDefault();
+                        return;
+                    }
+
+                    if (!hasMoved) {
+                        const index = Number(slide.dataset.galleryIndex || 0);
+                        openImageGalleryFromMain(index);
+                    }
+
+                    hasMoved = false;
+                });
+            });
+        }
+
+        function initializeDesktopGallery() {
+            desktopMainImage = document.getElementById('desktopMainImage');
+            desktopThumbnails = Array.from(document.querySelectorAll('[data-desktop-thumbnail]'));
+
+            if (desktopMainImage) {
+                desktopMainImage.addEventListener('click', () => openImageGallery(currentGalleryIndex));
+            }
+
+            if (desktopThumbnails.length) {
+                desktopThumbnails.forEach((thumbnail) => {
+                    thumbnail.addEventListener('click', () => {
+                        const index = Number(thumbnail.dataset.desktopThumbnail || 0);
+                        setActiveDesktopImage(index);
+                    });
+                });
+            }
+
+            updateDesktopImage(currentGalleryIndex);
+        }
+
+        function setActiveDesktopImage(index) {
+            if (!galleryImages.length) {
+                return;
+            }
+
+            const imageCount = galleryImages.length;
+            const safeIndex = ((index % imageCount) + imageCount) % imageCount;
+            currentGalleryIndex = safeIndex;
+
+            updateDesktopImage(safeIndex);
+
+            if (productImageSlider && sliderSlides.length) {
+                scrollMainSliderTo(safeIndex, { behavior: 'smooth' });
+            }
+        }
+
+        function updateDesktopImage(index) {
+            if (!galleryImages.length) {
+                return;
+            }
+
+            const boundedIndex = Math.max(0, Math.min(index, galleryImages.length - 1));
+            const targetSrc = galleryImages[boundedIndex];
+
+            if (desktopMainImage && targetSrc) {
+                desktopMainImage.src = targetSrc;
+            }
+
+            if (desktopThumbnails.length) {
+                desktopThumbnails.forEach((thumbnail, thumbIndex) => {
+                    const isActive = thumbIndex === boundedIndex;
+                    thumbnail.classList.toggle('border-blue-500', isActive);
+                    thumbnail.classList.toggle('opacity-100', isActive);
+                    thumbnail.classList.toggle('shadow-lg', isActive);
+                    thumbnail.classList.toggle('border-transparent', !isActive);
+                    thumbnail.classList.toggle('opacity-80', !isActive);
+                    thumbnail.classList.toggle('shadow', !isActive);
+                });
+            }
+        }
+
+        function registerLivewireEvents() {
+            Livewire.on('colorSelected', (data) => {
+                console.log(data[0]);
+            });
+
+            Livewire.on('sizeSelected', (data) => {
+                console.log(data[0]);
+            });
+
+            Livewire.on('checkcolorfirst', () => {
+                alert('Vui long chon phan muc o tren truoc');
+            });
+        }
+
         let touchStartX = 0;
         let touchEndX = 0;
 
@@ -850,13 +1132,12 @@
 
             if (Math.abs(swipeDistance) > swipeThreshold) {
                 if (swipeDistance > 0) {
-                    // Swipe right - previous image
                     previousImage();
                 } else {
-                    // Swipe left - next image
                     nextImage();
                 }
             }
         }
     </script>
 @endpush
+
