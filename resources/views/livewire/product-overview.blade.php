@@ -175,7 +175,7 @@
                     </div>
 
                     <!-- Nút Thêm vào giỏ hàng và Bảng size -->
-                    <div class="flex items-start space-x-4 mb-6" x-data="{ showSizeModal: false }">
+                    <div class="flex items-start space-x-4 mb-6 hidden md:flex" x-data="{ showSizeModal: false }">
                         <div class="w-full max-w-full md:max-w-[220px] flex flex-col gap-2 flex-shrink-0">
                             <button type="button"
                                     wire:click="openQuickBuy"
@@ -243,6 +243,59 @@
                                                     class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                                                     Đóng
                                                 </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Mobile Size Chart Button -->
+                    <div class="md:hidden mb-6">
+                        @if($sizeShoesImage)
+                            <div class="flex justify-center" x-data="{ showSizeModal: false }">
+                                <button type="button"
+                                    @click="showSizeModal = true"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">Xem bảng size</span>
+                                </button>
+
+                                <!-- Mobile Size Modal -->
+                                <div x-show="showSizeModal"
+                                    x-transition:enter="transition ease-out duration-300"
+                                    x-transition:enter-start="opacity-0 transform scale-90"
+                                    x-transition:enter-end="opacity-100 transform scale-100"
+                                    x-transition:leave="transition ease-in duration-200"
+                                    x-transition:leave-start="opacity-100 transform scale-100"
+                                    x-transition:leave-end="opacity-0 transform scale-90"
+                                    class="fixed inset-0 z-50 overflow-y-auto"
+                                    style="display: none;">
+                                    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                                            @click="showSizeModal = false"></div>
+
+                                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full mx-4">
+                                            <div class="bg-white p-4">
+                                                <div class="flex justify-between items-center mb-4">
+                                                    <h3 class="text-lg font-medium text-gray-900">
+                                                        Bảng Size Giày
+                                                    </h3>
+                                                    <button type="button"
+                                                        @click="showSizeModal = false"
+                                                        class="text-gray-400 hover:text-gray-500">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <img src="{{ asset('storage/' . $sizeShoesImage) }}"
+                                                    alt="Bảng size giày"
+                                                    loading="lazy"
+                                                    class="w-full h-auto rounded-lg">
                                             </div>
                                         </div>
                                     </div>
@@ -606,6 +659,10 @@
 
 
     @include('partials.quick_buy_modal')
+
+<!-- Mobile Bottom Actions -->
+@include('partials.product_bottom_actions')
+
 </div>
 
 @push('scripts')

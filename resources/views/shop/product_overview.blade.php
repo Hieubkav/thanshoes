@@ -60,3 +60,14 @@
 @section('content')
     @livewire('product-overview',compact('product'))
 @endsection
+
+@push('styles')
+<style>
+    /* Add bottom padding to prevent content from being hidden behind mobile bottom actions */
+    @media (max-width: 768px) {
+        main[data-main-content] {
+            padding-bottom: 120px !important;
+        }
+    }
+</style>
+@endpush
