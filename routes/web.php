@@ -53,6 +53,11 @@ Route::post('/ai-chat/send', [AiChatController::class, 'sendMessage'])
 Route::get('/ai-chat/test', [AiChatController::class, 'testConnection'])
     ->name('ai-chat.test');
 
+// API Routes
+Route::post('/api/add-to-cart', [ShopController::class, 'addToCartAjax'])
+    ->name('api.add-to-cart')
+    ->middleware('throttle:30,1'); // Rate limit: 30 requests per minute
+
 
 
 // Admin routes - require authentication
