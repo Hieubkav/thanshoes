@@ -223,8 +223,19 @@
         }
     }
 
+    function ensureBuffers() {
+        if (!Array.isArray(window.newArrivalModalDataBuffer)) {
+            window.newArrivalModalDataBuffer = [];
+        }
+
+        if (!Array.isArray(window.newArrivalModalIdBuffer)) {
+            window.newArrivalModalIdBuffer = [];
+        }
+    }
+
     function registerProducts(products = []) {
         ensureGlobalProducts();
+        ensureBuffers();
 
         const existingIds = new Set(window.productsData.map(item => item.id));
 
@@ -246,7 +257,58 @@
             state.productMap.set(product.id, product);
         });
 
+        processBufferedIds();
         console.log('Total products loaded:', window.productsData.length);
+    }
+
+    function registerProductsByIds(ids = [], options = {}) {
+        ensureGlobalProducts();
+        ensureBuffers();
+
+        const config = { requeue: true, ...options };
+        const unresolved = [];
+
+        (Array.isArray(ids) ? ids : []).forEach(id => {
+            if (typeof id === 'undefined' || id === null) {
+                return;
+            }
+
+            if (state.productMap.has(id)) {
+                return;
+            }
+
+            const product = window.productsData.find(item => item.id === id);
+
+            if (product) {
+                state.productMap.set(id, product);
+            } else {
+                unresolved.push(id);
+            }
+        });
+
+        if (config.requeue && unresolved.length > 0) {
+            window.newArrivalModalIdBuffer.push(unresolved);
+        }
+
+        return unresolved;
+    }
+
+    function processBufferedIds() {
+        ensureBuffers();
+
+        if (!window.newArrivalModalIdBuffer.length) {
+            return;
+        }
+
+        const pending = window.newArrivalModalIdBuffer.slice();
+        window.newArrivalModalIdBuffer = [];
+
+        pending.forEach(ids => {
+            const remaining = registerProductsByIds(ids, { requeue: false });
+            if (Array.isArray(remaining) && remaining.length > 0) {
+                window.newArrivalModalIdBuffer.push(remaining);
+            }
+        });
     }
 
     function resetSelections() {
@@ -617,8 +679,21 @@
         }
     });
 
+    function flushQueue() {
+        ensureBuffers();
+
+        if (window.newArrivalModalDataBuffer.length) {
+            const dataQueue = window.newArrivalModalDataBuffer.splice(0);
+            dataQueue.forEach(queueItem => registerProducts(queueItem));
+        }
+
+        processBufferedIds();
+    }
+
     window.newArrivalModal = {
         registerProducts,
+        registerProductsByIds,
+        flushQueue,
         state
     };
 
@@ -630,13 +705,32 @@
     window.buyNowFromModal = () => handleVariantAction('buy');
     window.updateCartCounter = updateCartCounter;
     window.showNotification = showNotification;
+
+    flushQueue();
 })(window, document);
 </script>
 @endonce
 
 @if ($so_luong_types > 0)
     @php
-        $componentProducts = $danh_sach_types->map(function ($item) {
+        static $registeredNewArrivalProductIds = [];
+
+        $sectionProductIds = $danh_sach_types
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $newProducts = $danh_sach_types
+            ->filter(function ($item) use ($registeredNewArrivalProductIds) {
+                return !in_array($item->id, $registeredNewArrivalProductIds, true);
+            });
+
+        $registeredNewArrivalProductIds = array_values(
+            array_unique(array_merge($registeredNewArrivalProductIds, $sectionProductIds->all()))
+        );
+
+        $newProductPayload = $newProducts->map(function ($item) {
             return [
                 'id' => $item->id,
                 'name' => $item->name,
@@ -655,14 +749,37 @@
         })->values();
     @endphp
 
-    <script>
-        (function registerNewArrivalProducts() {
-            if (!window.newArrivalModal || typeof window.newArrivalModal.registerProducts !== 'function') {
-                return;
-            }
+    @if ($newProductPayload->isNotEmpty())
+        <script>
+            (function queueNewArrivalProducts() {
+                const payload = @json($newProductPayload);
+                if (!window.newArrivalModal || typeof window.newArrivalModal.registerProducts !== 'function') {
+                    window.newArrivalModalDataBuffer = window.newArrivalModalDataBuffer || [];
+                    window.newArrivalModalDataBuffer.push(payload);
+                    return;
+                }
+                window.newArrivalModal.registerProducts(payload);
+                if (typeof window.newArrivalModal.flushQueue === 'function') {
+                    window.newArrivalModal.flushQueue();
+                }
+            })();
+        </script>
+    @endif
 
-            const products = @json($componentProducts);
-            window.newArrivalModal.registerProducts(products);
-        })();
-    </script>
+    @if ($sectionProductIds->isNotEmpty())
+        <script>
+            (function queueNewArrivalIds() {
+                const ids = @json($sectionProductIds);
+                if (!window.newArrivalModal || typeof window.newArrivalModal.registerProductsByIds !== 'function') {
+                    window.newArrivalModalIdBuffer = window.newArrivalModalIdBuffer || [];
+                    window.newArrivalModalIdBuffer.push(ids);
+                    return;
+                }
+                window.newArrivalModal.registerProductsByIds(ids);
+                if (typeof window.newArrivalModal.flushQueue === 'function') {
+                    window.newArrivalModal.flushQueue();
+                }
+            })();
+        </script>
+    @endif
 @endif

@@ -17,13 +17,24 @@ class ProductCacheService
     const SHORT_CACHE_TTL = 1800; // 30 minutes
 
     /**
+     * Request-level memoization để tránh deserialize collection lớn nhiều lần
+     */
+    protected static ?Collection $homepageProducts = null;
+
+    /**
      * Get cached products with eager loading
      */
     public static function getHomepageProducts(): Collection
     {
-        return Cache::remember('homepage_products_v2', self::CACHE_TTL, function () {
+        if (self::$homepageProducts instanceof Collection) {
+            return self::$homepageProducts;
+        }
+
+        self::$homepageProducts = Cache::remember('homepage_products_v2', self::CACHE_TTL, function () {
             return self::queryWithEagerLoads()->get();
         });
+
+        return self::$homepageProducts;
     }
 
     /**
@@ -192,6 +203,7 @@ class ProductCacheService
         }
 
         // Clear type-specific caches
+        self::$homepageProducts = null;
         $types = Cache::get('homepage_types_data_v2', collect())->keys();
         foreach ($types as $type) {
             $bannedNames = self::getBannedNames();

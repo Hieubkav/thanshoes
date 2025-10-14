@@ -10,13 +10,13 @@
     <title>{{ config('app.name') }}</title>
 
     <link rel="canonical" href="{{ request()->url() }}">    <meta name="description"
-          content="@yield('meta_description', \App\Models\Setting::first()->seo_description ?? 'ThanShoes - Cửa hàng giày thể thao chất lượng cao với các thương hiệu nổi tiếng như New Balance, Nike, Onitsuka Tiger, Adidas, MLB, và Converse. Chúng tôi cung cấp đa dạng các mẫu giày chất lượng cao, đáp ứng mọi phong cách và nhu cầu, với giá cả cạnh tranh. Đến với ThanShoes để tìm đôi giày phù hợp nhất và nâng tầm phong cách của bạn.')">
+          content="@yield('meta_description', optional($setting)->seo_description ?? 'ThanShoes - Cửa hàng giày thể thao chất lượng cao với các thương hiệu nổi tiếng như New Balance, Nike, Onitsuka Tiger, Adidas, MLB, và Converse. Chúng tôi cung cấp đa dạng các mẫu giày chất lượng cao, đáp ứng mọi phong cách và nhu cầu, với giá cả cạnh tranh. Đến với ThanShoes để tìm đôi giày phù hợp nhất và nâng tầm phong cách của bạn.')">
     <meta name="keywords"
           content="ThanShoes, giày thể thao, New Balance, Nike, Onitsuka Tiger, Adidas, MLB, Converse, giày chất lượng cao, cửa hàng giày thể thao, phong cách thể thao">
     <meta name="robots" content="all">    <meta property="og:title" content="@yield('og_title', 'ThanShoes - Giày Thể Thao Chất Lượng Cao, Nâng Tầm Phong Cách!')">    <meta property="og:description"
-          content="@yield('og_description', \App\Models\Setting::first()->seo_description ?? 'ThanShoes.vn cung cấp đa dạng các mẫu giày thể thao chất lượng cao từ Nike, Adidas, New Balance, Onitsuka Tiger, MLB và Converse. Chất lượng đảm bảo, giá cả cạnh tranh, dịch vụ chăm sóc khách hàng tận tình. Nâng tầm phong cách của bạn với ThanShoes.vn.')"/>
+          content="@yield('og_description', optional($setting)->seo_description ?? 'ThanShoes.vn cung cấp đa dạng các mẫu giày thể thao chất lượng cao từ Nike, Adidas, New Balance, Onitsuka Tiger, MLB và Converse. Chất lượng đảm bảo, giá cả cạnh tranh, dịch vụ chăm sóc khách hàng tận tình. Nâng tầm phong cách của bạn với ThanShoes.vn.')"/>
     <meta property="og:url" content="{{ request()->url() }}">
-    <meta property="og:image" content="@yield('og_image', \App\Models\Setting::first()->og_img ? asset('storage/' . \App\Models\Setting::first()->og_img) : asset('images/og_img.webp'))">
+    <meta property="og:image" content="@yield('og_image', optional($setting)->og_img ? asset('storage/' . optional($setting)->og_img) : asset('images/og_img.webp'))">
     <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -186,3 +186,4 @@
 </body>
 
 </html>
+

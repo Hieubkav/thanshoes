@@ -8,10 +8,12 @@
             @foreach($carousels as $key => $carousel)
             <div class="hidden duration-1000 ease-in-out h-full" data-carousel-item>
                 <div class="relative w-full h-full">
-                    <img src="{{config('app.asset_url')}}/storage/{{$carousel->link_image}}"
+                    <img src="{{ config('app.asset_url') }}/storage/{{ $carousel->link_image }}"
                          class="object-cover w-full h-full"
-                         loading="lazy"
-                         alt="Slide {{$key + 1}}">
+                         loading="{{ $key === 0 ? 'eager' : 'lazy' }}"
+                         fetchpriority="{{ $key === 0 ? 'high' : 'auto' }}"
+                         decoding="{{ $key === 0 ? 'sync' : 'async' }}"
+                         alt="Slide {{ $key + 1 }}">
 
                     <!-- Gradient Overlay -->
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
