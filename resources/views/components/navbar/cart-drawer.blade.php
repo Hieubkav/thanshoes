@@ -1,6 +1,7 @@
 <!-- Cart Drawer Component -->
 <div id="drawer_cart"
      class="fixed top-0 right-0 z-[9999] h-screen pt-16 w-3/4 lg:w-1/5 transition-transform translate-x-full bg-gradient-to-r from-orange-100 via-gray-100 to-blue-100 shadow-lg dark:bg-gray-900"
+     x-cloak data-cloak
      tabindex="-1" aria-labelledby="drawer-title" aria-hidden="true">
     
     <div class="p-4 flex flex-col h-full">

@@ -30,61 +30,119 @@
     <meta name="HandheldFriendly" content="true">
     <meta http-equiv="x-dns-prefetch-control" content="on">
     <meta name="author" content="ThanShoes.vn">
+    
+    <!-- Resource Hints for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
     <!-- link icon -->
     <link rel="icon" href="{{ asset('images/logo.svg') }}" type="image/x-icon">
 
+    <!-- Critical CSS (inline for faster above-the-fold rendering) -->
     <style>
-        [x-cloak] {
-            display: none !important;
+        /* Critical above-the-fold styles */
+        [x-cloak] { display: none !important; }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+        body { 
+            background: #FAFAFA;
+            color: #1A1A1A;
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
         }
-
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
+        
+        /* Critical navbar placeholder */
+        .pt-48 { padding-top: 12rem; }
+        .pt-52 { padding-top: 13rem; }
+        
+        /* Critical carousel */
+        .relative { position: relative; }
+        .w-full { width: 100%; }
+        .overflow-hidden { overflow: hidden; }
+        .hidden { display: none; }
+        .object-cover { object-fit: cover; }
+        
+        /* Critical lazy loading placeholder */
+        .lazy-section { min-height: 200px; }
+        .lazy-placeholder { display: flex; align-items: center; justify-content: center; min-height: 200px; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        
+        /* Hide sections before CSS loads to prevent flash of unstyled content */
+        .css-loading {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
         }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
+        
+        .css-loaded {
+            opacity: 1;
         }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        
+        /* Loading spinner for sections */
+        .section-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            background: white;
         }
-
-        ::-webkit-scrollbar-thumb {
-            background: #FF6B35;
-            border-radius: 3px;
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF6B35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #E55722;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
+        
+        /* Non-critical styles that will be overridden */
+        .bg-green-500 { background-color: #10b981; }
+        .bg-red-500 { background-color: #ef4444; }
+        .text-white { color: #ffffff; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .fixed { position: fixed; }
+        .top-24 { top: 6rem; }
+        .right-4 { right: 1rem; }
+        .z-80 { z-index: 80; }
+        .shadow-soft-lg { box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .border-green-400 { border-color: #4ade80; }
+        .border-red-400 { border-color: #f87171; }
+        
         /* Flash message animations */
         @keyframes fade-in-down {
-            0% {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
-
-        .animate-fade-in-down {
-            animation: fade-in-down 0.5s ease-out;
-        }
-
-        .fi-notifications,
-        .fi-notifications .fi-notification {
-            z-index: 120 !important;
-        }
+        .animate-fade-in-down { animation: fade-in-down 0.5s ease-out; }
+        
+        .fi-notifications, .fi-notification { z-index: 120 !important; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #FF6B35; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #E55722; }
     </style>
 
+    <!-- Defer non-critical styles -->
+    <link rel="preload" href="{{ asset('images/logo.svg') }}" as="image" type="image/svg+xml">
+
+    <!-- Load full styles with defer to prevent blocking -->
     @filamentStyles
-    @vite('resources/css/app.css')
+    <link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}" media="print" onload="this.media='all'">
+    @stack('head')
 </head>
 
 <body class="antialiased bg-neutral-50 text-neutral-900 font-sans">
@@ -123,6 +181,16 @@
 
 <script defer>
     document.addEventListener("DOMContentLoaded", function () {
+        const removeCloak = () => {
+            document.querySelectorAll('[data-cloak]').forEach((el) => {
+                el.removeAttribute('data-cloak');
+                el.removeAttribute('x-cloak');
+            });
+        };
+
+        window.addEventListener('load', removeCloak, { once: true });
+        setTimeout(removeCloak, 2500);
+
         const navbar = document.querySelector("[data-navbar]");
         const mainContent = document.querySelector("[data-main-content]");
 

@@ -22,7 +22,7 @@ class ProductCacheService
     protected static ?Collection $homepageProducts = null;
 
     /**
-     * Get cached products with eager loading
+     * Get cached products with eager loading (optimized for homepage)
      */
     public static function getHomepageProducts(): Collection
     {
@@ -30,8 +30,20 @@ class ProductCacheService
             return self::$homepageProducts;
         }
 
+        // For homepage, we need a lighter version to avoid large collection deserialization
         self::$homepageProducts = Cache::remember('homepage_products_v2', self::CACHE_TTL, function () {
-            return self::queryWithEagerLoads()->get();
+            return self::queryWithEagerLoads()
+                ->select(['id', 'name', 'slug', 'type', 'brand']) // Remove description for faster load
+                ->with(['variants' => function ($query) {
+                    $query->select(['id', 'product_id', 'price', 'stock']) // Remove sku for smaller payload
+                          ->limit(1); // Limit to only 1 variant per product for homepage
+                }])
+                ->with(['productImages' => function ($query) {
+                    $query->select(['id', 'product_id', 'image'])
+                          ->orderBy('order', 'asc')
+                          ->limit(1); // Only 1 image per product
+                }])
+                ->get();
         });
 
         return self::$homepageProducts;
@@ -51,11 +63,9 @@ class ProductCacheService
     public static function eagerLoadRelations(): array
     {
         return [
-            'variants' => function ($query) {
-                $query->with('variantImage');
-            },
+            'variants.variantImage',
             'productImages' => function ($query) {
-                $query->ordered();
+                $query->orderBy('order', 'asc')->limit(1);
             },
             'tags',
         ];
@@ -151,22 +161,25 @@ class ProductCacheService
      */
     public static function getProductsByType(string $typeName): Collection
     {
+        // Use a more robust cache key that includes banned names
         $bannedNames = self::getBannedNames();
-        $cacheKey = "products_type_{$typeName}_v2_" . md5(serialize($bannedNames));
+        $cacheKey = "products_type_{$typeName}_v3_" . md5(serialize($bannedNames));
         
         return Cache::remember($cacheKey, self::SHORT_CACHE_TTL, function () use ($typeName, $bannedNames) {
-            $products = self::getHomepageProducts()->where('type', $typeName);
-            
-            // Filter banned names
-            foreach ($bannedNames as $bannedName) {
-                if (!empty($bannedName)) {
-                    $products = $products->filter(function ($product) use ($bannedName) {
-                        return stripos($product->name, $bannedName) === false;
-                    });
-                }
-            }
-            
-            return $products->values();
+            // Direct database query instead of filtering from all products
+            return self::queryWithEagerLoads()
+                ->where('type', $typeName)
+                ->get()
+                ->filter(function ($product) use ($bannedNames) {
+                    // Filter banned names
+                    foreach ($bannedNames as $bannedName) {
+                        if (!empty($bannedName) && stripos($product->name, $bannedName) !== false) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                ->values();
         });
     }
 
@@ -202,13 +215,28 @@ class ProductCacheService
             Cache::forget($key);
         }
 
+        // Clear v3 cache keys (new optimized version)
+        $v3Keys = [
+            'homepage_products_v2', //美食 v2 is still the main key
+            'website_design_v2',
+            'has_posts_v2',
+            'app_settings_v2',
+            'homepage_carousels_v2'
+        ];
+        
+        foreach ($v3Keys as $key) {
+            Cache::forget($key);
+        }
+
         // Clear type-specific caches
         self::$homepageProducts = null;
         $types = Cache::get('homepage_types_data_v2', collect())->keys();
         foreach ($types as $type) {
             $bannedNames = self::getBannedNames();
-            $cacheKey = "products_type_{$type}_v2_" . md5(serialize($bannedNames));
-            Cache::forget($cacheKey);
+            $cacheKey_v2 = "products_type_{$type}_v2_" . md5(serialize($bannedNames));
+            $cacheKey_v3 = "products_type_{$type}_v3_" . md5(serialize($bannedNames));
+            Cache::forget($cacheKey_v2);
+            Cache::forget($cacheKey_v3);
         }
     }
 
@@ -225,8 +253,8 @@ class ProductCacheService
         self::getSettings();
         self::getBannedNames();
 
-        // Warm up type-specific caches
-        $types = self::getTypesData()->keys();
+        // Warm up type-specific caches (limit to first 6 types for performance)
+        $types = self::getTypesData()->keys()->take(6);
         foreach ($types as $type) {
             self::getProductsByType($type);
         }

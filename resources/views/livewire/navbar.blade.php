@@ -38,19 +38,6 @@
                     @include('components.navbar.logo')
                 </div>
 
-                <!-- Mobile-centered Search (hidden on larger screens) -->
-                <div class="flex-1 max-w-xs mx-auto hidden md:flex justify-center">
-                    <div class="relative group w-full">
-                        <button type="button"
-                                class="w-full flex items-center space-x-2 px-3 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 hover:border-primary-300 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                                data-modal-target="search_modal"
-                                data-modal-toggle="search_modal">
-                            <i class="fas fa-search text-neutral-500 group-hover:text-primary-600 transition-colors duration-200 text-sm"></i>
-                            <span class="text-neutral-500 group-hover:text-neutral-700 transition-colors duration-200 flex-1 text-left text-sm">Tìm kiếm...</span>
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Right: Icons -->
                 <div class="flex items-center gap-1 sm:gap-2">
                     <x-navbar.icons :cart-count="$cartCount" :pending-orders-count="$pendingOrdersCount" />

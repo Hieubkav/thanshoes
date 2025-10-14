@@ -31,23 +31,11 @@
         }
     </script>
 
-    <!-- AI Chatbot Button -->
-    @if($setting->ai_speedial_display !== 'hidden')
-        <div class="relative">
-            @livewire('ai-chatbot-button')
-        </div>
-    @endif
-
     <!-- Thêm nút  mũi  tên đẩy lên đầu trang nhanh -->
     <a href="#top" class="flex items center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg hover:bg-blue-200 group">
         <i class="fas fa-arrow-up text-2xl"></i>
     </a>
 </div>
-
-<!-- AI Chatbot Component -->
-@if($setting->ai_speedial_display !== 'hidden')
-    @livewire('ai-chatbot')
-@endif
 
 <style>
     /* Hiệu ứng lắc qua lắc lại */

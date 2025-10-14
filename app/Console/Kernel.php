@@ -23,6 +23,13 @@ class Kernel extends ConsoleKernel
                  ->everySixHours()
                  ->withoutOverlapping()
                  ->runInBackground();
+                 
+        // NEW: Warm up homepage cache every 30 minutes for optimal performance
+        $schedule->command('cache:warm-homepage')
+                 ->everyThirtyMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->description('Warm up homepage cache for better user experience');
     }
 
     /**

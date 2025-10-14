@@ -1,12 +1,54 @@
 {{-- Carousel data được share từ ViewServiceProvider --}}
 
+@php
+    $firstCarousel = $carousels->first();
+    $firstImageUrl = null;
+
+    if ($firstCarousel) {
+        $assetUrl = (string) config('app.asset_url');
+        $imagePath = ltrim($firstCarousel->link_image, '/');
+        $firstImageUrl = ($assetUrl !== '' ? rtrim($assetUrl, '/') : '') . '/storage/' . $imagePath;
+    }
+@endphp
+
+@once
+    @if($firstImageUrl)
+        @push('head')
+            <link rel="preload" as="image" href="{{ $firstImageUrl }}">
+        @endpush
+    @endif
+@endonce
+
 <!-- Modern Hero Carousel -->
 <section class="relative w-full overflow-hidden">
+    <div class="relative w-full">
+    @if($firstCarousel)
+        <div id="hero-placeholder" class="absolute inset-0 z-20 pointer-events-none" aria-hidden="true">
+            <div class="relative h-full">
+                <img src="{{ $firstImageUrl }}"
+                     class="object-cover w-full h-full"
+                     loading="eager"
+                     fetchpriority="high"
+                     decoding="sync"
+                     alt="Slide 1">
+
+                <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+            </div>
+        </div>
+    @endif
+
     <div id="hero-carousel" class="relative w-full" data-carousel="slide">
         <!-- Carousel wrapper -->
         <div class="relative h-[12rem] md:h-[28rem] lg:h-[45rem] overflow-hidden">
             @foreach($carousels as $key => $carousel)
-            <div class="hidden duration-1000 ease-in-out h-full" data-carousel-item>
+            <div class="{{ $key === 0 ? 'block' : 'hidden' }} duration-1000 ease-in-out h-full"
+                 @if($key === 0)
+                     data-carousel-item="active"
+                     aria-hidden="false"
+                 @else
+                     data-carousel-item
+                     aria-hidden="true"
+                 @endif>
                 <div class="relative w-full h-full">
                     <img src="{{ config('app.asset_url') }}/storage/{{ $carousel->link_image }}"
                          class="object-cover w-full h-full"
@@ -62,4 +104,49 @@
         </button>
         @endif
     </div>
+    </div>
 </section>
+
+@push('scripts')
+<script>
+    (function () {
+        const init = () => {
+            const placeholder = document.getElementById('hero-placeholder');
+            const firstHeroImage = document.querySelector('#hero-carousel img');
+
+            if (!placeholder) {
+                return;
+            }
+
+            const revealCarousel = () => {
+                if (placeholder.classList.contains('hidden')) {
+                    return;
+                }
+
+                placeholder.classList.add('hidden');
+            };
+
+            if (firstHeroImage) {
+                if (firstHeroImage.complete) {
+                    revealCarousel();
+                } else {
+                    firstHeroImage.addEventListener('load', revealCarousel, { once: true });
+                    firstHeroImage.addEventListener('error', revealCarousel, { once: true });
+                }
+            }
+
+            // Reveal asap and ensure fallback
+            requestAnimationFrame(revealCarousel);
+            window.addEventListener('load', revealCarousel, { once: true });
+            setTimeout(revealCarousel, 1200);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+</script>
+@endpush
+

@@ -1,7 +1,8 @@
 @php use Illuminate\Support\Str; @endphp
 <!-- Modern Search Modal -->
 <div id="search_modal" tabindex="-1" aria-hidden="true" wire:ignore.self
-    class="fixed inset-0 z-50 hidden overflow-y-auto">
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
+    x-cloak data-cloak>
     <!-- Backdrop -->
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
 

@@ -16,18 +16,21 @@
 @extends('layouts.shoplayout')
 
 @section('content')
+    {{-- Critical: Above-the-fold content (load immediately) --}}
     @include('component.carousel')
 
     @include('component.feature_benefit', ['websiteDesign' => $websiteDesign])
 
-    @include('component.product_categories')
+    @include('component.product_categories_optimized')
 
+    {{-- Priority content (load after page load) --}}
     @if ($count_types >= 1)
         @include('component.new_arrival', [
             'type_name' => $types->values()->get(0),
         ])
     @endif
 
+    {{-- For now, disable lazy loading to fix slot error. Use direct includes --}}
     @include('component.shop.animate_banner', ['websiteDesign' => $websiteDesign])
 
     @if ($count_types >= 2)
@@ -90,11 +93,11 @@
 
     @include('component.about_me', ['websiteDesign' => $websiteDesign])
 
+    {{-- Additional types with very lazy loading --}}
     @if ($count_types >= 9)
         @for ($i = 9; $i <= $count_types; $i++)
             @if ($products->where('type', $types->values()->get($i-1))->count() <= 3)
                 @continue
-                
             @endif
 
             @include('component.new_arrival', [
